@@ -237,7 +237,7 @@ esu "a" "b" +5 g
 ````
 
 #### Pitfalls:
-When dealing with the "\" character, you can use '\\\\', or "\\\\\\":
+When dealing with the "\\" character, you can use '\\\\\\\\', or "\\\\\\\\\\\\":
 
 ```
 esu '\\\\' aa
