@@ -1,8 +1,11 @@
 # bashed
 bash wrapper for the ed editor
 
+## Motivation:
+ed is a good text editor, but it's interface is really bad.  I thought that bash would be a good interface for it, plus it allows all the bash trickery to be used directly in an editing session.
+
 ## What this does?
-It wraps the ed editor in bash functions, allowing it use directly on command line.
+It wraps the ed editor in bash functions, allowing it use directly on command line.  It maintain the state, like the current line, using bash variables.
 
 ## Dependencies:
 - ed;
@@ -187,7 +190,7 @@ Will move the current line to line 2.
 em 2 10
 ````
 
-Will move the current line, to the line 10, to line 2
+Will move lines from the current line, to the line 10, to line 2
 
 ````
 em 2 +5
@@ -232,6 +235,14 @@ esu "a" "b" 10
 esu "a" "b" +5
 esu "a" "b" +5 g
 ````
+
+#### Pitfalls:
+When dealing with the "\" character, you can use '\\\\', or "\\\\\\":
+
+```
+esu '\\\\' aa
+esu "\\\\\\" aa
+```
 
 ### Searching:
 The most common searching mechanism would be:

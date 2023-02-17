@@ -82,8 +82,6 @@ function editcmd {
 		mv "$HOME/.edit/temp" "$editreadlines"
 		edit "${1},${2}d\nw"
 		editread 0 0 0 $(($1 - 1))		
-		#f="$(echo "$lines" | $3)"
-		#edit "$1,$2d\n$(( $1 - 1 ))a\n$f\n.\nw" "$filename"
 		editshow ${1},$2
 	fi
 }
@@ -242,7 +240,6 @@ function editsyntax {
 			|| syntax=org
 	fi
 
-#	[[ $1 =~ \.org ]] && syntax=$HOME/.highlight/org.lang
 	[[ $1 =~ \.perl ]] && syntax=perl
 	[[ $1 =~ \.php ]] && syntax=php
 	[[ $1 =~ \.pl ]] && syntax=perl
