@@ -404,12 +404,12 @@ Will repeat the last es command.
 #### On the searching list:
 ##### Going up on the list:
 ````
-em u
+es u
 ````
 
 ##### Goind down on the list:
 ````
-em d
+es d
 ````
 
 ##### Going to a item in the list:
@@ -421,7 +421,7 @@ Where n should be a number of an item of the search list.
 
 ##### Showing the content in the middle:
 ````
-em m
+es m
 ````
 
 If the search list have, for example, 3 items, and you want to see what's in the middle of item 1, and item 2:
