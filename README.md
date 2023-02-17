@@ -248,6 +248,12 @@ esu '\\\\' aa
 esu "\\\\\\" aa
 ```
 
+Groups in the regex are like:
+
+````
+esu "\\(re\\).*\\(re\\)"
+````
+
 ### Searching:
 The most common searching mechanism would be:
 
