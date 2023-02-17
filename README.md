@@ -1,6 +1,7 @@
 # bashed
-![screenshot][https://github.com/neoncortex/bashed/image/sshot.png]
 bash wrapper for the ed editor
+
+![screenshot](https://github.com/neoncortex/bashed/blob/main/image/image.png)
 
 ## Motivation:
 ed is a good text editor, but it's interface is really bad.  I thought that bash would be a good interface for it, plus it allows all the bash trickery to be used directly in an editing session.
