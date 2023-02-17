@@ -242,6 +242,23 @@ ef 'g/re/p'
 
 This will return a list with all occurences of "re".  More details on how to navigate this list in the Natigation section.
 
+### Commands:
+Shell commands can be applied to a region using ec:
+
+````
+ec 1 10 fmt
+````
+
+To apply a command to one line only, do:
+````
+ec 10 10 fmt
+````
+
+Commands with spaces should be:
+````
+ec 1 10 "fmt -w 80"
+````
+
 ### Levels:
 On ed, visualizing how many tabs/spaces the current line identation have can be tedious.  In bashed, you can use el to see the current line tab level:
 

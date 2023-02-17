@@ -234,7 +234,14 @@ function editsyntax {
 	[[ $1 =~ .*\/Makefile ]] && syntax=makefile
 	[[ $1 =~ \.meson ]] && syntax=meson
 	[[ $1 =~ \.objc ]] && syntax=objc
-	[[ $1 =~ \.org ]] && syntax=$HOME/.highlight/org-simple.lang
+	if [[ $1 =~ \.org ]]
+	then
+		local f="$HOME/.highlight/org-simple.lang"
+		[[ -f $f ]] \
+			&& syntax=$HOME/.highlight/org-simple.lang \
+			|| syntax=org
+	fi
+
 #	[[ $1 =~ \.org ]] && syntax=$HOME/.highlight/org.lang
 	[[ $1 =~ \.perl ]] && syntax=perl
 	[[ $1 =~ \.php ]] && syntax=php
