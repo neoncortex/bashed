@@ -1,4 +1,5 @@
 # bashed
+![screenshot][https://github.com/neoncortex/bashed/image/sshot.png]
 bash wrapper for the ed editor
 
 ## Motivation:
@@ -50,6 +51,8 @@ set-option -g display-panes-time 10000
 ````
 
 ## How to use it:
+All the commands below should be used inside a tmux session.
+
 ### Opening files:
 ````
 eo file
