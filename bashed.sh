@@ -316,10 +316,11 @@ function editfind {
 
 function editlocate {
 	[[ -z $1 ]] && return 1
-	local to="$(editsyntax=n edcmd=p \
-		ef "$((fileline + 1)),${filesize}g/$1/n" | head -n1)"
-	to="${to/*:/}"
+	[[ -n $2 ]] && local fileline="$2"
+	local to="$(editsyntax=n \
+		ef "${fileline},${filesize}g/$1/n" | head -n1)"
 	to="${to/\ */}"
+	to="${to/*:/}"
 	echo "$to"
 }
 
@@ -465,6 +466,22 @@ function editshow {
 			show="edit ${arg}$edcmd"
 			fileline="$arg"
 		fi
+	elif [[ $arg =~ ^\/.*(,\/.*)? ]] && [[ -z $show ]]
+	then
+		if [[ $arg =~ , ]]
+		then
+			local head="${arg/,*/}"
+			local tail="${arg/*,/}"
+			head="$(editlocate "${head/\//}")"
+			tail="$(editlocate "${tail/\//}" "$((fileline + 1))")"
+			[[ -n $head ]] && [[ -n $tail ]] \
+				&& show="edit ${head},${tail}$edcmd" \
+				&& fileline="$tail"
+		else
+			local line="$(editlocate "${arg/\//}")"
+			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$edcmd" \
+				&& fileline="$line"
+		fi
 	elif [[ $arg == "l" ]] || [[ $arg == "." ]]
 	then
 		show="edit ${fileline}$edcmd"
@@ -518,22 +535,6 @@ function editshow {
 			&& tail="$((tail + (pagesize / 2)))"
 		[[ $tail -gt $filesize ]] && tail="$filesize"
 		show="edit ${head},${tail}$edcmd"
-	elif [[ $arg =~ ^\/.*(,\/.*)? ]] && [[ -z $show ]]
-	then
-		if [[ $arg =~ , ]]
-		then
-			local head="${arg/,*/}"
-			local tail="${arg/*,/}"
-			head="$(editlocate "${head/\//}")"
-			tail="$(editlocate "${tail/\//}")"
-			[[ -n $head ]] && [[ -n $tail ]] \
-				&& show="edit ${head},${tail}$edcmd" \
-				&& fileline="$tail"
-		else
-			local line="$(editlocate "${arg/\//}")"
-			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$edcmd" \
-				&& fileline="$line"
-		fi
 	fi
 
 	if [[ -n $show ]]
