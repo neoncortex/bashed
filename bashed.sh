@@ -624,14 +624,14 @@ function editjoin {
 }
 
 function editmove {
-	local dest=
+	local dest="$1"
 	[[ -z $1 ]] && dest="$((fileline + 1))"
-	[[ $1 =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fileline + dest))"
-	[[ $1 =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fileline - dest))"
+	[[ $dest =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fileline + dest))"
+	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fileline - dest))"
 	[[ $dest -gt $filesize ]] && return 1
 	[[ $dest -lt 1 ]] && return 1
-	local to=
-	[[ $2 =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fileline + l))"
+	local to="$2"
+	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fileline + l))"
 	[[ -n $to ]] && edit "${fileline},${to}m$dest\nw" \
 			|| edit "${fileline}m$dest\nw"
 }
@@ -689,6 +689,7 @@ function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
 function edel { editdelete "$@"; }
+function efl { editlocate "$@"; }
 function ef { editfind "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
