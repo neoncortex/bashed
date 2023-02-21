@@ -251,7 +251,7 @@ That will execute the substitution on the entire file.
 
 #### Pitfalls:
 ##### Escape character:
-The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\.  This is not valid for the e command, there, you should use \\ when you command was between '', and \\\\ when you command is between "".  That means, using e, to insert a literal \:
+The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\\\.  This is not valid for the e command, there, you should use \\\\ when you command was between '', and \\\\\\\\ when you command is between "".  That means, using e, to insert a literal \\:
 
 ````
 e "a\n\\\\\n.\nw"
