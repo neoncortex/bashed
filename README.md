@@ -29,9 +29,9 @@ You can customize the prompt to show the file size, and current line.  For examp
 function prompt {
 	local dir="\[\e[0;32m\][\W]\[\e[0m\]"
 	local return="\[\e[0;33m\]\$?\[\e[0m\]"
-	if [[ -n $fileline ]] && [[ -n $filesize ]]
+	if [[ -n $fl ]] && [[ -n $fs ]]
 	then
-		local edprompt="\[\e[0;32m\][$fileline][$filesize]\[\e[0m\]"
+		local edprompt="\[\e[0;32m\][$fl][$fs]\[\e[0m\]"
 		PS1="$dir-$return-$edprompt-$ "
 	else
 		PS1="$dir-$return-$ "
@@ -240,15 +240,32 @@ esu "a" "b" +5
 esu "a" "b" +5 g
 ````
 
+##### Substitution on the entire file:
+The third argument can be %, like:
+````
+esu "a" "b" %
+esu "a" "b" % g
+````
+
+That will execute the substitution on the entire file.
+
 #### Pitfalls:
-When dealing with the "\\" character, you can use '\\\\\\\\', or "\\\\\\\\\\\\":
+##### Escape character:
+The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\.  This is not valid for the e command, there, you should use \\ when you command was between '', and \\\\ when you command is between "".  That means, using e, to insert a literal \:
 
-```
-esu '\\\\' aa
-esu "\\\\\\" aa
-```
+````
+e "a\n\\\\\n.\nw"
+e 'a\n\\\n.\nw"
+````
 
-Groups in the regex are like:
+When using s under e, it gets even scarier.  For example, substituting a for \:
+````
+e "s/\\\\\\/a\nw"
+e 's/\\\\/a\nw'
+````
+
+##### Groups:
+Groups in regex are like:
 
 ````
 esu "\\(re\\).*\\(re\\)"
@@ -280,14 +297,17 @@ Commands with spaces should be:
 ec 1 10 "fmt -w 80"
 ````
 
-### Levels:
-On ed, visualizing how many tabs/spaces the current line identation have can be tedious.  In bashed, you can use el to see the current line tab level:
+### Checking indentation:
+You can check how many tabs there is at the beginning of a line using:
 
 ````
 el
 ````
 
-and els for the current line space level.  By level I mean: a line beginning with one tab is 1 level, 2 tabs, 2 level, etc.  The same for spaces.
+And how many spaces using:
+````
+els
+````
 
 ### Navigation:
 #### On the text:
@@ -451,6 +471,8 @@ edcmd=p command
 ````
 
 ### Versioning:
+The simplest undo mechanism I can think of is to store versions of the files, and have mechanisms to display, restore, and compare these versions.
+
 #### Storing:
 ````
 et
@@ -494,13 +516,13 @@ eu n
 Will substitute the current file with the file n from the stored file list (eu l)
 
 ### Variables:
-#### filename:
+#### fn:
 Contains the complete path to the file beign edited.
 
-#### fileline:
+#### fl:
 Contains the current line number.
 
-#### filesize:
+#### fs:
 Contains the size of the file being edited.
 
 #### edcmd:

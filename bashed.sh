@@ -36,14 +36,14 @@ function editwindow {
 }
 
 function edit {
-	[[ -n $2 ]] && local filename="$2"
-	[[ -z $filename ]] && return 0
-	[[ ${filename:0:1} != '/' ]] && filename="$PWD/$filename"
+	[[ -n $2 ]] && local fn="$2"
+	[[ -z $fn ]] && return 0
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	if [[ -n $1 ]]
 	then
-		result="$(echo -e "$1" | ed -s "$filename")"
+		result="$(echo -e "$1" | ed -s "$fn")"
 		echo "$result"
-		filesize="$(wc -l "$filename" | cut -d ' ' -f1)"
+		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	fi
 }
 
@@ -71,13 +71,13 @@ function editread {
 }
 
 function editcmd {
-	[[ -n $4 ]] && local filename="$4"
-	[[ -z $filename ]] && return 1
-	[[ ${filename:0:1} != '/' ]] && filename="$PWD/$filename"
+	[[ -n $4 ]] && local fn="$4"
+	[[ -z $fn ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	if [[ -n $1 ]] && [[ -n $2 ]]
 	then
-		local lines="$(sed -n "${1},${2}p" "$filename")"
-		editread $1 $2 "$filename"
+		local lines="$(sed -n "${1},${2}p" "$fn")"
+		editread $1 $2 "$fn"
 		cat "$editreadlines" | $3 > "$HOME/.edit/temp"
 		mv "$HOME/.edit/temp" "$editreadlines"
 		edit "${1},${2}d\nw"
@@ -87,21 +87,21 @@ function editcmd {
 }
 
 function editstore {
-	[[ -n $1  ]] && local filename="$1"
-	[[ -z $filename ]] && return 1
-	[[ ${filename:0:1} != '/' ]] && filename="$PWD/$filename"
+	[[ -n $1  ]] && local fn="$1"
+	[[ -z $fn ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-	local dir="$HOME/.edit/$(dirname "$filename")"
+	local dir="$HOME/.edit/$(dirname "$fn")"
 	mkdir -p "$dir"
-	cp "$filename" "$dir"
-	mv "$HOME/.edit/$filename" "$HOME/.edit/${filename}_${date}"
+	cp "$fn" "$dir"
+	mv "$HOME/.edit/$fn" "$HOME/.edit/${fn}_${date}"
 }
 
 function editundo {
-	[[ -n $4  ]] && local filename="$4"
-	[[ -z $filename ]] && return 1
-	[[ ${filename:0:1} != '/' ]] && filename="$PWD/$filename"
-	local dir="$HOME/.edit/$(dirname "$filename")"
+	[[ -n $4  ]] && local fn="$4"
+	[[ -z $fn ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+	local dir="$HOME/.edit/$(dirname "$fn")"
 	local files=()
 	if [[ -d "$dir" ]]
 	then
@@ -110,8 +110,8 @@ function editundo {
 		for i in $dir/*
 		do
 			local version="/${i/*\/\//}"
-			local f="${version:0:${#filename}}"
-			if  [[ -f $i ]] && [[ "$filename" == "$f" ]]
+			local f="${version:0:${#fn}}"
+			if  [[ -f $i ]] && [[ "$fn" == "$f" ]]
 			then
 				files[$n]="$i"
 				n=$((n + 1))
@@ -128,8 +128,8 @@ function editundo {
 		for i in ${files[@]}
 		do
 			local version="/${i/*\/\//}"
-			local f="${version:0:${#filename}}"
-			if  [[ -f $i ]] && [[ "$filename" == "$f" ]]
+			local f="${version:0:${#fn}}"
+			if  [[ -f $i ]] && [[ "$fn" == "$f" ]]
 			then
 				echo "$n - $version"
 				n=$((n + 1))
@@ -168,9 +168,9 @@ function editundo {
 	elif [[ $1 =~ [0-9]+ ]]
 	then
 		[[ -f ${files[$1]} ]] \
-			&& cp "${files[$1]}" "$filename" \
+			&& cp "${files[$1]}" "$fn" \
 			|| echo "?"
-		filesize="$(wc -l "$filename" | cut -d ' ' -f1)"
+		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	else
 		echo "?"
 		return 4
@@ -268,20 +268,20 @@ function editopen {
 	[[ $? == 1 ]] && return 1
 	if [[ -f $f ]]
 	then
-		filename="$f"
-		tmux select-pane -T "$filename"
-		cd "$(dirname $filename)"
-		fileline=1
+		fn="$f"
+		tmux select-pane -T "$fn"
+		cd "$(dirname $fn)"
+		fl=1
 		syntax=
-		editsyntax "$filename"
+		editsyntax "$fn"
 		[[ -n $argument ]] && editarg "$argument" || editshow $
 	fi
 }
 
 function editclose {
-	[[ -n $filename ]] && filename=
-	[[ -n $fileline ]] && fileline=
-	[[ -n $filesize ]] && filesize=
+	[[ -n $fn ]] && fn=
+	[[ -n $fl ]] && fl=
+	[[ -n $fs ]] && fs=
 	[[ -n $syntax ]] && syntax=
 	[[ -n $fileresult ]] && fileresult=
 	[[ -n $fileresultindex ]] && fileresultindex=
@@ -316,23 +316,25 @@ function editfind {
 
 function editlocate {
 	[[ -z $1 ]] && return 1
-	[[ -n $2 ]] && local fileline="$2"
+	[[ -n $2 ]] && local fl="$2"
+	local pattern="$1"
+	[[ $1 =~ ^\/ ]] && pattern="${pattern/\//}"
 	local to="$(editsyntax=n \
-		ef "${fileline},${filesize}g/$1/n" | head -n1)"
+		ef "${fl},${fs}g/$pattern/n" | head -n1)"
 	to="${to/\ */}"
 	to="${to/*:/}"
 	echo "$to"
 }
 
 function editshow {
-	[[ -n $2 ]] && local filename="$2"
-	[[ -z $filename ]] && return 1
-	[[ ${filename:0:1} != '/' ]] && filename="$PWD/$filename"
-	filesize="$(wc -l "$filename" | cut -d ' ' -f1)"
-	[[ -z $filesize ]] && return 2
+	[[ -n $2 ]] && local fn="$2"
+	[[ -z $fn ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	[[ -z $fs ]] && return 2
 	[[ -z $pagesize ]] && pagesize=20
-	[[ -z $fileline ]] && fileline=1
-	! [[ $fileline =~ [0-9]+ ]] && fileline="$filesize"
+	[[ -z $fl ]] && fl=1
+	! [[ $fl =~ [0-9]+ ]] && fl="$fs"
 	local arg="$1"
 	[[ -z $1 ]] && arg="+"
 	local show=
@@ -344,9 +346,9 @@ function editshow {
 			if [[ $n -ge 0 ]] && [[ $n -le $((${#fileresult[@]}-1)) ]]
 			then
 				fileresultindex=$n
-				fileline="${fileresult[$fileresultindex]}"
+				fl="${fileresult[$fileresultindex]}"
 				printf "$fileresultindex:"
-				editshow ${fileline}
+				editshow ${fl}
 			else
 				echo "?"
 			fi
@@ -362,9 +364,9 @@ function editshow {
 				fileresultindex=$((fileresultindex-1))
 			fi
 
-			fileline="${fileresult[$fileresultindex]}"
+			fl="${fileresult[$fileresultindex]}"
 			printf "$fileresultindex:"
-			editshow $fileline
+			editshow $fl
 			return
 		elif [[ $arg == "d" ]]
 		then
@@ -376,9 +378,9 @@ function editshow {
 				fileresultindex=$((fileresultindex+1))
 			fi
 
-			fileline="${fileresult[$fileresultindex]}"
+			fl="${fileresult[$fileresultindex]}"
 			printf "$fileresultindex:"
-			editshow $fileline
+			editshow $fl
 			return
 		elif [[ $arg == "s" ]]
 		then
@@ -407,7 +409,7 @@ function editshow {
 			then
 				local start="${fileresult[$fileresultindex]}"
 				local end="$((${fileresult[$((fileresultindex + 1))]} - 1))"
-				fileline="$end"
+				fl="$end"
 				editshow ${start},${end}
 			else
 				editshow c
@@ -429,42 +431,42 @@ function editshow {
 		show="$eslast"
 	elif [[ $arg == "$" ]] || [[ $arg == "G" ]]
 	then
-		fileline="$filesize"
-		show="edit ${fileline}$edcmd"
+		fl="$fs"
+		show="edit ${fl}$edcmd"
 	elif [[ $arg == "g" ]]
 	then
-		fileline="1"
-		show="edit ${fileline}$edcmd"
+		fl="1"
+		show="edit ${fl}$edcmd"
 	elif [[ $arg =~ ^([.+-]?([0-9]+)?)(,[$+]?([0-9]+)?)?$ ]] \
 		&& [[ $arg != "." ]]
 	then
-		[[ $arg == "+" ]] && arg="$((fileline + 1))"
-		[[ $arg == "-" ]] && arg="$((fileline - 1))"
+		[[ $arg == "+" ]] && arg="$((fl + 1))"
+		[[ $arg == "-" ]] && arg="$((fl - 1))"
 		if [[ $arg =~ , ]]
 		then
 			local head="${arg/,*/}"
 			local tail="${arg/*,/}"
-			[[ $head == "." ]] && head="$fileline"
+			[[ $head == "." ]] && head="$fl"
 			[[ $head =~ ^\-[0-9]+ ]] && head="${head/-/}" \
-				&& head="$((fileline - head))"
+				&& head="$((fl - head))"
 			[[ $head =~ ^\+[0-9]+ ]] && head="${head/+/}" \
-				&& head="$((fileline + head))"
+				&& head="$((fl + head))"
 			[[ $head -lt 1 ]] && head="1"
-			[[ $tail == "$" ]] && tail="$filesize"
+			[[ $tail == "$" ]] && tail="$fs"
 			[[ $tail =~ ^\+[0-9]+ ]] && tail="${tail/+/}" \
-				&& tail="$((fileline + tail))"
-			[[ $tail -gt $filesize ]] && tail="$filesize"
+				&& tail="$((fl + tail))"
+			[[ $tail -gt $fs ]] && tail="$fs"
 			show="edit ${head},${tail}$edcmd"
-			fileline="$tail"
+			fl="$tail"
 		else
 			[[ $arg =~ ^\+[0-9]+ ]] && arg="${arg/+/}" \
-				&& arg="$((fileline + arg))"
+				&& arg="$((fl + arg))"
 			[[ $arg =~ ^\-[0-9]+ ]] && arg="${arg/-/}" \
-				&& arg="$((fileline - arg))"
+				&& arg="$((fl - arg))"
 			[[ $arg -lt 1 ]] && arg="1"
-			[[ $arg -gt $filesize ]] && arg="$filesize"
+			[[ $arg -gt $fs ]] && arg="$fs"
 			show="edit ${arg}$edcmd"
-			fileline="$arg"
+			fl="$arg"
 		fi
 	elif [[ $arg =~ ^\/.*(,\/.*)? ]] && [[ -z $show ]]
 	then
@@ -473,67 +475,67 @@ function editshow {
 			local head="${arg/,*/}"
 			local tail="${arg/*,/}"
 			head="$(editlocate "${head/\//}")"
-			tail="$(editlocate "${tail/\//}" "$((fileline + 1))")"
+			tail="$(editlocate "${tail/\//}" $((fl + 1)))"
 			[[ -n $head ]] && [[ -n $tail ]] \
 				&& show="edit ${head},${tail}$edcmd" \
-				&& fileline="$tail"
+				&& fl="$tail"
 		else
 			local line="$(editlocate "${arg/\//}")"
 			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$edcmd" \
-				&& fileline="$line"
+				&& fl="$line"
 		fi
 	elif [[ $arg == "l" ]] || [[ $arg == "." ]]
 	then
-		show="edit ${fileline}$edcmd"
-	elif [[ $pagesize -ge $filesize ]]
+		show="edit ${fl}$edcmd"
+	elif [[ $pagesize -ge $fs ]]
 	then
-		show="edit "1,${filesize}$edcmd""
+		show="edit "1,${fs}$edcmd""
 	elif [[ $arg == "n" ]]
 	then
 		[[ $eslastarg == "p" ]] \
-			&& fileline="$((fileline + pagesize + 2))"
-		if [[ $fileline -ge $((filesize - pagesize)) ]]
+			&& fl="$((fl + pagesize + 2))"
+		if [[ $fl -ge $((fs - pagesize)) ]]
 		then
-			show="edit "$((filesize - pagesize)),${filesize}$edcmd""
-			fileline="$filesize"
+			show="edit "$((fs - pagesize)),${fs}$edcmd""
+			fl="$fs"
 		else
-			show="edit "${fileline},$((fileline + pagesize))$edcmd""
-			fileline="$((fileline + pagesize + 1))"
+			show="edit "${fl},$((fl + pagesize))$edcmd""
+			fl="$((fl + pagesize + 1))"
 		fi
 	elif [[ $arg == "p" ]]
 	then
 		[[ $eslastarg == "n" ]] \
-			&& [[ $fileline -ne $filesize ]] \
-			&& fileline="$((fileline - pagesize - 2))"
+			&& [[ $fl -ne $fs ]] \
+			&& fl="$((fl - pagesize - 2))"
 		[[ $eslastarg == "n" ]] \
-			&& [[ $fileline == $filesize ]] \
-			&& fileline="$((fileline - pagesize - 1))"
-		if [[ $fileline -le $pagesize ]]
+			&& [[ $fl == $fs ]] \
+			&& fl="$((fl - pagesize - 1))"
+		if [[ $fl -le $pagesize ]]
 		then
 			show="edit "1,${pagesize}$edcmd""
-			fileline=$pagesize
+			fl=$pagesize
 		else
-			show="edit "$((fileline - pagesize)),${fileline}$edcmd""
-			fileline=$((fileline - pagesize - 1))
+			show="edit "$((fl - pagesize)),${fl}$edcmd""
+			fl=$((fl - pagesize - 1))
 		fi
 	elif [[ $arg == "b" ]]
 	then
 		show="edit "1,${pagesize}$edcmd""
-		fileline=$((pagesize + 1))
+		fl=$((pagesize + 1))
 	elif [[ $arg == "e" ]]
 	then
-		show="edit "$((filesize - pagesize)),${filesize}$edcmd""
-		fileline=$((filesize - pagesize - 1))
+		show="edit "$((fs - pagesize)),${fs}$edcmd""
+		fl=$((fs - pagesize - 1))
 	elif [[ $arg == "a" ]]
 	then
 		show="edit ,$edcmd"
 	elif [[ $arg == "c" ]]
 	then
-		local head="$((fileline - (pagesize / 2)))"
-		local tail="$((fileline + (pagesize / 2)))"
+		local head="$((fl - (pagesize / 2)))"
+		local tail="$((fl + (pagesize / 2)))"
 		[[ $head -lt 1 ]] && head="1" \
 			&& tail="$((tail + (pagesize / 2)))"
-		[[ $tail -gt $filesize ]] && tail="$filesize"
+		[[ $tail -gt $fs ]] && tail="$fs"
 		show="edit ${head},${tail}$edcmd"
 	fi
 
@@ -552,34 +554,36 @@ function editshow {
 }
 
 function editappend {
-	edit "${fileline}a\n$1\n.\nw"
+	local data="$1"
+	edit "${fl}a\n$data\n.\nw"
 	[[ -n $2 ]] && editshow "+$2" \
-		|| editshow "+$(echo -e "$1" | grep -c "^")"
+		|| editshow "+$(echo -e "$data" | grep -c "^")"
 }
 
 function editinsert {
-	fileline="$((fileline - 1))"
+	fl="$((fl - 1))"
 	editappend "$1" "$2"
 }
 
 function editdelete {
 	[[ -n $1 ]] && local to="$1"
-	[[ $1 =~ ^\+[0-9]+ ]] && to="${1/\+/}" && to="$((fileline + to))"
-	[[ $to -gt $filesize ]] && return 1
-	[[ -z $to ]] && edit "${fileline}d\nw" || edit "${fileline},${to}d\nw"
-	filesize="$(wc -l "$filename" | cut -d ' ' -f1)"
-	[[ $fileline -gt $filesize ]] && fileline="$filesize"
+	[[ $1 =~ ^\+[0-9]+ ]] && to="${1/\+/}" && to="$((fl + to))"
+	[[ $to -gt $fs ]] && return 1
+	[[ -z $to ]] && edit "${fl}d\nw" || edit "${fl},${to}d\nw"
+	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	[[ $fl -gt $fs ]] && fl="$fs"
 }
 
 function editchange {
 	if [[ -n $1 ]]
 	then
+		local data="$1"
 		[[ -n $2 ]] && local to="$2"
-		[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fileline + to))"
-		[[ $to -gt $filesize ]] && return 1
-		[[ -z $to ]] && edit "${fileline}c\n$1\n.\nw" \
-			|| edit "${fileline},${to}c\n$1\n.\nw"
-		[[ -z $to ]] && editshow l || editshow ${fileline},$to
+		[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
+		[[ $to -gt $fs ]] && return 1
+		[[ -z $to ]] && edit "${fl}c\n$data\n.\nw" \
+			|| edit "${fl},${to}c\n$data\n.\nw"
+		[[ -z $to ]] && editshow l || editshow ${fl},$to
 	else
 		return 2
 	fi
@@ -589,23 +593,21 @@ function editsub {
 	if [[ -n $1 ]]
 	then
 		[[ -n $3 ]] && local to="$3"
-		[[ $to =~ ^\+[0-9]+ ]] && to="${to/\+/}" && to="$((fileline + to))"
-		[[ $to == '%' ]] && to="$filesize"
-		[[ $to -gt $filesize ]] && return 1
+		[[ $to =~ ^\+[0-9]+ ]] && to="${to/\+/}" && to="$((fl + to))"
+		[[ $to == '%' ]] && to="$fs"
+		[[ $to -gt $fs ]] && return 1
+		local in="$1"
+		local out="$2"
+		in="${in//\\\\/\\\\\\\\}"
+		out="${out//\\\\/\\\\\\\\}"
+		local pattern="s/$in/$out/"
+		[[ $4 == "g" ]] && pattern="${pattern}g"
 		if [[ -z $to ]] || [[ $to == " " ]]
 		then
-			local pattern="s/$1/$2/"
-			[[ $1 =~ $'\\'$ ]] && pattern="s/$1\/$2/"
-			[[ $2 =~ $'\\'$ ]] && pattern="s/$1/$2\/"
-			[[ $4 == "g" ]] && pattern="${pattern}g"
-			edit "$fileline$pattern\nw"
+			edit "$fl$pattern\nw"
 		else
-			local pattern="s/$1/$2/"
-			local lines="${fileline},${to}"
-			[[ $1 =~ $'\\'$ ]] && pattern="s/$1\/$2/"
-			[[ $2 =~ $'\\'$ ]] && pattern="s/$1/$2\/"
-			[[ $3 == "%" ]] && lines="1,${filesize}"
-			[[ $4 == "g" ]] && pattern="${pattern}g"
+			local lines="${fl},${to}"
+			[[ $3 == "%" ]] && lines="1,${fs}"
 			edit "$lines$pattern\nw"
 		fi
 
@@ -617,38 +619,38 @@ function editsub {
 
 function editjoin {
 	local l=
-	[[ -z $1 ]] && l="$((fileline + 1))"
-	[[ $1 =~ ^\+[0-9]+ ]] && l="${1/\+/}" && l="$((fileline + l))"
-	[[ $l -gt $filesize ]] && return 1
-	[[ -n $l ]] && edit "${fileline},${l}j\nw" && editshow ${fileline}
+	[[ -z $1 ]] && l="$((fl + 1))"
+	[[ $1 =~ ^\+[0-9]+ ]] && l="${1/\+/}" && l="$((fl + l))"
+	[[ $l -gt $fs ]] && return 1
+	[[ -n $l ]] && edit "${fl},${l}j\nw" && editshow ${fl}
 }
 
 function editmove {
 	local dest="$1"
-	[[ -z $1 ]] && dest="$((fileline + 1))"
-	[[ $dest =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fileline + dest))"
-	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fileline - dest))"
-	[[ $dest -gt $filesize ]] && return 1
+	[[ -z $1 ]] && dest="$((fl + 1))"
+	[[ $dest =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fl + dest))"
+	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fl - dest))"
+	[[ $dest -gt $fs ]] && return 1
 	[[ $dest -lt 1 ]] && return 1
 	local to="$2"
-	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fileline + l))"
-	[[ -n $to ]] && edit "${fileline},${to}m$dest\nw" \
-			|| edit "${fileline}m$dest\nw"
+	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + l))"
+	[[ -n $to ]] && edit "${fl},${to}m$dest\nw" \
+			|| edit "${fl}m$dest\nw"
 }
 
 function edittransfer {
 	yank=
 	local line="$1"
-	[[ $1 == "." ]] && line="$fileline"
+	[[ $1 == "." ]] && line="$fl"
 	[[ -n $2 ]] && local n="$2" \
-		&& [[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fileline + n))"
+		&& [[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fl + n))"
 	if [[ $line -gt 0 ]]
 	then
-		[[ -n $n ]] && edit "${fileline},${n}t$line\nw" \
-			|| edit "${fileline}t$line\nw"
+		[[ -n $n ]] && edit "${fl},${n}t$line\nw" \
+			|| edit "${fl}t$line\nw"
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
-		yank="$(edcmd=p editsyntax=n editshow ${fileline},$n)"
+		yank="$(edcmd=p editsyntax=n editshow ${fl},$n)"
 	else
 		yank="$(edcmd=p editsyntax=n editshow l)"
 	fi
@@ -693,11 +695,11 @@ function efl { editlocate "$@"; }
 function ef { editfind "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
-function ek { editclose "$@"; }
 function els { editspaces "$@"; }
 function el { editlevel "$@"; }
 function em { editmove "$@"; }
 function eo { editopen "$@"; }
+function eq { editclose "$@"; }
 function er { editread "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
