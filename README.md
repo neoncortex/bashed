@@ -62,7 +62,7 @@ When opening files, it will verify if the same file is already opened in another
 
 ### Closing files:
 ````
-ek
+eq
 ````
 
 ### Adding line:
