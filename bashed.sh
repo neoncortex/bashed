@@ -10,7 +10,7 @@ function hi { highlight "$1" --syntax "$2" -s $hitheme -O $himode; }
 # edit
 editreadlines="$HOME/.edit/readlines"
 edcmd="n"
-editsyntax="y"
+edsyntax="y"
 diffarg="--color -c"
 
 function editwindow {
@@ -74,16 +74,25 @@ function editcmd {
 	[[ -n $4 ]] && local fn="$4"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	if [[ -n $1 ]] && [[ -n $2 ]]
-	then
-		local lines="$(sed -n "${1},${2}p" "$fn")"
-		editread $1 $2 "$fn"
-		cat "$editreadlines" | $3 > "$HOME/.edit/temp"
-		mv "$HOME/.edit/temp" "$editreadlines"
-		edit "${1},${2}d\nw"
-		editread 0 0 0 $(($1 - 1))		
-		editshow ${1},$2
-	fi
+	[[ -z $1 ]] && return 2
+	[[ -z $2 ]] && return 3
+	[[ -z $3 ]] && return 4
+ 	local begin="$1"
+	local end="$2"
+	[[ $begin == "." ]] && begin="$fl"
+	[[ $end == "." ]] && end="$fl"
+	[[ $begin == "$" ]] && begin="$fs"
+	[[ $end == "$" ]] && end="$fs"
+	[[ $begin =~ ^\+ ]] && begin="${begin/+/}" && begin="$((begin + fl))"
+	[[ $end =~ ^\+ ]] && end="${end/+/}" && end="$((end + fl))"
+	[[ $begin =~ ^\- ]] && begin="${begin/-/}" && begin="$((begin - fl))"
+	[[ $end =~ ^\- ]] && end="${end/-/}" && end="$((end - fl))"
+	editread $begin $end "$fn"
+	cat "$editreadlines" | $3 > "$HOME/.edit/temp"
+	mv "$HOME/.edit/temp" "$editreadlines"
+	edit "${begin},${end}d\nw"
+	editread 0 0 0 $(($begin - 1))		
+	editshow ${begin},$end
 }
 
 function editstore {
@@ -164,7 +173,7 @@ function editundo {
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] \
-			&& editsyntax=n edcmd=p editshow a "${files[$2]}"
+			&& edsyntax=n edcmd=p editshow a "${files[$2]}"
 	elif [[ $1 =~ [0-9]+ ]]
 	then
 		[[ -f ${files[$1]} ]] \
@@ -301,7 +310,7 @@ function editfind {
 		do
 			fileresult+=("${i/$'\t'*/}")
 			printf "$counter:"
-			if [[ -n $syntax ]] && [[ $editsyntax == y ]]
+			if [[ -n $syntax ]] && [[ $edsyntax == y ]]
 			then
 				echo "${i/$'\t'/ }" | highlight \
 					--syntax $syntax -s $hitheme -O $himode
@@ -319,7 +328,7 @@ function editlocate {
 	[[ -n $2 ]] && local fl="$2"
 	local pattern="$1"
 	[[ $1 =~ ^\/ ]] && pattern="${pattern/\//}"
-	local to="$(editsyntax=n \
+	local to="$(edsyntax=n \
 		ef "${fl},${fs}g/$pattern/n" | head -n1)"
 	to="${to/\ */}"
 	to="${to/*:/}"
@@ -390,7 +399,7 @@ function editshow {
 				local line="$(edit ${i}n)"
 				line="${line/$'\t'/ }"
 				printf "$counter:"
-				if [[ -n $syntax ]] && [[ $editsyntax == y ]]
+				if [[ -n $syntax ]] && [[ $edsyntax == y ]]
 				then
 					echo "$line" | highlight \
 						--syntax $syntax -s $hitheme -O $himode
@@ -541,7 +550,7 @@ function editshow {
 
 	if [[ -n $show ]]
 	then
-		if [[ -n $syntax ]] && [[ $editsyntax == y ]]
+		if [[ -n $syntax ]] && [[ $edsyntax == y ]]
 		then
 			$show | highlight --syntax $syntax -s $hitheme -O $himode
 		else
@@ -650,9 +659,9 @@ function edittransfer {
 			|| edit "${fl}t$line\nw"
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
-		yank="$(edcmd=p editsyntax=n editshow ${fl},$n)"
+		yank="$(edcmd=p edsyntax=n editshow ${fl},$n)"
 	else
-		yank="$(edcmd=p editsyntax=n editshow l)"
+		yank="$(edcmd=p edsyntax=n editshow l)"
 	fi
 
 	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -i
@@ -661,8 +670,8 @@ function edittransfer {
 function editlevel {
 	local line=
 	[[ -n $1 ]] \
-		&& line="$(editsyntax=n edcmd=p es $1)" \
-		|| line="$(editsyntax=n edcmd=p es l)"
+		&& line="$(edsyntax=n edcmd=p es $1)" \
+		|| line="$(edsyntax=n edcmd=p es l)"
 	[[ -n $line ]] && echo "$line" | awk -F '\t' '{ print NF-1 }' || return 1
 }
 
@@ -670,8 +679,8 @@ function editspaces {
 	local n=0
 	local line=
 	[[ -n $1 ]] \
-		&& line="$(editsyntax=n edcmd=p es $1)" \
-		|| line="$(editsyntax=n edcmd=p es l)"
+		&& line="$(edsyntax=n edcmd=p es $1)" \
+		|| line="$(edsyntax=n edcmd=p es l)"
 	[[ -z $line ]] && return 1
 	while true
 	do
@@ -697,6 +706,7 @@ function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
 function els { editspaces "$@"; }
 function el { editlevel "$@"; }
+function emore { [[ -n $fn ]] && editshow $fl,$fs | more -lf; }
 function em { editmove "$@"; }
 function eo { editopen "$@"; }
 function eq { editclose "$@"; }

@@ -173,13 +173,17 @@ ey '' +5 x
 ej
 ````
 
-Will join the current line with the next.  Can receive a an argument, either a number n, or +n, like:
+Will join the current line with the next.
 
 #### Joining range:
+ej can receiva an argument, n, or +n
+
 ````
 ej 2
 ej +2
 ````
+
+That will join the current line to line 2, and the current line + 2 lines, respectively.
 
 ### Moving:
 #### Moving line:
@@ -420,6 +424,9 @@ es r
 ````
 
 Will repeat the last es command.
+
+##### emore:
+You can use the emore command to visualize using more.  It will display the file from the current line to the end.
 
 #### On the searching list:
 ##### Going up on the list:
