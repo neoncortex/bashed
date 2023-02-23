@@ -318,6 +318,18 @@ Commands with spaces should be:
 ec 1 10 "fmt -w 80"
 ````
 
+ec can receive +n, -n, ., and $, to represent lines.  For example, to apply a command from the current line to last:
+
+````
+ec . $ fmt
+````
+
+Or from the current line, + 2 lines:
+
+````
+ec . +2 fmt
+````
+
 ### Checking indentation:
 You can check how many tabs there is at the beginning of a line using:
 
