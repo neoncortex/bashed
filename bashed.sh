@@ -17,34 +17,47 @@ function editwindow {
 	local window=
 	local pane=
 	local session="$(tmux display-message -p '#S')"
-	[[ -n $3 ]] && session="$3"
 	for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
 	do
 		if [[ $i == $1 ]] && [[ -n $window ]] && [[ -n $pane ]]
 		then
-			tmux select-window -t "$session:$window"
-			tmux select-pane -t "$pane"
-			[[ -n $2 ]] && editarg "$2" "$session"
-			return 1
+			if [[ $3 == 'n' ]]
+			then
+				tmux select-window -t "$session:$window"
+				tmux select-pane -t "$pane"
+				tmux send-keys -t "$pane" \
+					"fn=\"$1\"" Enter
+				tmux send-keys -t "$pane" \
+					"cd \"\$(dirname \"\$fn\")\"" Enter
+				tmux send-keys -t "$pane" "fl=1" Enter
+				tmux send-keys -t "$pane" "syntax=" Enter
+				tmux send-keys -t "$pane" \
+					"editsyntax \"\$fn\"" Enter
+				tmux send-keys -t "$pane" "clear" Enter
+				[[ -n $2 ]] && tmux send-keys \
+					"editarg \"$2\" \"$pane\"" Enter
+				return
+			else
+				tmux select-window -t "$session:$window"
+				tmux select-pane -t "$pane"
+				[[ -n $2 ]] && editarg "$2" "$pane"
+				return 1
+			fi
 		fi
 
 		window="${i/::*/}"
 		pane="${i/*::/}"
 	done
-
-	return 0
 }
 
 function edit {
 	[[ -n $2 ]] && local fn="$2"
-	[[ -z $fn ]] && return 0
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	if [[ -n $1 ]]
-	then
-		result="$(echo -e "$1" | ed -s "$fn")"
-		echo "$result"
-		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
-	fi
+	result="$(echo -e "$1" | ed -s "$fn")"
+	echo "$result"
+	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 }
 
 function editread {
@@ -187,20 +200,20 @@ function editundo {
 }
 
 function editarg {
-	[[ -n $1 ]] && argument="$1"
-	[[ -z $argument ]] && return 1
+	[[ -z $1 ]] && return 1
+	argument="$1"
 	local session="$(tmux display-message -p '#S')"
-	[[ -n $2 ]] && session="$2"
+	local pane="$2"
+	[[ -z $pane ]] && pane="$session"
 	if [[ $argument =~ ^[0-9]+$ ]]
 	then
-		tmux send-keys -t "$session" "edit \"${argument}n\""
+		tmux send-keys -t "$pane" "es $argument" Enter
 	else
 		argument="${argument//\//\\/}"
 		argument="${argument//\*/\\*}"
-		tmux send-keys -t "$session" "edit \"/${argument}/n\""
+		tmux send-keys -t "$pane" \
+			"es \$(e \"/${argument}/n\" | cut -f1)" Enter
 	fi
-
-	tmux send-keys -t "$session" Enter
 }
 
 function editsyntax {
@@ -269,21 +282,34 @@ function editopen {
 		[[ $f =~ ^% ]] && f="$(cortex-db -q "$f")"
 	fi
 
-	[[ -z $f ]] && return 2
+	[[ -z $f ]] && return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-	local session="$(tmux display-message -p '#S')"
-	[[ -n $2 ]] && session="$2"
-	editwindow "$f" "$argument" "$session"
-	[[ $? == 1 ]] && return 1
+	editwindow "$f" "$argument"
+	[[ $? == 1 ]] && return 2
 	if [[ -f $f ]]
 	then
-		fn="$f"
-		tmux select-pane -T "$fn"
-		cd "$(dirname $fn)"
-		fl=1
-		syntax=
-		editsyntax "$fn"
-		[[ -n $argument ]] && editarg "$argument" || editshow $
+		[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
+		[[ $2 == 'd' ]] && tmux splitw -c "$f"
+		[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
+		[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
+		[[ $2 == 'n' ]] && tmux neww -c "$f"
+		tmux select-pane -T "$f"
+		if [[ -z $2 ]]
+		then
+			fn="$f"
+			cd "$(dirname "$fn")"
+			fl=1
+			syntax=
+			editsyntax "$fn"
+			[[ -n $argument ]] \
+				&& editarg "$argument" \
+				|| editshow $
+			tmux select-pane -T "$f"
+		else
+			editwindow "$f" "$argument" n
+		fi
+	else
+		return 3
 	fi
 }
 
@@ -300,27 +326,25 @@ function editclose {
 function editfind {
 	[[ -z $1 ]] && return 1
 	local result="$(edit "$1")"
-	if [[ -n $result ]]
-	then
-		fileresult=()
-		fileresultindex=-1
-		local IFS=$'\n'
-		local counter=0
-		for i in $result
-		do
-			fileresult+=("${i/$'\t'*/}")
-			printf "$counter:"
-			if [[ -n $syntax ]] && [[ $edsyntax == y ]]
-			then
-				echo "${i/$'\t'/ }" | highlight \
-					--syntax $syntax -s $hitheme -O $himode
-			else
-				echo "${i/$'\t'/ }"
-			fi
+	[[ -z $result ]] && return
+	fileresult=()
+	fileresultindex=-1
+	local IFS=$'\n'
+	local counter=0
+	for i in $result
+	do
+		fileresult+=("${i/$'\t'*/}")
+		printf "$counter:"
+		if [[ -n $syntax ]] && [[ $edsyntax == y ]]
+		then
+			echo "${i/$'\t'/ }" | highlight \
+				--syntax $syntax -s $hitheme -O $himode
+		else
+			echo "${i/$'\t'/ }"
+		fi
 
-			counter=$((counter+1))
-		done
-	fi
+		counter=$((counter+1))
+	done
 }
 
 function editlocate {
@@ -584,46 +608,40 @@ function editdelete {
 }
 
 function editchange {
-	if [[ -n $1 ]]
-	then
-		local data="$1"
-		[[ -n $2 ]] && local to="$2"
-		[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
-		[[ $to -gt $fs ]] && return 1
-		[[ -z $to ]] && edit "${fl}c\n$data\n.\nw" \
-			|| edit "${fl},${to}c\n$data\n.\nw"
-		[[ -z $to ]] && editshow l || editshow ${fl},$to
-	else
-		return 2
-	fi
+	[[ -z $1 ]] && return 1
+	local data="$1"
+	[[ -n $2 ]] && local to="$2"
+	[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
+	[[ $to -gt $fs ]] && return 2
+	[[ -z $to ]] && edit "${fl}c\n$data\n.\nw" \
+		|| edit "${fl},${to}c\n$data\n.\nw"
+	[[ -z $to ]] && editshow l || editshow ${fl},$to
 }
 
 function editsub {
-	if [[ -n $1 ]]
+	[[ -z $1 ]] && return 1
+	[[ -n $3 ]] && local to="$3"
+	[[ $to =~ ^\+[0-9]+ ]] && to="${to/\+/}" && to="$((fl + to))"
+	[[ $to == '%' ]] && to="$fs"
+	[[ $to -gt $fs ]] && return 2
+	local in="$1"
+	local out="$2"
+	in="${in//\\\\/\\\\\\\\}"
+	in="${in//\\N/\\\\\\n}"
+	out="${out//\\\\/\\\\\\\\}"
+	out="${out//\\N/\\\\\\n}"
+	local pattern="s/$in/$out/"
+	[[ $4 == "g" ]] && pattern="${pattern}g"
+	if [[ -z $to ]] || [[ $to == " " ]]
 	then
-		[[ -n $3 ]] && local to="$3"
-		[[ $to =~ ^\+[0-9]+ ]] && to="${to/\+/}" && to="$((fl + to))"
-		[[ $to == '%' ]] && to="$fs"
-		[[ $to -gt $fs ]] && return 1
-		local in="$1"
-		local out="$2"
-		in="${in//\\\\/\\\\\\\\}"
-		out="${out//\\\\/\\\\\\\\}"
-		local pattern="s/$in/$out/"
-		[[ $4 == "g" ]] && pattern="${pattern}g"
-		if [[ -z $to ]] || [[ $to == " " ]]
-		then
-			edit "$fl$pattern\nw"
-		else
-			local lines="${fl},${to}"
-			[[ $3 == "%" ]] && lines="1,${fs}"
-			edit "$lines$pattern\nw"
-		fi
-
-		editshow l
+		edit "$fl$pattern\nw"
 	else
-		return 2
+		local lines="${fl},${to}"
+		[[ $3 == "%" ]] && lines="1,${fs}"
+		edit "$lines$pattern\nw"
 	fi
+
+	editshow l
 }
 
 function editjoin {
@@ -639,10 +657,12 @@ function editmove {
 	[[ -z $1 ]] && dest="$((fl + 1))"
 	[[ $dest =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fl + dest))"
 	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fl - dest))"
+	[[ $dest == "$" ]] && dest="$fs"
 	[[ $dest -gt $fs ]] && return 1
 	[[ $dest -lt 1 ]] && return 1
 	local to="$2"
 	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + l))"
+	[[ $to == "$" ]] && to="$fs"
 	[[ -n $to ]] && edit "${fl},${to}m$dest\nw" \
 			|| edit "${fl}m$dest\nw"
 }

@@ -60,6 +60,14 @@ eo file
 ````
 When opening files, it will verify if the same file is already opened in another tmux pane.  It it does, these pane will be focused, otherwise, the file will be opened in the current pane.
 
+eo can receive an argument specifying that the file should be opened in a new panel.  A new panel can be: u for up, d for down, l for left, r for right, n, for new window.
+
+For example, to open a file into a new panel on top of the current one:
+
+````
+eo file u
+````
+
 ### Closing files:
 ````
 eq
@@ -186,6 +194,8 @@ ej +2
 That will join the current line to line 2, and the current line + 2 lines, respectively.
 
 ### Moving:
+Can receive a number, (+|-)n, or $ as its argument.
+
 #### Moving line:
 ````
 em 2
@@ -268,11 +278,18 @@ e "s/\\\\\\/a\nw"
 e 's/\\\\/a\nw'
 ````
 
-##### Groups:
+##### Groups in substitutions:
 Groups in regex are like:
 
 ````
 esu "\\(re\\).*\\(re\\)"
+````
+
+##### Newlines in substitutions:
+\N can be used to represent a new line.  For example:
+
+````
+esu a '\N'
 ````
 
 ### Searching:
@@ -551,7 +568,7 @@ Contains the diff options.  By default: "--color -c".
 ##### syntax:
 Contains the name of the syntax file used by highlight for the current file.
 
-##### editsyntax:
+##### edsyntax:
 Set if es should use syntax.  Should be y, or n.
 
 ##### hitheme:
