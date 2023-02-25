@@ -290,13 +290,6 @@ e "s/\\\\\\/a\nw"
 e 's/\\\\/a\nw'
 ````
 
-##### Groups in substitutions:
-Groups in regex are like:
-
-````
-esu "\\(re\\).*\\(re\\)"
-````
-
 ##### Newlines in substitutions:
 \N can be used to represent a new line.  For example:
 
