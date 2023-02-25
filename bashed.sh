@@ -34,8 +34,11 @@ function editwindow {
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
 				tmux send-keys -t "$pane" "clear" Enter
-				[[ -n $2 ]] && tmux send-keys \
-					"editarg \"$2\" \"$pane\"" Enter
+				[[ -n $2 ]] \
+					&& tmux send-keys \
+					"editarg \"$2\" \"$pane\"" Enter \
+					|| tmux send-keys \
+					"editshow $" Enter
 				return
 			else
 				tmux select-window -t "$session:$window"
@@ -72,14 +75,17 @@ function editread {
 
 	if [[ -n $4 ]] && [[ -f $editreadlines ]]
 	then
+		local res=
 		if [[ -n $5 ]]
 		then
 			local f="$5"
 			[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-			edit "${4}r $editreadlines\nw" "$f"
+			res="$(edit "${4}r $editreadlines\nw" "$f")"
 		else
-			edit "${4}r $editreadlines\nw"
+			res="$(edit "${4}r $editreadlines\nw")"
 		fi
+
+		[[ -n $res ]] && echo "$res"
 	fi
 }
 
@@ -103,7 +109,8 @@ function editcmd {
 	editread $begin $end "$fn"
 	cat "$editreadlines" | $3 > "$HOME/.edit/temp"
 	mv "$HOME/.edit/temp" "$editreadlines"
-	edit "${begin},${end}d\nw"
+	local res="$(edit "${begin},${end}d\nw")"
+	[[ -n $res ]] && echo "$res"
 	editread 0 0 0 $(($begin - 1))		
 	editshow ${begin},$end
 }
@@ -570,6 +577,23 @@ function editshow {
 			&& tail="$((tail + (pagesize / 2)))"
 		[[ $tail -gt $fs ]] && tail="$fs"
 		show="edit ${head},${tail}$edcmd"
+	elif [[ $arg == "v" ]]
+	then
+		local rows=
+		local cols=
+		read -r rows cols < <(stty size)
+		[[ -z $rows ]] && return 3
+		[[ -z $cols ]] && return 3
+		local head="$fl"
+		local tail="$((fl + rows - 2))"
+		if [[ $tail -eq $fs ]] || [[ $tail -gt $fs ]]
+		then
+			editshow c
+			fl="$fs"
+		else
+			show="edit $head,$tail$edcmd"
+			fl="$tail"
+		fi
 	fi
 
 	if [[ -n $show ]]
@@ -588,7 +612,8 @@ function editshow {
 
 function editappend {
 	local data="$1"
-	edit "${fl}a\n$data\n.\nw"
+	local res="$(edit "${fl}a\n$data\n.\nw")"
+	[[ -n $res ]] && echo "$res"
 	[[ -n $2 ]] && editshow "+$2" \
 		|| editshow "+$(echo -e "$data" | grep -c "^")"
 }
@@ -602,7 +627,10 @@ function editdelete {
 	[[ -n $1 ]] && local to="$1"
 	[[ $1 =~ ^\+[0-9]+ ]] && to="${1/\+/}" && to="$((fl + to))"
 	[[ $to -gt $fs ]] && return 1
-	[[ -z $to ]] && edit "${fl}d\nw" || edit "${fl},${to}d\nw"
+	local res=
+	[[ -z $to ]] && res="$(edit "${fl}d\nw")" \
+		|| res="$(edit "${fl},${to}d\nw")"
+	[[ -n $res ]] && echo "$res"
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fl -gt $fs ]] && fl="$fs"
 }
@@ -613,8 +641,10 @@ function editchange {
 	[[ -n $2 ]] && local to="$2"
 	[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
 	[[ $to -gt $fs ]] && return 2
-	[[ -z $to ]] && edit "${fl}c\n$data\n.\nw" \
-		|| edit "${fl},${to}c\n$data\n.\nw"
+	local res=
+	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw")" \
+		|| res="$(edit "${fl},${to}c\n$data\n.\nw")"
+	[[ -n $res ]] && echo "$res"
 	[[ -z $to ]] && editshow l || editshow ${fl},$to
 }
 
@@ -632,15 +662,17 @@ function editsub {
 	out="${out//\\N/\\\\\\n}"
 	local pattern="s/$in/$out/"
 	[[ $4 == "g" ]] && pattern="${pattern}g"
+	local res=
 	if [[ -z $to ]] || [[ $to == " " ]]
 	then
-		edit "$fl$pattern\nw"
+		res="$(edit "$fl$pattern\nw")"
 	else
 		local lines="${fl},${to}"
 		[[ $3 == "%" ]] && lines="1,${fs}"
-		edit "$lines$pattern\nw"
+		res="$(edit "$lines$pattern\nw")"
 	fi
 
+	[[ -n $res ]] && echo "$res"
 	editshow l
 }
 
@@ -649,7 +681,9 @@ function editjoin {
 	[[ -z $1 ]] && l="$((fl + 1))"
 	[[ $1 =~ ^\+[0-9]+ ]] && l="${1/\+/}" && l="$((fl + l))"
 	[[ $l -gt $fs ]] && return 1
-	[[ -n $l ]] && edit "${fl},${l}j\nw" && editshow ${fl}
+	local res=
+	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw")" && editshow ${fl}
+	[[ -n $res ]] && echo "$res"
 }
 
 function editmove {
@@ -663,8 +697,10 @@ function editmove {
 	local to="$2"
 	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + l))"
 	[[ $to == "$" ]] && to="$fs"
-	[[ -n $to ]] && edit "${fl},${to}m$dest\nw" \
-			|| edit "${fl}m$dest\nw"
+	local res=
+	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw")" \
+		|| res="$(edit "${fl}m$dest\nw")"
+	[[ -n $res ]] && echo "$res"
 }
 
 function edittransfer {
@@ -675,8 +711,10 @@ function edittransfer {
 		&& [[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fl + n))"
 	if [[ $line -gt 0 ]]
 	then
-		[[ -n $n ]] && edit "${fl},${n}t$line\nw" \
-			|| edit "${fl}t$line\nw"
+		local res=
+		[[ -n $n ]] && res="$(edit "${fl},${n}t$line\nw")" \
+			|| res="$(edit "${fl}t$line\nw")"
+		[[ -n $res ]] && echo "$res"
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
 		yank="$(edcmd=p edsyntax=n editshow ${fl},$n)"
@@ -716,6 +754,19 @@ function editspaces {
 	echo "$n"
 }
 
+function emore {
+	[[ -z $fn ]] && return 1
+	local line="$fl"
+	[[ -n $1 ]] && line="$1"
+	[[ $1 == "." ]] && line="$fl"
+	[[ -n $2 ]] && local fn="$2"
+	! [[ -f $fn ]] && return 2
+	[[ $line == $fs ]] && line="1"
+	[[ $line -gt $fs ]] && line="1"
+	[[ $line -lt q ]] && line="1"
+	editshow $line,$fs "$fn" | more -lf
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
@@ -726,7 +777,6 @@ function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
 function els { editspaces "$@"; }
 function el { editlevel "$@"; }
-function emore { [[ -n $fn ]] && editshow $fl,$fs | more -lf; }
 function em { editmove "$@"; }
 function eo { editopen "$@"; }
 function eq { editclose "$@"; }

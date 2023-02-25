@@ -68,6 +68,18 @@ For example, to open a file into a new panel on top of the current one:
 eo file u
 ````
 
+#### Arguments:
+Files can be opened with arguments. These arguments can specify a line, or a string.  Examples:
+
+````
+eo file:10
+eo file:'hello world'
+````
+
+In the first command, file will be opened, and the line 10 will be setted as the current line.  On the second, file will be opened, the string "hello world" will be searched, and the line containing that string will be setted as the current line.
+
+If there is a pane with file already opened, then it will be focused, and the current line will be changed using the argument.
+
 ### Closing files:
 ````
 eq
@@ -292,6 +304,12 @@ esu "\\(re\\).*\\(re\\)"
 esu a '\N'
 ````
 
+##### & in substitutions:
+& should be used like \& when you substituting something with it.  Example:
+
+````
+esu x '\&'
+````
 ### Searching:
 The most common searching mechanism would be:
 
@@ -455,7 +473,29 @@ es r
 Will repeat the last es command.
 
 ##### emore:
-You can use the emore command to visualize using more.  It will display the file from the current line to the end.
+You can use the emore command to visualize using more.  It will display the file from the current line to the end.  A start line can be passed, for example, 10:
+
+````
+emore 10
+````
+
+##### Visualizing a terminal page:
+With v, you can show as much text as there's rows in the terminal window:
+
+````
+es v
+````
+
+##### Files:
+You can visualize a different file.  Examples:
+
+````
+es c file
+es n file
+emore . file
+````
+
+This will not change the current opened file, just display the desired portion of another file.
 
 #### On the searching list:
 ##### Going up on the list:
