@@ -143,7 +143,7 @@ function editundo {
 			if  [[ -f $i ]] && [[ "$fn" == "$f" ]]
 			then
 				files[$n]="$i"
-				n=$((n + 1))
+				n="$((n + 1))"
 			fi
 		done
 
@@ -161,7 +161,7 @@ function editundo {
 			if  [[ -f $i ]] && [[ "$fn" == "$f" ]]
 			then
 				echo "$n - $version"
-				n=$((n + 1))
+				n="$((n + 1))"
 			fi
 		done
 	elif [[ $1 == "-" ]] || [[ $2 == "delete" ]]
@@ -225,59 +225,50 @@ function editarg {
 
 function editsyntax {
 	local shebang="$(edit 1p "$1")"
-	[[ $shebang =~ \#\!.*\ ?(bash|sh) ]] && syntax=bash
-	[[ $shebang =~ \#\!.*\ ?lua ]] && syntax=lua
-	[[ $shebang =~ \#\!.*\ ?perl ]] && syntax=perl
-	[[ $shebang =~ \#\!.*\ ?ruby ]] && syntax=ruby
-	[[ $shebang =~ \#\!.*\ ?python ]] && syntax=python
+	[[ $shebang =~ \#\!.*\ ?(bash|sh) ]] && syntax="bash"
+	[[ $shebang =~ \#\!.*\ ?lua ]] && syntax="lua"
+	[[ $shebang =~ \#\!.*\ ?perl ]] && syntax="perl"
+	[[ $shebang =~ \#\!.*\ ?ruby ]] && syntax="ruby"
+	[[ $shebang =~ \#\!.*\ ?python ]] && syntax="python"
 	[[ -n $syntax ]] && return
-	[[ $1 == $HOME/.bashrc ]] && syntax=bash 
-	[[ $1 =~ \.awk ]] && syntax=awk
-	[[ $1 =~ \.conf ]] && syntax=conf
-	[[ $1 =~ \.cmake ]] && syntax=cmake
-	[[ $1 =~ \.css ]] && syntax=css
-	[[ $1 =~ \.cpp ]] && syntax=c
-	[[ $1 =~ \.c ]] && syntax=c
-	[[ $1 =~ \.diff ]] && syntax=diff
-	[[ $1 == /etc/fstab ]] && syntax=fstab
-	[[ $1 =~ \.elisp ]] && syntax=lisp
-	[[ $1 =~ \.el ]] && syntax=lisp
-	[[ $1 =~ \.gdb ]] && syntax=gdb
-	[[ $1 =~ \.GNUmakefile ]] && syntax=makefile
-	[[ $1 =~ \.html ]] && syntax=html
-	[[ $1 =~ \.ini ]] && syntax=ini
-	[[ $1 =~ \.INI ]] && syntax=ini
-	[[ $1 =~ \.java ]] && syntax=java
-	[[ $1 =~ \.json ]] && syntax=json
-	[[ $1 =~ \.js ]]  && syntax=javascript
-	[[ $1 =~ \.lisp ]] && syntax=lisp
-	[[ $1 =~ \.lang ]] && syntax=json
-	[[ $1 =~ \.lua ]] && syntax=lua
-	[[ $1 =~ \.latex ]] && syntax=latex
-	[[ $1 =~ \.less ]] && syntax=less
-	[[ $1 =~ \.markdown ]] && syntax=markdown
-	[[ $1 =~ \.md ]] && syntax=markdown
-	[[ $1 =~ .*\/makefile ]] && syntax=makefile
-	[[ $1 =~ .*\/Makefile ]] && syntax=makefile
-	[[ $1 =~ \.meson ]] && syntax=meson
-	[[ $1 =~ \.objc ]] && syntax=objc
-	if [[ $1 =~ \.org ]]
+	[[ $1 == $HOME/.bashrc ]] && syntax="bash"
+	[[ $1 =~ \.awk$ ]] && syntax="awk"
+	[[ $1 =~ \.build$ ]] && syntax="meson"
+	[[ $1 =~ \.conf$ ]] && syntax="conf"
+	[[ $1 =~ \.cmake$ ]] && syntax="cmake"
+	[[ $1 =~ \.css$ ]] && syntax="css"
+	[[ $1 =~ \.(c|cpp)$ ]] && syntax="c"
+	[[ $1 =~ \.diff$ ]] && syntax="diff"
+	[[ $1 == /etc/fstab ]] && syntax="fstab"
+	[[ $1 =~ \.(el|elisp|lisp)$ ]] && syntax="lisp"
+	[[ $1 =~ \.gdb$ ]] && syntax="gdb"
+	[[ $1 =~ \/(GNUmakefile|makefile|Makefile)$ ]] && syntax="makefile"
+	[[ $1 =~ \.html$ ]] && syntax="html"
+	[[ $1 =~ \.(ini|INI)$ ]] && syntax="ini"
+	[[ $1 =~ \.java$ ]] && syntax="java"
+	[[ $1 =~ \.(json|lang)$ ]] && syntax="json"
+	[[ $1 =~ \.js$ ]]  && syntax="javascript"
+	[[ $1 =~ \.lua$ ]] && syntax="lua"
+	[[ $1 =~ \.latex$ ]] && syntax="latex"
+	[[ $1 =~ \.less$ ]] && syntax="less"
+	[[ $1 =~ \.md$ ]] && syntax="markdown"
+	[[ $1 =~ \.objc$ ]] && syntax="objc"
+	if [[ $1 =~ \.org$ ]]
 	then
 		local f="$HOME/.highlight/org-simple.lang"
 		[[ -f $f ]] \
-			&& syntax=$HOME/.highlight/org-simple.lang \
-			|| syntax=org
+			&& syntax="$HOME/.highlight/org-simple.lang" \
+			|| syntax="org"
 	fi
 
-	[[ $1 =~ \.perl ]] && syntax=perl
-	[[ $1 =~ \.php ]] && syntax=php
-	[[ $1 =~ \.pl ]] && syntax=perl
-	[[ $1 =~ \.py ]] && syntax=python
-	[[ $1 =~ \.qmake ]] && syntax=qmake
-	[[ $1 =~ \.ruby ]] && syntax=ruby
-	[[ $1 =~ \.sh ]] && syntax=bash
-	[[ $1 =~ \.s ]] && syntax=assembler
-	[[ $1 =~ \.tex ]] && syntax=latex
+	[[ $1 =~ \.php$ ]] && syntax="php"
+	[[ $1 =~ \.(pl|perl)$ ]] && syntax="perl"
+	[[ $1 =~ \.py$ ]] && syntax="python"
+	[[ $1 =~ \.qmake$ ]] && syntax="qmake"
+	[[ $1 =~ \.ruby$ ]] && syntax="ruby"
+	[[ $1 =~ \.sh$ ]] && syntax="bash"
+	[[ $1 =~ \.s$ ]] && syntax="assembler"
+	[[ $1 =~ \.tex$ ]] && syntax="latex"
 }
 
 function editopen {
@@ -367,7 +358,14 @@ function editlocate {
 }
 
 function editshow {
-	[[ -n $2 ]] && local fn="$2"
+	if [[ -n $2 ]]
+	then
+		local fn="$2"
+		[[ $fn =~ ^% ]] && fn="$(cortex-db -q "$fn")"
+		local fl="$fl"
+		local fs=
+	fi
+
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
@@ -378,7 +376,7 @@ function editshow {
 	local arg="$1"
 	[[ -z $1 ]] && arg="+"
 	local show=
-	if [[ -n $fileresult ]] && [[ $fileresultindex ]]
+	if [[ -n $fileresult ]] && [[ -n $fileresultindex ]]
 	then
 		if [[ $arg =~ f([0-9]+) ]]
 		then
@@ -398,10 +396,10 @@ function editshow {
 		then
 			if [[ $fileresultindex -eq 0 ]] || [[ $fileresultindex -eq -1 ]]
 			then
-				fileresultindex=$((${#fileresult[@]}-1))
+				fileresultindex="$((${#fileresult[@]}-1))"
 			elif [[ $fileresultindex -gt 0 ]]
 			then
-				fileresultindex=$((fileresultindex-1))
+				fileresultindex="$((fileresultindex-1))"
 			fi
 
 			fl="${fileresult[$fileresultindex]}"
@@ -415,7 +413,7 @@ function editshow {
 				fileresultindex=0
 			elif [[ $fileresultindex -lt $((${#fileresult[@]}-1)) ]]
 			then
-				fileresultindex=$((fileresultindex+1))
+				fileresultindex="$((fileresultindex+1))"
 			fi
 
 			fl="${fileresult[$fileresultindex]}"
@@ -438,7 +436,7 @@ function editshow {
 					echo "$line"
 				fi
 
-				counter=$((counter+1))
+				counter="$((counter+1))"
 			done
 
 			return
@@ -553,19 +551,19 @@ function editshow {
 		if [[ $fl -le $pagesize ]]
 		then
 			show="edit "1,${pagesize}$edcmd""
-			fl=$pagesize
+			fl="$pagesize"
 		else
 			show="edit "$((fl - pagesize)),${fl}$edcmd""
-			fl=$((fl - pagesize - 1))
+			fl="$((fl - pagesize - 1))"
 		fi
 	elif [[ $arg == "b" ]]
 	then
 		show="edit "1,${pagesize}$edcmd""
-		fl=$((pagesize + 1))
+		fl="$((pagesize + 1))"
 	elif [[ $arg == "e" ]]
 	then
 		show="edit "$((fs - pagesize)),${fs}$edcmd""
-		fl=$((fs - pagesize - 1))
+		fl="$((fs - pagesize - 1))"
 	elif [[ $arg == "a" ]]
 	then
 		show="edit ,$edcmd"
@@ -584,7 +582,8 @@ function editshow {
 		read -r rows cols < <(stty size)
 		[[ -z $rows ]] && return 3
 		[[ -z $cols ]] && return 3
-		local head="$fl"
+		local head="$((fl + 1))"
+		[[ $head -gt $fs ]] && head="$fs"
 		local tail="$((fl + rows - 2))"
 		if [[ $tail -eq $fs ]] || [[ $tail -gt $fs ]]
 		then
