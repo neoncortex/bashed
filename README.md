@@ -164,7 +164,7 @@ The current line, to b, will be copied to line n.  For example:
 ey 1 5
 ````
 
-Will copy the current line, to line 5, to the line 1.  The second argument (5, in last case), can be set using +, like +5.
+The current line, to line 5, will be copied to the line 1.  The second argument (5, in last case), can be set using +, like +5.
 
 #### Yank:
 Lines can be "yanked" like follows:
@@ -203,7 +203,7 @@ ej 2
 ej +2
 ````
 
-That will join the current line to line 2, and the current line + 2 lines, respectively.
+That will join from the current line to line 2, and from the current line + 2 lines, respectively.
 
 ### Moving:
 Can receive a number, (+|-)n, or $ as its argument.
@@ -275,34 +275,6 @@ esu "a" "b" % g
 
 That will execute the substitution on the entire file.
 
-#### Pitfalls:
-##### Escape character:
-The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\\\.  This is not valid for the e command, there, you should use \\\\ when you command was between '', and \\\\\\\\ when you command is between "".  That means, using e, to insert a literal \\:
-
-````
-e "a\n\\\\\n.\nw"
-e 'a\n\\\n.\nw"
-````
-
-When using s under e, it gets even scarier.  For example, substituting a for \:
-````
-e "s/\\\\\\/a\nw"
-e 's/\\\\/a\nw'
-````
-
-##### Newlines in substitutions:
-\N can be used to represent a new line.  For example:
-
-````
-esu a '\N'
-````
-
-##### & in substitutions:
-& should be used like \& when you substituting something with it.  Example:
-
-````
-esu x '\&'
-````
 ### Searching:
 The most common searching mechanism would be:
 
@@ -627,3 +599,60 @@ e "a\nA new line.\n.\nw"
 e "1,2d\nw"
 ````
 
+#### Pitfalls:
+##### Escape character:
+The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\\\.  This is not valid for the e command, there, you should use \\\\ when you command was between '', and \\\\\\\\ when you command is between "".  That means, using e, to insert a literal \\:
+
+````
+e "a\n\\\\\n.\nw"
+e 'a\n\\\n.\nw"
+````
+
+When using s under e, it gets even scarier.  For example, substituting a for \:
+````
+e "s/\\\\\\/a\nw"
+e 's/\\\\/a\nw'
+````
+
+##### Newlines in substitutions:
+\N can be used to represent a new line.  For example:
+
+````
+esu a '\N'
+````
+
+##### & in substitutions:
+& should be used like \& when you substituting something with it.  Example:
+
+````
+esu x '\&'
+````
+
+## Function dictionary:
+The functions that are to be used directly have two names: one "big" name, unambiguous, and other shorter, easier to type.
+
+The functions are:
+- edit, e: execute ed commands on file;
+- editappend, ea: Append lines;
+- editcmd, ec: execute command on region; 
+- editchange, ec: change lines;
+- editclose, eq: close file;
+- editdelete, edel: delete lines;
+- editfind, ef: find text;
+- editinsert, ei: insert line;
+- editjoin, ej: join lines;
+- editlevel, el: count tab indentation;
+- editlocate, efl, find line;
+- editmove, em: move lines;
+- editopen, eo: open file;
+- editread, er: read a region of file, and store in ~/.edit/readlines
+- editshow, es: show file text in various ways;
+- editspaces, els: count space indentation;
+- editstore, et: store a version of file;
+- editsub, esu; substitution;
+- edittransfer, ey: copy lines;
+- editundo, eu: show, diff, restore, delete stored version files;
+
+There are other functions that are used internally by the ones above:
+- editarg: parse the arguments of a file;
+- editsyntax: set the syntax to be used;

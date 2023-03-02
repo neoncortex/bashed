@@ -362,12 +362,15 @@ function editshow {
 	then
 		local fn="$2"
 		[[ $fn =~ ^% ]] && fn="$(cortex-db -q "$fn")"
+		local syntax=
+		editsyntax "$fn"
 		local fl="$fl"
 		local fs=
 	fi
 
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+	[[ -d $fn ]] && return 1
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fs ]] && return 2
 	[[ -z $pagesize ]] && pagesize=20
@@ -587,7 +590,7 @@ function editshow {
 		local tail="$((fl + rows - 2))"
 		if [[ $tail -eq $fs ]] || [[ $tail -gt $fs ]]
 		then
-			editshow c
+			editshow n
 			fl="$fs"
 		else
 			show="edit $head,$tail$edcmd"
@@ -625,6 +628,7 @@ function editinsert {
 function editdelete {
 	[[ -n $1 ]] && local to="$1"
 	[[ $1 =~ ^\+[0-9]+ ]] && to="${1/\+/}" && to="$((fl + to))"
+	[[ $to == "$" ]] && to="$fs"
 	[[ $to -gt $fs ]] && return 1
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}d\nw")" \
