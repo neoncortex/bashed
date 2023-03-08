@@ -628,6 +628,15 @@ esu a '\N'
 esu x '\&'
 ````
 
+## .bashed files:
+A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:
+
+````
+edcmd=p
+var=1
+function my_special_function { echo "special"; }
+````
+
 ## Function dictionary:
 The functions that are to be used directly have two names: one "big" name, unambiguous, and other shorter, easier to type.
 
@@ -643,6 +652,7 @@ The functions are:
 - editjoin, ej: join lines;
 - editlevel, el: count tab indentation;
 - editlocate, efl, find line;
+- emore, scroll file forward using more;
 - editmove, em: move lines;
 - editopen, eo: open file;
 - editread, er: read a region of file, and store in ~/.edit/readlines

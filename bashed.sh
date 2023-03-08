@@ -33,6 +33,9 @@ function editwindow {
 				tmux send-keys -t "$pane" "syntax=" Enter
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
+				tmux send-keys -t "$pane" \
+					"[[ -f \$PWD/.bashed ]] " \
+					"&& source \$PWD/.bashed" Enter
 				tmux send-keys -t "$pane" "clear" Enter
 				[[ -n $2 ]] \
 					&& tmux send-keys \
@@ -299,6 +302,7 @@ function editopen {
 			fl=1
 			syntax=
 			editsyntax "$fn"
+			[[ -f $PWD/.bashed ]] && source "$PWD/.bashed"
 			[[ -n $argument ]] \
 				&& editarg "$argument" \
 				|| editshow $
