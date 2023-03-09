@@ -4,7 +4,7 @@ bash wrapper for the ed editor
 ![screenshot](https://github.com/neoncortex/bashed/blob/main/image/image.png)
 
 ## Motivation:
-ed is a good text editor, but it's interface is really bad.  I thought that bash would be a good interface for it, plus it allows all the bash trickery to be used directly in an editing session.
+ed is a good text editor, but it's interface is not optimal.  I thought that bash would be a good interface for it, plus it allows all the bash trickery to be used directly in an editing session.
 
 ## What this does?
 It wraps the ed editor in bash functions, allowing it use directly on command line.  It maintain the state, like the current line, using bash variables.
@@ -581,6 +581,9 @@ Contains the last argument received by es.
 #### diffarg:
 Contains the diff options.  By default: "--color -c".
 
+#### edtmux:
+Controls if tmux should be used.  By default, 1.  Should be 1, or 0.
+
 #### Highlight:
 ##### syntax:
 Contains the name of the syntax file used by highlight for the current file.
@@ -598,6 +601,17 @@ Commands can be passed directly to ed, using e, like:
 e "a\nA new line.\n.\nw"
 e "1,2d\nw"
 ````
+
+#### Scripting:
+You can use bashed in scripts, for example:
+
+````
+source /path/to/bashed.sh
+edtmux=0
+...
+````
+
+That means, in your script, you have to source bashed, and set edtmux to 0, so that the commands running in the script will not mess with your tmux sessions.
 
 #### Pitfalls:
 ##### Escape character:

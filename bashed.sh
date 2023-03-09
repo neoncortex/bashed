@@ -11,12 +11,14 @@ function hi { highlight "$1" --syntax "$2" -s $hitheme -O $himode; }
 editreadlines="$HOME/.edit/readlines"
 edcmd="n"
 edsyntax="y"
+edtmux=1
 diffarg="--color -c"
 
 function editwindow {
 	local window=
 	local pane=
-	local session="$(tmux display-message -p '#S')"
+	[[ $edtmux -eq 1 ]] && local session="$(tmux display-message -p '#S')"
+	[[ -z $session ]] && editarg "$2" && return
 	for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
 	do
 		if [[ $i == $1 ]] && [[ -n $window ]] && [[ -n $pane ]]
@@ -212,17 +214,22 @@ function editundo {
 function editarg {
 	[[ -z $1 ]] && return 1
 	argument="$1"
-	local session="$(tmux display-message -p '#S')"
-	local pane="$2"
-	[[ -z $pane ]] && pane="$session"
+	[[ $edtmux -eq 1 ]] \
+		&& local session="$(tmux display-message -p '#S')" \
+		&& local pane="$2"
+	[[ $edtmux -eq 1 ]] && [[ -z $pane ]] && pane="$session"
 	if [[ $argument =~ ^[0-9]+$ ]]
 	then
-		tmux send-keys -t "$pane" "es $argument" Enter
+		[[ $edtmux -eq 1 ]] \
+			&& tmux send-keys -t "$pane" "es $argument" Enter \
+			|| es "$argument"
 	else
 		argument="${argument//\//\\/}"
 		argument="${argument//\*/\\*}"
-		tmux send-keys -t "$pane" \
-			"es \$(e \"/${argument}/n\" | cut -f1)" Enter
+		[[ $edtmux -eq 1 ]] \
+			&& tmux send-keys -t "$pane" \
+				"es \$(e \"/${argument}/n\" | cut -f1)" Enter \
+			|| es $(e "/${argument}/n" | cut -f1)
 	fi
 }
 
@@ -289,13 +296,17 @@ function editopen {
 	[[ $? == 1 ]] && return 2
 	if [[ -f $f ]]
 	then
-		[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
-		[[ $2 == 'd' ]] && tmux splitw -c "$f"
-		[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
-		[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
-		[[ $2 == 'n' ]] && tmux neww -c "$f"
-		tmux select-pane -T "$f"
-		if [[ -z $2 ]]
+		if [[ $edtmux -eq 1 ]]
+		then
+			[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
+			[[ $2 == 'd' ]] && tmux splitw -c "$f"
+			[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
+			[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
+			[[ $2 == 'n' ]] && tmux neww -c "$f"
+			tmux select-pane -T "$f"
+		fi
+
+		if [[ -z $2 ]] || [[ $edtmux -eq 0 ]]
 		then
 			fn="$f"
 			cd "$(dirname "$fn")"
@@ -306,7 +317,7 @@ function editopen {
 			[[ -n $argument ]] \
 				&& editarg "$argument" \
 				|| editshow $
-			tmux select-pane -T "$f"
+			[[ $edtmux -eq 1 ]] && tmux select-pane -T "$f"
 		else
 			editwindow "$f" "$argument" n
 		fi
@@ -322,7 +333,7 @@ function editclose {
 	[[ -n $syntax ]] && syntax=
 	[[ -n $fileresult ]] && fileresult=
 	[[ -n $fileresultindex ]] && fileresultindex=
-	tmux select-pane -T "$(hostname)"
+	[[ $edtmux -eq 1 ]] && tmux select-pane -T "$(hostname)"
 }
 
 function editfind {
@@ -714,6 +725,7 @@ function edittransfer {
 	yank=
 	local line="$1"
 	[[ $1 == "." ]] && line="$fl"
+	[[ $1 == '$' ]] && line="$fs"
 	[[ -n $2 ]] && local n="$2" \
 		&& [[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fl + n))"
 	if [[ $line -gt 0 ]]
