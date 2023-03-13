@@ -558,7 +558,7 @@ eu n
 Will substitute the current file with the file n from the stored file list (eu l)
 
 ### Images:
-If a path to a image file is found, it will be displayed using cafa.  The image path should be the sole content of the line.  For example:
+If a path to a image file is found, it will be displayed using chafa.  The image path should be the sole content of the line.  For example:
 
 ````
 /usr/share/pixmaps/xine.xpm
