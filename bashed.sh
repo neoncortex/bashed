@@ -5,14 +5,21 @@ himode="xterm256"
 #hitheme="neon"
 #hitheme="lucretia"
 hitheme="bluegreen"
-function hi { highlight "$1" --syntax "$2" -s $hitheme -O $himode; }
 
 # edit
 editreadlines="$HOME/.edit/readlines"
 edcmd="n"
 edsyntax="y"
+edimg=1
 edtmux=1
+
 diffarg="--color -c"
+
+# chafa
+function img {
+	local cmd="chafa --animate=off"
+	[[ $1 =~ ^% ]] && $cmd "$(cortex-db -q "$1")" || $cmd "$1"
+}
 
 function editwindow {
 	local window=
@@ -331,6 +338,7 @@ function editclose {
 	[[ -n $fl ]] && fl=
 	[[ -n $fs ]] && fs=
 	[[ -n $syntax ]] && syntax=
+	[[ -n $block_syntax ]] && syntax=
 	[[ -n $fileresult ]] && fileresult=
 	[[ -n $fileresultindex ]] && fileresultindex=
 	[[ $edtmux -eq 1 ]] && tmux select-pane -T "$(hostname)"
@@ -370,6 +378,64 @@ function editlocate {
 	to="${to/\ */}"
 	to="${to/*:/}"
 	echo "$to"
+}
+
+function hi {
+	[[ -z $1 ]] && return 1
+	local s="$syntax"
+	[[ -n $block_syntax ]] && s="$block_syntax"
+	[[ -n $s ]] && [[ $edsyntax == y ]] \
+		&& echo "$1" | highlight --syntax $s -s $hitheme -O $himode \
+		|| echo "$1"
+}
+
+function editpresent {
+	local lines="$($1)"
+	[[ -z $lines ]] && return 1
+	[[ $edimg -eq 0 ]] && hi "$lines" && return
+	local text=
+	local n=1
+	local rows=
+	local cols=
+	read -r rows cols < <(stty size)
+	[[ -z $rows ]] && return 2
+	[[ -z $cols ]] && return 2
+	local IFS=$'\n'
+	for i in $lines
+	do
+		if [[ $i =~ \.(png|PNG|jpg|JPG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]]
+		then
+			hi "$text"
+			[[ $i =~ ^[0-9] ]] && img "${i/*$'\t'/}" || img "$i"
+			text=
+		elif [[ ${i/*$'\t'/} =~ ^\#\+begin_src ]] || [[ $i =~ \#\+begin_src ]]
+		then
+			hi "$text"
+			hi "$i"
+			text=
+			block_syntax="${i#*\ }"
+			block_syntax="${block_syntax/\ */}"
+		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]]
+		then
+			hi "$text"
+			text=
+			block_syntax=
+			hi "$i"
+		else
+			[[ -z $text ]] && text="$i" || text="$text
+$i"
+			if [[ $n -eq $rows ]]
+			then
+				hi "$text"
+				n=1
+				text=
+			fi
+
+			n="$((n + 1))"
+		fi
+	done
+
+	[[ -n $text ]] && hi "$text"
 }
 
 function editshow {
@@ -615,15 +681,9 @@ function editshow {
 
 	if [[ -n $show ]]
 	then
-		if [[ -n $syntax ]] && [[ $edsyntax == y ]]
-		then
-			$show | highlight --syntax $syntax -s $hitheme -O $himode
-		else
-			$show
-		fi
-
 		eslastarg="$arg"
 		eslast="$show"
+		editpresent "$show"
 	fi
 }
 

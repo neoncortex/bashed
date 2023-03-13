@@ -14,6 +14,7 @@ It wraps the ed editor in bash functions, allowing it use directly on command li
 - tmux;
 - highlight;
 - xclip;
+- chafa;
 
 ## Configuration:
 Add to your ~/.bashrc:
@@ -556,6 +557,16 @@ eu n
 
 Will substitute the current file with the file n from the stored file list (eu l)
 
+#### Images:
+If a path to a image file is found, it will be displayed using cafa.  The image path should be the sole content of the line.  For example:
+
+````
+/usr/share/pixmaps/xine.xpm
+````
+
+Here's how it looks:
+![screenshot](https://github.com/neoncortex/bashed/blob/main/image/chafa.png)
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -584,9 +595,15 @@ Contains the diff options.  By default: "--color -c".
 #### edtmux:
 Controls if tmux should be used.  By default, 1.  Should be 1, or 0.
 
+#### edimg:
+Controls if bashed show display images.
+
 #### Highlight:
 ##### syntax:
 Contains the name of the syntax file used by highlight for the current file.
+
+##### block_syntax:
+Contains the name of the syntax used in a code block.
 
 ##### edsyntax:
 Set if es should use syntax.  Should be y, or n.
@@ -679,4 +696,7 @@ The functions are:
 
 There are other functions that are used internally by the ones above:
 - editarg: parse the arguments of a file;
+- editpresent: display file contents; 
 - editsyntax: set the syntax to be used;
+- hi: display text;
+- img: display images;
