@@ -565,6 +565,7 @@ If a path to a image file is found, it will be displayed using cafa.  The image 
 ````
 
 Here's how it looks:
+
 ![screenshot](https://github.com/neoncortex/bashed/blob/main/image/chafa.png)
 
 ### Variables:
