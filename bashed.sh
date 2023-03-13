@@ -392,7 +392,6 @@ function hi {
 function editpresent {
 	local lines="$($1)"
 	[[ -z $lines ]] && return 1
-	[[ $edimg -eq 0 ]] && hi "$lines" && return
 	local text=
 	local n=1
 	local rows=
@@ -403,7 +402,8 @@ function editpresent {
 	local IFS=$'\n'
 	for i in $lines
 	do
-		if [[ $i =~ \.(png|PNG|jpg|JPG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]]
+		if [[ $i =~ \.(png|PNG|jpg|JPG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]] \
+			&& [[ $edimg -eq 1 ]]
 		then
 			hi "$text"
 			[[ $i =~ ^[0-9] ]] && img "${i/*$'\t'/}" || img "$i"
@@ -557,6 +557,7 @@ function editshow {
 		show="edit ${fl}$edcmd"
 	elif [[ $arg == "g" ]]
 	then
+		block_syntax=
 		fl="1"
 		show="edit ${fl}$edcmd"
 	elif [[ $arg =~ ^([.+-]?([0-9]+)?)(,[$+]?([0-9]+)?)?$ ]] \
@@ -578,6 +579,7 @@ function editshow {
 			[[ $tail =~ ^\+[0-9]+ ]] && tail="${tail/+/}" \
 				&& tail="$((fl + tail))"
 			[[ $tail -gt $fs ]] && tail="$fs"
+			[[ $head -eq 1 ]] && block_syntax=
 			show="edit ${head},${tail}$edcmd"
 			fl="$tail"
 		else
@@ -587,6 +589,7 @@ function editshow {
 				&& arg="$((fl - arg))"
 			[[ $arg -lt 1 ]] && arg="1"
 			[[ $arg -gt $fs ]] && arg="$fs"
+			[[ $arg -eq 1 ]] && block_syntax=
 			show="edit ${arg}$edcmd"
 			fl="$arg"
 		fi
@@ -642,6 +645,7 @@ function editshow {
 		fi
 	elif [[ $arg == "b" ]]
 	then
+		block_syntax=
 		show="edit "1,${pagesize}$edcmd""
 		fl="$((pagesize + 1))"
 	elif [[ $arg == "e" ]]

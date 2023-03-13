@@ -557,7 +557,7 @@ eu n
 
 Will substitute the current file with the file n from the stored file list (eu l)
 
-#### Images:
+### Images:
 If a path to a image file is found, it will be displayed using cafa.  The image path should be the sole content of the line.  For example:
 
 ````
@@ -567,6 +567,8 @@ If a path to a image file is found, it will be displayed using cafa.  The image 
 Here's how it looks:
 
 ![screenshot](https://github.com/neoncortex/bashed/blob/main/image/chafa.png)
+
+It can be disabled by setting the variable edimg to 0.
 
 ### Variables:
 #### fn:
@@ -597,7 +599,7 @@ Contains the diff options.  By default: "--color -c".
 Controls if tmux should be used.  By default, 1.  Should be 1, or 0.
 
 #### edimg:
-Controls if bashed show display images.
+Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
 
 #### Highlight:
 ##### syntax:
@@ -620,7 +622,7 @@ e "a\nA new line.\n.\nw"
 e "1,2d\nw"
 ````
 
-#### Scripting:
+### Scripting:
 You can use bashed in scripts, for example:
 
 ````
@@ -631,8 +633,8 @@ edtmux=0
 
 That means, in your script, you have to source bashed, and set edtmux to 0, so that the commands running in the script will not mess with your tmux sessions.
 
-#### Pitfalls:
-##### Escape character:
+### Pitfalls:
+#### Escape character:
 The character \ can be problematic.  To insert a literal \ character using the wrappers (ea, ei, ech, esu), use \\\\.  This is not valid for the e command, there, you should use \\\\ when you command was between '', and \\\\\\\\ when you command is between "".  That means, using e, to insert a literal \\:
 
 ````
@@ -646,19 +648,21 @@ e "s/\\\\\\/a\nw"
 e 's/\\\\/a\nw'
 ````
 
-##### Newlines in substitutions:
+#### Newlines in substitutions:
 \N can be used to represent a new line.  For example:
 
 ````
 esu a '\N'
 ````
 
-##### & in substitutions:
+#### & in substitutions:
 & should be used like \& when you substituting something with it.  Example:
 
 ````
 esu x '\&'
 ````
+#### Syntax highlighting:
+It will misbehave here and there (at least I'm not alone on this).  It is useful enough to catch some bugs, but not perfect.
 
 ## .bashed files:
 A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:
