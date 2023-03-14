@@ -664,6 +664,9 @@ esu x '\&'
 #### Syntax highlighting:
 It will misbehave here and there (at least I'm not alone on this).  It is useful enough to catch some bugs, but not perfect.
 
+#### Images and emore:
+It seems that chafa and more does not work well together, so, for now, emore does not display images.
+
 ## .bashed files:
 A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:
 

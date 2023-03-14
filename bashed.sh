@@ -17,8 +17,11 @@ diffarg="--color -c"
 
 # chafa
 function img {
-	local cmd="chafa --animate=off"
-	[[ $1 =~ ^% ]] && $cmd "$(cortex-db -q "$1")" || $cmd "$1"
+	[[ -z $1 ]] && return 1
+	local f="$1"
+	[[ $1 =~ ^% ]] && f="$(cortex-db -q "$1")"
+	[[ -z $f ]] && return 2
+	chafa --animate=off "$f"
 }
 
 function editwindow {
@@ -654,6 +657,7 @@ function editshow {
 		fl="$((fs - pagesize - 1))"
 	elif [[ $arg == "a" ]]
 	then
+		block_syntax=
 		show="edit ,$edcmd"
 	elif [[ $arg == "c" ]]
 	then
@@ -675,7 +679,7 @@ function editshow {
 		local tail="$((fl + rows - 2))"
 		if [[ $tail -eq $fs ]] || [[ $tail -gt $fs ]]
 		then
-			editshow n
+			show="edit $fl,\$$edcmd"
 			fl="$fs"
 		else
 			show="edit $head,$tail$edcmd"
@@ -847,7 +851,10 @@ function emore {
 	[[ $line == $fs ]] && line="1"
 	[[ $line -gt $fs ]] && line="1"
 	[[ $line -lt q ]] && line="1"
+	local old_edimg="$edimg"
+	edimg=0
 	editshow $line,$fs "$fn" | more -lf
+	edimg="$old_edimg"
 }
 
 function ea { editappend "$@"; }
