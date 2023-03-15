@@ -344,6 +344,7 @@ function editclose {
 	[[ -n $block_syntax ]] && syntax=
 	[[ -n $fileresult ]] && fileresult=
 	[[ -n $fileresultindex ]] && fileresultindex=
+	[[ -n $fileresult_a ]] && fileresult_a=
 	[[ $edtmux -eq 1 ]] && tmux select-pane -T "$(hostname)"
 }
 
@@ -351,24 +352,22 @@ function editfind {
 	[[ -z $1 ]] && return 1
 	local result="$(edit "$1")"
 	[[ -z $result ]] && return
-	fileresult=()
+	fileresult_a=()
 	fileresultindex=-1
+	fileresult=
 	local IFS=$'\n'
 	local counter=0
 	for i in $result
 	do
-		fileresult+=("${i/$'\t'*/}")
-		printf "$counter:"
-		if [[ -n $syntax ]] && [[ $edsyntax == y ]]
-		then
-			echo "${i/$'\t'/ }" | highlight \
-				--syntax $syntax -s $hitheme -O $himode
-		else
-			echo "${i/$'\t'/ }"
-		fi
-
+		fileresult_a+=("${i/$'\t'*/}")
+		[[ -z $fileresult ]] \
+			&& fileresult="$counter:${i/$'\t'/ }" \
+			|| fileresult="$fileresult
+$counter:${i/$'\t'/ }"
 		counter=$((counter+1))
 	done
+
+	[[ -n "$fileresult" ]] && hi "$fileresult"
 }
 
 function editlocate {
@@ -463,15 +462,15 @@ function editshow {
 	local arg="$1"
 	[[ -z $1 ]] && arg="+"
 	local show=
-	if [[ -n $fileresult ]] && [[ -n $fileresultindex ]]
+	if [[ -n $fileresult_a ]] && [[ -n $fileresultindex ]]
 	then
 		if [[ $arg =~ f([0-9]+) ]]
 		then
 			local n=${arg//f/}
-			if [[ $n -ge 0 ]] && [[ $n -le $((${#fileresult[@]}-1)) ]]
+			if [[ $n -ge 0 ]] && [[ $n -le $((${#fileresult_a[@]}-1)) ]]
 			then
 				fileresultindex=$n
-				fl="${fileresult[$fileresultindex]}"
+				fl="${fileresult_a[$fileresultindex]}"
 				printf "$fileresultindex:"
 				editshow ${fl}
 			else
@@ -509,23 +508,7 @@ function editshow {
 			return
 		elif [[ $arg == "s" ]]
 		then
-			local counter=0
-			for i in "${fileresult[@]}"
-			do
-				local line="$(edit ${i}n)"
-				line="${line/$'\t'/ }"
-				printf "$counter:"
-				if [[ -n $syntax ]] && [[ $edsyntax == y ]]
-				then
-					echo "$line" | highlight \
-						--syntax $syntax -s $hitheme -O $himode
-				else
-					echo "$line"
-				fi
-
-				counter="$((counter+1))"
-			done
-
+			[[ -n "$fileresult" ]] && hi "$fileresult"
 			return
 		elif [[ $arg == "m" ]]
 		then

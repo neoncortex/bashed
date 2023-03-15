@@ -592,6 +592,12 @@ Contains the last command executed by es.
 #### eslastarg:
 Contains the last argument received by es.
 
+#### fileresult:
+Contains the search results to be displayed by ef, and es s.
+
+#### fileresult_a:
+It's an array that have one entry to each result of an ef search.
+
 #### diffarg:
 Contains the diff options.  By default: "--color -c".
 
