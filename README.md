@@ -502,7 +502,7 @@ es s
 To disable syntax for the next command:
 
 ````
-editsyntax=n command
+editsyntax=0 command
 ````
 
 #### Disable line numbering:
@@ -545,10 +545,14 @@ eu p n
 
 #### Diff:
 ````
-eu diff n1 n2
+eu diff f1 f2
 ````
 
-Will present a diff from the file n1, and file n2 from the stored file list (eu l).
+Will present a diff from the file f1, and file f2.  f1, and f2, can be either a stored file or a regular file.  For example, to compare the current file with the stored version 2:
+
+````
+eu diff 2 $fn
+````
 
 #### Selecting:
 ````
@@ -615,7 +619,7 @@ Contains the name of the syntax file used by highlight for the current file.
 Contains the name of the syntax used in a code block.
 
 ##### edsyntax:
-Set if es should use syntax.  Should be y, or n.
+Set if es should use syntax.  By default, 1.  Should be 1, or 0.
 
 ##### hitheme:
 Contains the theme name used by highlight.
@@ -710,7 +714,7 @@ The functions are:
 
 There are other functions that are used internally by the ones above:
 - editarg: parse the arguments of a file;
+- edithi: display text;
+- editimg: display images;
 - editpresent: display file contents; 
 - editsyntax: set the syntax to be used;
-- hi: display text;
-- img: display images;

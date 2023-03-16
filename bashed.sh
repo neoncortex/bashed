@@ -2,27 +2,17 @@
 
 # highlight
 himode="xterm256"
-#hitheme="neon"
-#hitheme="lucretia"
 hitheme="bluegreen"
 
 # edit
 editreadlines="$HOME/.edit/readlines"
 edcmd="n"
-edsyntax="y"
+edsyntax=1
 edimg=1
 edtmux=1
 
+# diff
 diffarg="--color -c"
-
-# chafa
-function img {
-	[[ -z $1 ]] && return 1
-	local f="$1"
-	[[ $1 =~ ^% ]] && f="$(cortex-db -q "$1")"
-	[[ -z $f ]] && return 2
-	chafa --animate=off "$f"
-}
 
 function editwindow {
 	local window=
@@ -42,6 +32,8 @@ function editwindow {
 				tmux send-keys -t "$pane" \
 					"cd \"\$(dirname \"\$fn\")\"" Enter
 				tmux send-keys -t "$pane" "fl=1" Enter
+				tmux send-keys -t "$pane" "edimg=$edimg" Enter
+				tmux send-keys -t "$pane" "edsyntax=$edsyntax" Enter
 				tmux send-keys -t "$pane" "syntax=" Enter
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
@@ -194,9 +186,13 @@ function editundo {
 	elif [[ $1 == "diff" ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] && return 3
-		if [[ -f ${files[$2]} ]] && [[ -f ${files[$3]} ]]
+		local f1="$2"
+		local f2="$3"
+		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
+		[[ $3 =~ ^[0-9]+ ]] && f2="${files[$3]}"
+		if [[ -f $f1 ]] && [[ -f $f2 ]]
 		then
-			diff $diffarg "${files[$2]}" "${files[$3]}" 
+			diff $diffarg "$f1" "$f2" 
 		else
 			echo "?"
 		fi
@@ -208,7 +204,7 @@ function editundo {
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] \
-			&& edsyntax=n edcmd=p editshow a "${files[$2]}"
+			&& edsyntax=0 edcmd=p editshow a "${files[$2]}"
 	elif [[ $1 =~ [0-9]+ ]]
 	then
 		[[ -f ${files[$1]} ]] \
@@ -367,7 +363,7 @@ $counter:${i/$'\t'/ }"
 		counter=$((counter+1))
 	done
 
-	[[ -n "$fileresult" ]] && hi "$fileresult"
+	[[ -n "$fileresult" ]] && edithi "$fileresult"
 }
 
 function editlocate {
@@ -375,18 +371,25 @@ function editlocate {
 	[[ -n $2 ]] && local fl="$2"
 	local pattern="$1"
 	[[ $1 =~ ^\/ ]] && pattern="${pattern/\//}"
-	local to="$(edsyntax=n \
+	local to="$(edsyntax=0 \
 		ef "${fl},${fs}g/$pattern/n" | head -n1)"
 	to="${to/\ */}"
 	to="${to/*:/}"
 	echo "$to"
 }
 
-function hi {
+function editimg {
+	[[ -z $1 ]] && return 1
+	local f="$1"
+	[[ $f =~ ^% ]] && f="$(cortex-db -q "$1")"
+	[[ -z $f ]] && edithi "$f" || chafa --animate=off "$f"
+}
+
+function edithi {
 	[[ -z $1 ]] && return 1
 	local s="$syntax"
 	[[ -n $block_syntax ]] && s="$block_syntax"
-	[[ -n $s ]] && [[ $edsyntax == y ]] \
+	[[ -n $s ]] && [[ $edsyntax == 1 ]] \
 		&& echo "$1" | highlight --syntax $s -s $hitheme -O $himode \
 		|| echo "$1"
 }
@@ -407,28 +410,28 @@ function editpresent {
 		if [[ $i =~ \.(png|PNG|jpg|JPG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]] \
 			&& [[ $edimg -eq 1 ]]
 		then
-			hi "$text"
-			[[ $i =~ ^[0-9] ]] && img "${i/*$'\t'/}" || img "$i"
+			edithi "$text"
+			[[ $i =~ ^[0-9] ]] && editimg "${i/*$'\t'/}" || editimg "$i"
 			text=
 		elif [[ ${i/*$'\t'/} =~ ^\#\+begin_src ]] || [[ $i =~ \#\+begin_src ]]
 		then
-			hi "$text"
-			hi "$i"
+			edithi "$text"
+			edithi "$i"
 			text=
 			block_syntax="${i#*\ }"
 			block_syntax="${block_syntax/\ */}"
 		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]]
 		then
-			hi "$text"
+			edithi "$text"
 			text=
 			block_syntax=
-			hi "$i"
+			edithi "$i"
 		else
 			[[ -z $text ]] && text="$i" || text="$text
 $i"
 			if [[ $n -eq $rows ]]
 			then
-				hi "$text"
+				edithi "$text"
 				n=1
 				text=
 			fi
@@ -437,7 +440,7 @@ $i"
 		fi
 	done
 
-	[[ -n $text ]] && hi "$text"
+	[[ -n $text ]] && edithi "$text"
 }
 
 function editshow {
@@ -508,15 +511,15 @@ function editshow {
 			return
 		elif [[ $arg == "s" ]]
 		then
-			[[ -n "$fileresult" ]] && hi "$fileresult"
+			[[ -n "$fileresult" ]] && edithi "$fileresult"
 			return
 		elif [[ $arg == "m" ]]
 		then
-			local asize=${#fileresult[@]}
+			local asize=${#fileresult_a[@]}
 			if [[ $fileresultindex -lt $((asize - 1)) ]]
 			then
-				local start="${fileresult[$fileresultindex]}"
-				local end="$((${fileresult[$((fileresultindex + 1))]} - 1))"
+				local start="${fileresult_a[$fileresultindex]}"
+				local end="$((${fileresult_a[$((fileresultindex + 1))]} - 1))"
 				fl="$end"
 				editshow ${start},${end}
 			else
@@ -787,9 +790,9 @@ function edittransfer {
 		[[ -n $res ]] && echo "$res"
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
-		yank="$(edcmd=p edsyntax=n editshow ${fl},$n)"
+		yank="$(edcmd=p edsyntax=0 editshow ${fl},$n)"
 	else
-		yank="$(edcmd=p edsyntax=n editshow l)"
+		yank="$(edcmd=p edsyntax=0 editshow l)"
 	fi
 
 	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -i
@@ -798,8 +801,8 @@ function edittransfer {
 function editlevel {
 	local line=
 	[[ -n $1 ]] \
-		&& line="$(edsyntax=n edcmd=p es $1)" \
-		|| line="$(edsyntax=n edcmd=p es l)"
+		&& line="$(edsyntax=0 edcmd=p es $1)" \
+		|| line="$(edsyntax=0 edcmd=p es l)"
 	[[ -n $line ]] && echo "$line" | awk -F '\t' '{ print NF-1 }' || return 1
 }
 
@@ -807,8 +810,8 @@ function editspaces {
 	local n=0
 	local line=
 	[[ -n $1 ]] \
-		&& line="$(edsyntax=n edcmd=p es $1)" \
-		|| line="$(edsyntax=n edcmd=p es l)"
+		&& line="$(edsyntax=0 edcmd=p es $1)" \
+		|| line="$(edsyntax=0 edcmd=p es l)"
 	[[ -z $line ]] && return 1
 	while true
 	do
@@ -834,10 +837,7 @@ function emore {
 	[[ $line == $fs ]] && line="1"
 	[[ $line -gt $fs ]] && line="1"
 	[[ $line -lt q ]] && line="1"
-	local old_edimg="$edimg"
-	edimg=0
-	editshow $line,$fs "$fn" | more -lf
-	edimg="$old_edimg"
+	edimg=0 editshow $line,$fs "$fn" | more -lf
 }
 
 function ea { editappend "$@"; }
