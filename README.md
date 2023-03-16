@@ -638,10 +638,11 @@ You can use bashed in scripts, for example:
 ````
 source /path/to/bashed.sh
 edtmux=0
+edimg=0
 ...
 ````
 
-That means, in your script, you have to source bashed, and set edtmux to 0, so that the commands running in the script will not mess with your tmux sessions.
+That means, in your script, you have to source bashed, and set edtmux to 0, so that the commands running in the script will not mess with your tmux sessions.  edimg is also set to 0, unless you want images on your results.
 
 ### Pitfalls:
 #### Escape character:
