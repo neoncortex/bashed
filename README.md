@@ -10,17 +10,39 @@ ed is a good text editor, but it's interface is not optimal.  I thought that bas
 It wraps the ed editor in bash functions, allowing it use directly on command line.  It maintain the state, like the current line, using bash variables.
 
 ## Dependencies:
+### Required:
 - ed;
-- tmux;
 - highlight;
 - xclip;
+
+### Optional:
+- tmux;
 - chafa;
+- terminology;
+- xdotool;
 
 ## Configuration:
 Add to your ~/.bashrc:
 
 ````
     source /path/to/bashed.sh
+````
+
+Then you should configure if you want to use it with tmux, terminology, or directly:
+### Tmux:
+Add to your ~/.bashrc, after the sourcing:
+
+````
+edtmux=1
+edty=0
+````
+
+### Terminology:
+Add to your ~/.bashrc, after the sourcing:
+
+````
+edtmux=0
+edty=1
 ````
 
 ### Optional, prompt:
@@ -53,15 +75,13 @@ set-option -g display-panes-time 10000
 ````
 
 ## How to use it:
-All the commands below should be used inside a tmux session.
-
 ### Opening files:
 ````
 eo file
 ````
-When opening files, it will verify if the same file is already opened in another tmux pane.  It it does, these pane will be focused, otherwise, the file will be opened in the current pane.
+When opening files, if bashed is configured to use tmux, or terminology, it will verify if the same file is already opened in another tmux pane, or terminology window.  It it does, the tmux pane, or terminology window, will be focused, otherwise, the file will be opened in the current tmux pane, or a new terminology window.  If it's not using tmux or terminology, the file will be opened in the current shell.
 
-eo can receive an argument specifying that the file should be opened in a new panel.  A new panel can be: u for up, d for down, l for left, r for right, n, for new window.
+eo can receive an argument specifying that the file should be opened in a new tmux panel.  A new panel can be: u for up, d for down, l for left, r for right, n, for new window.
 
 For example, to open a file into a new panel on top of the current one:
 
@@ -79,7 +99,7 @@ eo file:'hello world'
 
 In the first command, file will be opened, and the line 10 will be setted as the current line.  On the second, file will be opened, the string "hello world" will be searched, and the line containing that string will be setted as the current line.
 
-If there is a pane with file already opened, then it will be focused, and the current line will be changed using the argument.
+If there is a tmux pane, or terminology window, with file already opened, then it will be focused, and the current line will be changed using the argument.
 
 ### Closing files:
 ````
@@ -562,17 +582,21 @@ eu n
 Will substitute the current file with the file n from the stored file list (eu l)
 
 ### Images:
-If a path to a image file is found, it will be displayed using chafa.  The image path should be the sole content of the line.  For example:
+If a path to a image file is found, bashed will display it. If bashed is configured to use tmux, it will be displayed using chafa, and if it's configured to use terminology, the image will be displayed using tycat.  The image path should be the sole content of the line.  For example:
 
 ````
 /usr/share/pixmaps/xine.xpm
 ````
 
-Here's how it looks:
+Here's how it looks in tmux, using chafa:
 
 ![screenshot](https://github.com/neoncortex/bashed/blob/main/image/chafa.png)
 
-It can be disabled by setting the variable edimg to 0.
+And here's how it looks in terminology, using tycat:
+
+![screenshot](https://github.com/neoncortex/bashed/blob/main/image/tycat.png)
+
+Images can be disabled by setting the variable edimg to 0.
 
 ### Variables:
 #### fn:
@@ -608,6 +632,12 @@ Contains the diff options.  By default: "--color -c".
 #### edtmux:
 Controls if tmux should be used.  By default, 1.  Should be 1, or 0.
 
+#### edty:
+Controls if terminology should be used, By default, 0.  Should be 1, or 0.
+
+#### edtysleep:
+Contains a real number, that is used as interval between xdotool commands that are sent to terminology windows.  By default, 0.2.
+
 #### edimg:
 Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
 
@@ -638,6 +668,7 @@ You can use bashed in scripts, for example:
 ````
 source /path/to/bashed.sh
 edtmux=0
+edty=0
 edimg=0
 ...
 ````
@@ -672,11 +703,13 @@ esu a '\N'
 ````
 esu x '\&'
 ````
+
 #### Syntax highlighting:
 It will misbehave here and there (at least I'm not alone on this).  It is useful enough to catch some bugs, but not perfect.
 
 #### Images and emore:
-It seems that chafa and more does not work well together, so, for now, emore does not display images.
+It seems that chafa, tycat, and more does not work well together, so, for now, emore does not display images.
+
 
 ## .bashed files:
 A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:

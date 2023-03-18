@@ -10,15 +10,70 @@ edcmd="n"
 edsyntax=1
 edimg=1
 edtmux=1
+edty=0
+edtysleep="0.2"
 
 # diff
 diffarg="--color -c"
 
 function editwindow {
+	if [[ $edty -eq 1 ]]
+	then
+		for i in $(xdotool search --name "." getwindowname "%@")
+		do
+			if [[ $i == $1 ]]
+			then
+				wmctrl -a "$i"
+				if [[ $terminologynew -eq 1 ]]
+				then
+					local dir="$1"
+					[[ $dir =~ ^% ]] \
+						&& dir="$(cortex-db -q "$dir")"
+					dir="$(dirname "$dir")"
+					[[ -z $dir ]] && dir="$PWD"
+					local cmd="fn="$1""
+					cmd="$cmd;edtmux="$edtmux""
+					cmd="$cmd;edty="$edty""
+					cmd="$cmd;edtysleep="$edtysleep""
+					cmd="$cmd;edimg="$edimg""
+					cmd="$cmd;edsyntax="$edsyntax""
+					cmd="$cmd;cd "$dir""
+					cmd="$cmd;editsyntax "$1""
+					cmd="$cmd;[[ -f .bashed ]] && source .bashed"
+					cmd="$cmd;clear"
+					cmd="$cmd;es 0"
+					echo "$cmd" | xclip -i 
+					xdotool key Shift+Insert
+					sleep $edtysleep
+					xdotool key Return
+					terminologynew=0
+				fi
+
+				if [[ -n $2 ]]
+				then
+					echo "editarg "$2"" | xclip -i
+					xdotool key Shift+Insert
+					sleep $edtysleep
+					xdotool key Return
+				fi
+
+				return 1
+			fi
+		done
+
+		terminologynew=1
+		terminology -T "$1" >& /dev/null &
+		sleep $edtysleep
+		editwindow "$1" "$2"
+		return
+	fi
+
 	local window=
 	local pane=
-	[[ $edtmux -eq 1 ]] && local session="$(tmux display-message -p '#S')"
-	[[ -z $session ]] && editarg "$2" && return
+	[[ $edtmux -eq 0 ]] && [[ -n $2 ]] && editarg "$2"
+	[[ $edtmux -eq 0 ]] && return
+	[[ $edmutx -eq 1 ]] \
+		&& local session="$(tmux display-message -p '#S')"
 	for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
 	do
 		if [[ $i == $1 ]] && [[ -n $window ]] && [[ -n $pane ]]
@@ -34,6 +89,9 @@ function editwindow {
 				tmux send-keys -t "$pane" "fl=1" Enter
 				tmux send-keys -t "$pane" "edimg=$edimg" Enter
 				tmux send-keys -t "$pane" "edsyntax=$edsyntax" Enter
+				tmux send-keys -t "$pane" "edtmux=$edtmux" Enter
+				tmux send-keys -t "$pane" "edty=$edty" Enter
+				tmux send-keys -t "$pane" "edtysleep=$edtysleep" Enter
 				tmux send-keys -t "$pane" "syntax=" Enter
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
@@ -44,8 +102,7 @@ function editwindow {
 				[[ -n $2 ]] \
 					&& tmux send-keys \
 					"editarg \"$2\" \"$pane\"" Enter \
-					|| tmux send-keys \
-					"editshow $" Enter
+					|| tmux send-keys "editshow 1" Enter
 				return
 			else
 				tmux select-window -t "$session:$window"
@@ -226,12 +283,24 @@ function editarg {
 	[[ $edtmux -eq 1 ]] && [[ -z $pane ]] && pane="$session"
 	if [[ $argument =~ ^[0-9]+$ ]]
 	then
+		[[ $edty -eq 1 ]] \
+			&& echo "es "$argument"" | xclip -i \
+			&& xdotool key Shift+Insert \
+			&& sleep $edtysleep \
+			&& xdotool key Return \
+			&& return
 		[[ $edtmux -eq 1 ]] \
 			&& tmux send-keys -t "$pane" "es $argument" Enter \
 			|| es "$argument"
 	else
 		argument="${argument//\//\\/}"
 		argument="${argument//\*/\\*}"
+		[[ $edty -eq 1 ]] \
+			&& echo "es "$(e "/${argument}/n" | cut -f1)"" | xclip -i \
+			&& xdotool key Shift+Insert \
+			&& sleep $edtysleep \
+			&& xdotool key Return \
+			&& return
 		[[ $edtmux -eq 1 ]] \
 			&& tmux send-keys -t "$pane" \
 				"es \$(e \"/${argument}/n\" | cut -f1)" Enter \
@@ -322,7 +391,7 @@ function editopen {
 			[[ -f $PWD/.bashed ]] && source "$PWD/.bashed"
 			[[ -n $argument ]] \
 				&& editarg "$argument" \
-				|| editshow $
+				|| editshow 1
 			[[ $edtmux -eq 1 ]] && tmux select-pane -T "$f"
 		else
 			editwindow "$f" "$argument" n
@@ -382,7 +451,9 @@ function editimg {
 	[[ -z $1 ]] && return 1
 	local f="$1"
 	[[ $f =~ ^% ]] && f="$(cortex-db -q "$1")"
-	[[ -z $f ]] && edithi "$f" || chafa --animate=off "$f"
+	[[ -z $f ]] && edithi "$f" && return 2
+	[[ $TERMINOLOGY -eq 1 ]] && [[ $edtmux -eq 0 ]] && tycat "$1" && return
+	[[ $edty -eq 1 ]] && tycat "$f" || chafa --animate=off "$f"
 }
 
 function edithi {
@@ -407,7 +478,7 @@ function editpresent {
 	local IFS=$'\n'
 	for i in $lines
 	do
-		if [[ $i =~ \.(png|PNG|jpg|JPG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]] \
+		if [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]] \
 			&& [[ $edimg -eq 1 ]]
 		then
 			edithi "$text"
