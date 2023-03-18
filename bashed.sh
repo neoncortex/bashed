@@ -450,9 +450,9 @@ function editlocate {
 function editimg {
 	[[ -z $1 ]] && return 1
 	local f="$1"
-	[[ $f =~ ^% ]] && f="$(cortex-db -q "$1")"
+	[[ $f =~ ^% ]] && f="$(cortex-db -q "$f")"
 	[[ -z $f ]] && edithi "$f" && return 2
-	[[ $TERMINOLOGY -eq 1 ]] && [[ $edtmux -eq 0 ]] && tycat "$1" && return
+	[[ $TERMINOLOGY -eq 1 ]] && [[ $edtmux -eq 0 ]] && tycat "$f" && return
 	[[ $edty -eq 1 ]] && tycat "$f" || chafa --animate=off "$f"
 }
 
