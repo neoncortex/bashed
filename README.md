@@ -20,15 +20,17 @@ It wraps the ed editor in bash functions, allowing it use directly on command li
 - chafa;
 - terminology;
 - xdotool;
+- wmctrl;
 
 ## Configuration:
 Add to your ~/.bashrc:
 
 ````
-    source /path/to/bashed.sh
+source /path/to/bashed.sh
 ````
 
 Then you should configure if you want to use it with tmux, terminology, or directly:
+
 ### Tmux:
 Add to your ~/.bashrc, after the sourcing:
 
@@ -43,6 +45,31 @@ Add to your ~/.bashrc, after the sourcing:
 ````
 edtmux=0
 edty=1
+edtysleep=0.2
+````
+
+You can tweak edtysleep to a highter value.  It may be necessary if 0.2 is not enough time for your system to open terminology, and paste the commands using xdotool.
+
+### Directly:
+Add to your ~/.bashrc, after the sourcing:
+
+````
+edtmux=0
+edty=0
+````
+
+### Syntax highlight:
+Syntax highlight comes enables by default.  To disable, add to your ~/.bashrc, after the sourcing:
+
+````
+edsyntax=0
+````
+
+### Images:
+Images comes enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
+
+````
+edimg=0
 ````
 
 ### Optional, prompt:
@@ -79,6 +106,7 @@ set-option -g display-panes-time 10000
 ````
 eo file
 ````
+
 When opening files, if bashed is configured to use tmux, or terminology, it will verify if the same file is already opened in another tmux pane, or terminology window.  It it does, the tmux pane, or terminology window, will be focused, otherwise, the file will be opened in the current tmux pane, or a new terminology window.  If it's not using tmux or terminology, the file will be opened in the current shell.
 
 eo can receive an argument specifying that the file should be opened in a new tmux panel.  A new panel can be: u for up, d for down, l for left, r for right, n, for new window.
@@ -342,6 +370,7 @@ el
 ````
 
 And how many spaces using:
+
 ````
 els
 ````
@@ -685,6 +714,7 @@ e 'a\n\\\n.\nw"
 ````
 
 When using s under e, it gets even scarier.  For example, substituting a for \:
+
 ````
 e "s/\\\\\\/a\nw"
 e 's/\\\\/a\nw'
