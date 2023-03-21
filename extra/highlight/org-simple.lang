@@ -1,0 +1,37 @@
+Description="bashed-org"
+
+Categories = {"markup"}
+
+Keywords={
+{
+	Id=1,
+	Regex=[[ \#\+(begin_src.*|end_src.*|tags.*|title.*|name.*) ]]
+},
+{
+	Id=2,
+	Regex=[[ \*.*:$ ]]
+},
+{
+	Id=6,
+	Regex=[[ %.*% ]]
+},
+{
+	Id=6,
+	Regex=[[ .*:\/\/.* ]]
+},
+{
+	Id=6,
+	Regex=[[ \/[a-zA-Z0-9-_./]+ ]]
+},
+{
+	Id=6,
+	Regex=[[ <<[a-zA-Z0-9-_./%#]+>> ]]
+},
+}
+
+Operators=[[\+|\-|\*|\/|\^|<|>|\<<|\>>|\||=|\!|\&|\~|\?|\(|\)|\[|\]|\{|\}]]
+IgnoreCase=false
+
+Strings={
+	Delimiter=[["]],
+}
