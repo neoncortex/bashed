@@ -478,8 +478,8 @@ function editpresent {
 	local IFS=$'\n'
 	for i in $lines
 	do
-		if [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF|xpm|XPM)$ ]] \
-			&& [[ $edimg -eq 1 ]]
+		if [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
+			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]]
 		then
 			edithi "$text"
 			[[ $i =~ ^[0-9] ]] && editimg "${i/*$'\t'/}" || editimg "$i"
@@ -523,6 +523,8 @@ function editshow {
 		editsyntax "$fn"
 		local fl="$fl"
 		local fs=
+		local edtmux=0
+		local edty=0
 	fi
 
 	[[ -z $fn ]] && return 1
@@ -911,6 +913,45 @@ function emore {
 	edimg=0 editshow $line,$fs "$fn" | more -lf
 }
 
+function editmediaqueue {
+	[[ $TERM_PROGRAM != "terminology" ]] && return 1
+	if [[ -n $1 ]]
+	then
+		local fn="$1"
+		[[ $fn =~ ^% ]] && fn="$(cortex-db -q "$fn")"
+		local syntax=
+		editsyntax "$fn"
+		local fl="$fl"
+		local fs=
+		local edty=0
+	fi
+
+	[[ -z $fn ]] && return 2
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+	[[ -d $fn ]] && return 2
+	local media=""
+	local old_ifs="$IFS"
+	local IFS=$'\n'
+	while read -r line
+	do
+		if [[ $line =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
+			|xpm|XPM|svg|SVG|mp4|MP4|avi|AVI|webm|WEBM\
+			flac|FLAC|mp3|MP3|ogg|OGG)$ ]]
+		then
+			local item="$line"
+			[[ $item =~ ^% ]] && item="$(cortex-db -q "$item")"
+			if [[ $item =~ ^\/ ]]
+			then
+				[[ -z $media ]] && media="$item" \
+					|| media="$media $item"
+			fi
+		fi
+	done < "$fn"
+
+	IFS="$old_ifs"
+	[[ -n $media ]] && tyq $media
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
@@ -922,6 +963,7 @@ function ej { editjoin "$@"; }
 function els { editspaces "$@"; }
 function el { editlevel "$@"; }
 function em { editmove "$@"; }
+function emq { editmediaqueue "$@"; }
 function eo { editopen "$@"; }
 function eq { editclose "$@"; }
 function er { editread "$@"; }

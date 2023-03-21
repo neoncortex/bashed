@@ -627,6 +627,9 @@ And here's how it looks in terminology, using tycat:
 
 Images can be disabled by setting the variable edimg to 0.
 
+### Multimedia:
+If you are using Bashed with Terminology, you can view the all the media files in a text file using the command emq.  It will call tyq with all media files present in a text file, like images, audio, and video.
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -764,7 +767,8 @@ The functions are:
 - editinsert, ei: insert line;
 - editjoin, ej: join lines;
 - editlevel, el: count tab indentation;
-- editlocate, efl, find line;
+- editlocate, efl: find line;
+- editmediaqueue, emq: show all media files in a text file when using Terminology.
 - emore, scroll file forward using more;
 - editmove, em: move lines;
 - editopen, eo: open file;
