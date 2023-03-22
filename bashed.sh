@@ -10,6 +10,8 @@ edcmd="n"
 edsyntax=1
 edimg=1
 edtmux=1
+edesc=1
+edesch=0
 edty=0
 edtysleep="0.2"
 
@@ -162,6 +164,7 @@ function editcmd {
 	[[ -z $3 ]] && return 4
  	local begin="$1"
 	local end="$2"
+	local edesch=1
 	[[ $begin == "." ]] && begin="$fl"
 	[[ $end == "." ]] && end="$fl"
 	[[ $begin == "$" ]] && begin="$fs"
@@ -475,6 +478,7 @@ function editpresent {
 	read -r rows cols < <(stty size)
 	[[ -z $rows ]] && return 2
 	[[ -z $cols ]] && return 2
+	local old_ifs="$IFS"
 	local IFS=$'\n'
 	for i in $lines
 	do
@@ -497,6 +501,66 @@ function editpresent {
 			text=
 			block_syntax=
 			edithi "$i"
+		elif [[ $i =~ \[\[\\[0-9][0-9][0-9]\[.*\ .*\]\] ]] && [[ edesc -eq 1 ]]
+		then
+			edithi "$text"
+			text=
+			local first=1
+			local escaped=0
+			local IFS="$old_ifs"
+			local n="${i/	*/}"
+			local line="$i"
+			local nospace=0
+			[[ $edcmd == 'n' ]] \
+				&& printf "%s\t" "$(edithi "$n")"  \
+				&& line="$(e ${n}p)"
+			for j in $line
+			do
+				[[ -z $j ]] && break
+				if [[ $j =~ ^\[\[\\[0-9][0-9][0-9] ]]
+				then
+					escaped=1
+					[[ $edesch -eq 0 ]] \
+						&& printf "%b" "${j/\[\[/}"
+				elif [[ $j =~ ^\\[0-9][0-9][0-9].*\]\] ]]
+				then	
+					escaped=0
+					[[ $edesch -eq 0 ]] \
+						&& printf "%b" "${j/\]\]/}"
+				elif [[ $j == '\E' ]]
+				then
+					nospace=1
+				elif [[ $j == '\S' ]]
+				then
+					printf ' '
+				elif [[ $escaped -eq 1 ]]
+				then
+					[[ $edesch -eq 0 ]] \
+						&& printf "%s" "$j" \
+						|| printf "%s" "$(edithi "$j")"
+					if [[ $nospace -eq 0 ]]
+					then
+						[[ $first -eq 0 ]] && printf ' '
+						[[ $first -eq 1 ]] \
+							&& printf ' ' && first=0
+					else
+						nospace=0
+					fi
+				else
+					printf "%s" "$(edithi "$j")"
+					if [[ $nospace -eq 0 ]]
+					then
+						[[ $first -eq 0 ]] && printf ' '
+						[[ $first -eq 1 ]] \
+							&& printf ' ' && first=0
+					else
+						nospace=0
+					fi
+				fi
+			done
+
+			[[ $first -eq 0 ]] && echo
+			IFS=$'\n'
 		else
 			[[ -z $text ]] && text="$i" || text="$text
 $i"
@@ -863,9 +927,9 @@ function edittransfer {
 		[[ -n $res ]] && echo "$res"
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
-		yank="$(edcmd=p edsyntax=0 editshow ${fl},$n)"
+		yank="$(edcmd=p edsyntax=0 edesch=1 editshow ${fl},$n)"
 	else
-		yank="$(edcmd=p edsyntax=0 editshow l)"
+		yank="$(edcmd=p edsyntax=0 edesch=1 editshow l)"
 	fi
 
 	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -i
@@ -900,7 +964,7 @@ function editspaces {
 	echo "$n"
 }
 
-function emore {
+function editmore {
 	[[ -z $fn ]] && return 1
 	local line="$fl"
 	[[ -n $1 ]] && line="$1"
@@ -910,7 +974,7 @@ function emore {
 	[[ $line == $fs ]] && line="1"
 	[[ $line -gt $fs ]] && line="1"
 	[[ $line -lt q ]] && line="1"
-	edimg=0 editshow $line,$fs "$fn" | more -lf
+	edimg=0 edtmux=0 edty=0 editshow $line,$fs "$fn" | more -lf
 }
 
 function editmediaqueue {
@@ -923,6 +987,7 @@ function editmediaqueue {
 		editsyntax "$fn"
 		local fl="$fl"
 		local fs=
+		local edtmux=0
 		local edty=0
 	fi
 
@@ -963,6 +1028,7 @@ function ej { editjoin "$@"; }
 function els { editspaces "$@"; }
 function el { editlevel "$@"; }
 function em { editmove "$@"; }
+function emore { editmore "$@"; }
 function emq { editmediaqueue "$@"; }
 function eo { editopen "$@"; }
 function eq { editclose "$@"; }

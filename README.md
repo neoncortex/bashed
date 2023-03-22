@@ -59,17 +59,24 @@ edty=0
 ````
 
 ### Syntax highlight:
-Syntax highlight comes enables by default.  To disable, add to your ~/.bashrc, after the sourcing:
+Syntax highlight are enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
 
 ````
 edsyntax=0
 ````
 
 ### Images:
-Images comes enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
+Images are enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
 
 ````
 edimg=0
+````
+
+### Escape sequences:
+Escape sequences are enabled by default.  To disable, add to your ~/.bashrc, after sourcing:
+
+````
+edesc=0
 ````
 
 ### Optional, prompt:
@@ -627,6 +634,39 @@ And here's how it looks in terminology, using tycat:
 
 Images can be disabled by setting the variable edimg to 0.
 
+### Escape sequences:
+Bashed have a special syntax that allows it to pass escape sequences to the terminal.  The syntax is:
+[[ followed by '\033[', followed by the escape code, space, '\033[', the escape finalization, and ]].  For example:
+
+````
+[[\033[31m test \033[0m]]
+````
+
+#### Spaces after the escape sequence:
+By default, a space will be added at the end of the escape sequence.  To prevent this, you can place a '\E ' before the escape sequence.  For example:
+
+````
+\E [[\033[31m test \033[0m]] , word
+````
+
+This will place the escape sequence and the comma together, without spaces in the middle.
+
+#### Two or more spaces in lines containing escape sequences:
+The space is used as the word delimiter when parsing lines containing escape sequences.  For that reason, spaces will be collapsed, that is, two or more space characters in sequence will become one space character.  To use extra spaces, you can place a '\S'.  For example:
+
+````
+[[\033[31m test \033[0m]] \S word
+````
+
+That will place a extra space between the escape sequence containing test, and the word 'word'.  To place more than one:
+
+````
+[[\033[31m test \033[0m]] \S \S word
+````
+
+#### Hiding the escape sequences:
+Sometimes it will be useful to hide the escape sequences, for example when you want to pass the text to a command.  To do this, you set the variable edesch to 1.
+
 ### Multimedia:
 If you are using Bashed with Terminology, you can view the all the media files in a text file using the command emq.  It will call tyq with all media files present in a text file, like images, audio, and video.
 
@@ -685,6 +725,13 @@ Set if es should use syntax.  By default, 1.  Should be 1, or 0.
 
 ##### hitheme:
 Contains the theme name used by highlight.
+
+#### Escape sequences:
+##### edesc:
+Controls if escape sequences should be interpreted,  By default, 1.  Should be 1, or 0.
+
+##### edesch:
+Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, or 1.
 
 ### Using e:
 Commands can be passed directly to ed, using e, like:
@@ -769,7 +816,7 @@ The functions are:
 - editlevel, el: count tab indentation;
 - editlocate, efl: find line;
 - editmediaqueue, emq: show all media files in a text file when using Terminology.
-- emore, scroll file forward using more;
+- editmore, emore, scroll file forward using more;
 - editmove, em: move lines;
 - editopen, eo: open file;
 - editread, er: read a region of file, and store in ~/.edit/readlines
