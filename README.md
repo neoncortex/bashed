@@ -642,6 +642,12 @@ Bashed have a special syntax that allows it to pass escape sequences to the term
 [[\033[31m test \033[0m]]
 ````
 
+Nothing should be typed together with the sequences.  For example, if you want to place a dot after the sequence:
+
+````
+[[\033[31m test \033[0m]] .
+````
+
 #### Spaces after the escape sequence:
 By default, a space will be added at the end of the escape sequence.  To prevent this, you can place a '\E ' before the escape sequence.  For example:
 
@@ -733,6 +739,9 @@ Controls if escape sequences should be interpreted,  By default, 1.  Should be 1
 ##### edesch:
 Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, or 1.
 
+##### edecesc:
+Controls if ec should use escape sequences.  By default, 0.  Should be 0, or 1.
+
 ### Using e:
 Commands can be passed directly to ed, using e, like:
 
@@ -791,7 +800,7 @@ It will misbehave here and there (at least I'm not alone on this).  It is useful
 It seems that chafa, tycat, and more does not work well together, so, for now, emore does not display images.
 
 #### Escape sequences and ec:
-Escape sequences will be lost when a command is executed in a region of the text that contains them.  It's done that way because passing escape sequences to commands will, in general, yield the wrong result.  I hope to find a better solution for this.
+Escape sequences will be lost when a command is executed in a region of the text that contains them.  It's done that way because passing escape sequences to commands will, in general, yield the wrong result.  You can force the escape sequences on ec input by setting edecesc to 1.
 
 ## .bashed files:
 A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:
