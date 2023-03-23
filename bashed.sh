@@ -526,7 +526,7 @@ function editescape {
 		fi
 	done
 
-	[[ $first -eq 0 ]] && echo
+	echo
 }
 
 function editpresent {

@@ -635,8 +635,8 @@ And here's how it looks in terminology, using tycat:
 Images can be disabled by setting the variable edimg to 0.
 
 ### Escape sequences:
-Bashed have a special syntax that allows it to pass escape sequences to the terminal.  The syntax is:
-[[ followed by '\033[', followed by the escape code, space, '\033[', the escape finalization, and ]].  For example:
+Lines containing escape sequences are special.  Bashed have a special syntax that allows it to pass escape sequences to the terminal.  The syntax is:
+[[ followed by '\033[', followed by the escape code, space, content, '\033[', the escape finalization, and ]].  For example:
 
 ````
 [[\033[31m test \033[0m]]
@@ -669,6 +669,8 @@ That will place a extra space between the escape sequence containing test, and t
 ````
 [[\033[31m test \033[0m]] \S \S word
 ````
+
+And so on.
 
 #### Hiding the escape sequences:
 Sometimes it will be useful to hide the escape sequences, for example when you want to pass the text to a command.  To do this, you set the variable edesch to 1.
