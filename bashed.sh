@@ -134,7 +134,7 @@ function editread {
 	then
 		local f="$3"
 		[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-		local lines="$(edit "${1},${2}p" "$f")"
+		local lines="$(edesch=1 edsyntax=0 edcmd=p es "${1},${2}" "$f")"
 		mkdir -p "$HOME/.edit"
 		echo "$lines" > "$editreadlines"
 	fi
@@ -164,7 +164,6 @@ function editcmd {
 	[[ -z $3 ]] && return 4
  	local begin="$1"
 	local end="$2"
-	local edesch=1
 	[[ $begin == "." ]] && begin="$fl"
 	[[ $end == "." ]] && end="$fl"
 	[[ $begin == "$" ]] && begin="$fs"
@@ -178,7 +177,7 @@ function editcmd {
 	mv "$HOME/.edit/temp" "$editreadlines"
 	local res="$(edit "${begin},${end}d\nw")"
 	[[ -n $res ]] && echo "$res"
-	editread 0 0 0 $(($begin - 1))		
+	editread 0 0 "$fn" $(($begin - 1))
 	editshow ${begin},$end
 }
 
@@ -468,6 +467,67 @@ function edithi {
 		|| echo "$1"
 }
 
+function editescape {
+	[[ -z "$1" ]] && return 1
+	local i="$1"
+	local first=1
+	local escaped=0
+	local IFS=$' '
+	local n="${i/	*/}"
+	local line="$i"
+	local nospace=0
+	[[ $edcmd == 'n' ]] \
+		&& printf "%s\t" "$(edithi "$n")"  \
+		&& line="$(e ${n}p)"
+	for j in $line
+	do
+		[[ -z $j ]] && break
+		if [[ $j =~ ^\[\[\\[0-9][0-9][0-9] ]]
+		then
+			escaped=1
+			[[ $edesch -eq 0 ]] \
+				&& printf "%b" "${j/\[\[/}"
+		elif [[ $j =~ ^\\[0-9][0-9][0-9].*\]\] ]]
+		then	
+			escaped=0
+			[[ $edesch -eq 0 ]] \
+				&& printf "%b" "${j/\]\]/}"
+			! [[ $j =~ \]$ ]] && j="${j/*]/}" && edithi "$j"
+		elif [[ $j == '\E' ]]
+		then
+			nospace=1
+		elif [[ $j == '\S' ]]
+		then
+			printf ' '
+		elif [[ $escaped -eq 1 ]]
+		then
+			[[ $edesch -eq 0 ]] \
+				&& printf "%s" "$j" \
+				|| printf "%s" "$(edithi "$j")"
+			if [[ $nospace -eq 0 ]]
+			then
+				[[ $first -eq 0 ]] && printf ' '
+				[[ $first -eq 1 ]] \
+					&& printf ' ' && first=0
+			else
+				nospace=0
+			fi
+		else
+			printf "%s" "$(edithi "$j")"
+			if [[ $nospace -eq 0 ]]
+			then
+				[[ $first -eq 0 ]] && printf ' '
+				[[ $first -eq 1 ]] \
+					&& printf ' ' && first=0
+			else
+				nospace=0
+			fi
+		fi
+	done
+
+	[[ $first -eq 0 ]] && echo
+}
+
 function editpresent {
 	local lines="$($1)"
 	[[ -z $lines ]] && return 1
@@ -505,62 +565,7 @@ function editpresent {
 		then
 			edithi "$text"
 			text=
-			local first=1
-			local escaped=0
-			local IFS="$old_ifs"
-			local n="${i/	*/}"
-			local line="$i"
-			local nospace=0
-			[[ $edcmd == 'n' ]] \
-				&& printf "%s\t" "$(edithi "$n")"  \
-				&& line="$(e ${n}p)"
-			for j in $line
-			do
-				[[ -z $j ]] && break
-				if [[ $j =~ ^\[\[\\[0-9][0-9][0-9] ]]
-				then
-					escaped=1
-					[[ $edesch -eq 0 ]] \
-						&& printf "%b" "${j/\[\[/}"
-				elif [[ $j =~ ^\\[0-9][0-9][0-9].*\]\] ]]
-				then	
-					escaped=0
-					[[ $edesch -eq 0 ]] \
-						&& printf "%b" "${j/\]\]/}"
-				elif [[ $j == '\E' ]]
-				then
-					nospace=1
-				elif [[ $j == '\S' ]]
-				then
-					printf ' '
-				elif [[ $escaped -eq 1 ]]
-				then
-					[[ $edesch -eq 0 ]] \
-						&& printf "%s" "$j" \
-						|| printf "%s" "$(edithi "$j")"
-					if [[ $nospace -eq 0 ]]
-					then
-						[[ $first -eq 0 ]] && printf ' '
-						[[ $first -eq 1 ]] \
-							&& printf ' ' && first=0
-					else
-						nospace=0
-					fi
-				else
-					printf "%s" "$(edithi "$j")"
-					if [[ $nospace -eq 0 ]]
-					then
-						[[ $first -eq 0 ]] && printf ' '
-						[[ $first -eq 1 ]] \
-							&& printf ' ' && first=0
-					else
-						nospace=0
-					fi
-				fi
-			done
-
-			[[ $first -eq 0 ]] && echo
-			IFS=$'\n'
+			editescape "$i"
 		else
 			[[ -z $text ]] && text="$i" || text="$text
 $i"

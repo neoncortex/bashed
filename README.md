@@ -831,6 +831,7 @@ The functions are:
 
 There are other functions that are used internally by the ones above:
 - editarg: parse the arguments of a file;
+- editescape: manipulate and print escape sequences;
 - edithi: display text;
 - editimg: display images;
 - editpresent: display file contents; 
