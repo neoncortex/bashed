@@ -636,7 +636,7 @@ Images can be disabled by setting the variable edimg to 0.
 
 ### Escape sequences:
 Lines containing escape sequences are special.  Bashed have a special syntax that allows it to pass escape sequences to the terminal.  The syntax is:
-[[ followed by '\033[', followed by the escape code, space, content, '\033[', the escape finalization, and ]].  For example:
+[[ followed by '\033[', followed by the escape code, space, content, space, '\033[', the escape finalization, and ]].  For example:
 
 ````
 [[\033[31m test \033[0m]]
