@@ -1053,37 +1053,30 @@ function editfmt {
 		do
 			if [[ $word =~ \[\[\\[0-9][0-9][0-9]\[.* ]]
 			then
-				echo 1
 				lines[$ln]="${lines[$ln]} $word"
 				linesize="$((linesize + ${#word} + 1))"
 			elif [[ $word =~ \\[0-9][0-9][0-9]\[.* ]]
 			then
-				echo 1.5
 				lines[$ln]="${lines[$ln]} $word"
 				linesize="$((linesize + ${#word} + 1))"
 			elif [[ $word =~ (\\S|\\E) ]]
 			then
-				echo 2
 				lines[$ln]="${lines[$ln]} $word"
 				linesize="$((linesize + ${#word} + 1))"
 			elif [[ $n -eq 1 ]]
 			then
-				echo xx3
 				lines[$ln]="$word "
 				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
 			elif [[ $(echo "${lines[$ln]} $word" | wc -m) -ge $linesize ]]
 			then
-				echo 4
 				lines+=("$word")
 				ln="$((ln + 1))"
 				linesize=$size
 			else
-				echo 5
 				lines[$ln]="${lines[$ln]} $word"
 				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
 			fi
 
-			echo $linesize
 			n=$((n + 1))
 		done
 	done < "$editreadlines"
@@ -1105,7 +1098,6 @@ function editfmt {
 	local res="$(edit "${begin},${end}d\nw")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
-	#editshow ${begin},$end
 }
 
 function ea { editappend "$@"; }
