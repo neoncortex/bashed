@@ -12,7 +12,7 @@ edimg=1
 edtmux=1
 edesc=1
 edesch=0
-edecesc=1
+edecesch=1
 edty=0
 edtysleep="0.2"
 
@@ -135,7 +135,7 @@ function editread {
 	then
 		local f="$3"
 		[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-		local lines="$(edesch=$edecesc edsyntax=0 edcmd=p es "${1},${2}" "$f")"
+		local lines="$(edesch=$edecesch edsyntax=0 edcmd=p es "${1},${2}" "$f")"
 		mkdir -p "$HOME/.edit"
 		echo "$lines" > "$editreadlines"
 	fi
