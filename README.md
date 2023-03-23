@@ -802,7 +802,7 @@ It will misbehave here and there (at least I'm not alone on this).  It is useful
 It seems that chafa, tycat, and more does not work well together, so, for now, emore does not display images.
 
 #### Escape sequences and ec:
-Escape sequences will be lost when a command is executed in a region of the text that contains them.  It's done that way because passing escape sequences to commands will, in general, yield the wrong result.  You can force the escape sequences on ec input by setting edecesc to 1.
+Escape sequences will be lost when a command is executed in a region of the text that contains them.  It's done that way because passing escape sequences to commands will, in general, yield the wrong result.  You can force the escape sequences on ec input by setting edecesc to 0.
 
 ## .bashed files:
 A .bashed file can be placed in any directory.  These files can be used to change the configuration of the editor based on the location of the file.  Any valid bash command can be placed in these files, they will be sourced.  For example:

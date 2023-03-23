@@ -12,7 +12,7 @@ edimg=1
 edtmux=1
 edesc=1
 edesch=0
-edecesc=0
+edecesc=1
 edty=0
 edtysleep="0.2"
 
@@ -135,7 +135,7 @@ function editread {
 	then
 		local f="$3"
 		[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-		local lines="$(edesc=$edecesc edsyntax=0 edcmd=p es "${1},${2}" "$f")"
+		local lines="$(edesch=$edecesc edsyntax=0 edcmd=p es "${1},${2}" "$f")"
 		mkdir -p "$HOME/.edit"
 		echo "$lines" > "$editreadlines"
 	fi
@@ -1023,11 +1023,97 @@ function editmediaqueue {
 	[[ -n $media ]] && tyq $media
 }
 
+function editfmt {
+	[[ -n $4 ]] && local fn="$4"
+	[[ -z $fn ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+	[[ -z $1 ]] && return 2
+	[[ -z $2 ]] && return 3
+	local size="80"
+	[[ -n $3 ]] && size="$3"
+ 	local begin="$1"
+	local end="$2"
+	[[ $begin == "." ]] && begin="$fl"
+	[[ $end == "." ]] && end="$fl"
+	[[ $begin == "$" ]] && begin="$fs"
+	[[ $end == "$" ]] && end="$fs"
+	[[ $begin =~ ^\+ ]] && begin="${begin/+/}" && begin="$((fl + begin))"
+	[[ $end =~ ^\+ ]] && end="${end/+/}" && end="$((fl + end))"
+	[[ $begin =~ ^\- ]] && begin="${begin/-/}" && begin="$((fl - begin))"
+	[[ $end =~ ^\- ]] && end="${end/-/}" && end="$((fl - end))"
+	editread $begin $end "$fn"
+	local ln=0
+	local linesize=$size
+	local n=1
+	local IFS=$' '
+	local lines=()
+	while read -r line
+	do
+		for word in $line
+		do
+			if [[ $word =~ \[\[\\[0-9][0-9][0-9]\[.* ]]
+			then
+				echo 1
+				lines[$ln]="${lines[$ln]} $word"
+				linesize="$((linesize + ${#word} + 1))"
+			elif [[ $word =~ \\[0-9][0-9][0-9]\[.* ]]
+			then
+				echo 1.5
+				lines[$ln]="${lines[$ln]} $word"
+				linesize="$((linesize + ${#word} + 1))"
+			elif [[ $word =~ (\\S|\\E) ]]
+			then
+				echo 2
+				lines[$ln]="${lines[$ln]} $word"
+				linesize="$((linesize + ${#word} + 1))"
+			elif [[ $n -eq 1 ]]
+			then
+				echo xx3
+				lines[$ln]="$word "
+				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
+			elif [[ $(echo "${lines[$ln]} $word" | wc -m) -ge $linesize ]]
+			then
+				echo 4
+				lines+=("$word")
+				ln="$((ln + 1))"
+				linesize=$size
+			else
+				echo 5
+				lines[$ln]="${lines[$ln]} $word"
+				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
+			fi
+
+			echo $linesize
+			n=$((n + 1))
+		done
+	done < "$editreadlines"
+
+	n=1
+	local IFS=$'\n'
+	for i in ${lines[@]}
+	do
+		if [[ $n -eq 1 ]]
+		then
+			echo "$i" > "$HOME/.edit/temp"
+			n="$((n + 1))"
+		else
+			echo "$i" >> "$HOME/.edit/temp"
+		fi
+	done
+
+	mv "$HOME/.edit/temp" "$editreadlines"
+	local res="$(edit "${begin},${end}d\nw")"
+	[[ -n $res ]] && echo "$res"
+	editread 0 0 "$fn" $(($begin - 1))
+	#editshow ${begin},$end
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
 function edel { editdelete "$@"; }
 function efl { editlocate "$@"; }
+function efmt { editfmt "$@"; }
 function ef { editfind "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
