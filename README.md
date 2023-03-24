@@ -702,6 +702,21 @@ ee . .
 
 Yo can use $, or (+|-)n, and so on.
 
+### Including another files for displaying:
+Other files can be included in the current file using [[include:file]].  For example:
+
+````
+[[include:/etc/fstab]]
+````
+
+The [[include:...]] line will be replaced with the contents of the file, in that case, /etc/fstab.  An argument can be placed after the file name, specifying what portion of the file you want to show.  For example, to show from the line 1 to line 5:
+
+````
+[[include:/etc/fstab:1,5]]
+````
+
+These arguments are the same accepted by es.  The file including can be turned off by setting edinclude to 0.
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -767,6 +782,9 @@ Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, o
 
 ##### edecesch:
 Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
+
+##### edinclude:
+Controls if files inside [[include:]] shoud be displayed.
 
 ### Using e:
 Commands can be passed directly to ed, using e, like:
@@ -872,5 +890,5 @@ There are other functions that are used internally by the ones above:
 - edithi: display text;
 - editimg: display images;
 - editpresent: display file contents; 
-- editregion: used to separate a region of the text and write it in $editreadlines;
+- editregion: used internally to separate regions of the text;
 - editsyntax: set the syntax to be used;

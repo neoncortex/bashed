@@ -13,6 +13,7 @@ edtmux=1
 edesc=1
 edesch=0
 edecesch=1
+edinclude=1
 edty=0
 edtysleep="0.2"
 
@@ -556,15 +557,16 @@ function editescape {
 }
 
 function editpresent {
-	local lines="$($1)"
-	[[ -z $lines ]] && return 1
+	[[ -z $fn ]] && return 1
+	local lines="$1"
+	[[ -z $lines ]] && return 2
 	local text=
 	local n=1
 	local rows=
 	local cols=
 	read -r rows cols < <(stty size)
-	[[ -z $rows ]] && return 2
-	[[ -z $cols ]] && return 2
+	[[ -z $rows ]] && return 3
+	[[ -z $cols ]] && return 3
 	local old_ifs="$IFS"
 	local IFS=$'\n'
 	for i in $lines
@@ -588,11 +590,31 @@ function editpresent {
 			text=
 			block_syntax=
 			edithi "$i"
-		elif [[ $i =~ \[\[\\[0-9][0-9][0-9]\[.*\ .*\]\] ]] && [[ edesc -eq 1 ]]
+		elif [[ $i =~ \[\[\\[0-9][0-9][0-9]\[.*\ .*\]\] ]] && [[ $edesc -eq 1 ]]
 		then
 			edithi "$text"
 			text=
 			editescape "$i"
+		elif [[ $i =~ \[\[include:.*\]\] ]]
+		then
+			edithi "$text"
+			text=
+			if [[ $edinclude -eq 1 ]]
+			then
+				local file="${i/*\[\[include:/}"
+				file="${file/\]\]*/}"
+				local arg="a"
+				if [[ $file =~ : ]]
+				then
+					arg="${file/*:/}"
+					file="${file/:*/}"
+				fi
+
+				[[ -f $file ]] \
+					&& bash -ic "edcmd=p editshow $arg "$file""
+			else
+				edithi "$i"
+			fi
 		else
 			[[ -z $text ]] && text="$i" || text="$text
 $i"
@@ -846,7 +868,7 @@ function editshow {
 	then
 		eslastarg="$arg"
 		eslast="$show"
-		editpresent "$show"
+		editpresent "$($show)"
 	fi
 }
 
