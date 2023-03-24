@@ -40,6 +40,9 @@ function editwindow {
 					cmd="$cmd;edtysleep="$edtysleep""
 					cmd="$cmd;edimg="$edimg""
 					cmd="$cmd;edsyntax="$edsyntax""
+					cmd="$cmd;edesc="$edesc""
+					cmd="$cmd;edesch="$edesch""
+					cmd="$cmd;edecesch="$edecesch""
 					cmd="$cmd;cd "$dir""
 					cmd="$cmd;editsyntax "$1""
 					cmd="$cmd;[[ -f .bashed ]] && source .bashed"
@@ -95,6 +98,9 @@ function editwindow {
 				tmux send-keys -t "$pane" "edtmux=$edtmux" Enter
 				tmux send-keys -t "$pane" "edty=$edty" Enter
 				tmux send-keys -t "$pane" "edtysleep=$edtysleep" Enter
+				tmux send-keys -t "$pane" "edesc=$edesc" Enter
+				tmux send-keys -t "$pane" "edesch=$edesch" Enter
+				tmux send-keys -t "$pane" "edecesch=$edesch" Enter
 				tmux send-keys -t "$pane" "syntax=" Enter
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
@@ -133,9 +139,17 @@ function edit {
 function editread {
 	if [[ $1 != 0 ]] && [[ $2 != 0 ]] && [[ $3 != 0 ]]
 	then
-		local f="$3"
-		[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-		local lines="$(edesch=$edecesch edsyntax=0 edcmd=p es "${1},${2}" "$f")"
+		[[ -n $3 ]] && local fn="$3"
+		[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
+		local lines=
+		if [[ $edecesch -eq 0 ]]
+		then
+			lines="$(e "${1},${2}p" "$fn")"
+		else
+			lines="$(edesch=$edecesch edsyntax=0 edcmd=p \
+				es "${1},${2}" "$fn")"
+		fi
+
 		mkdir -p "$HOME/.edit"
 		echo "$lines" > "$editreadlines"
 	fi
@@ -156,13 +170,12 @@ function editread {
 	fi
 }
 
-function editcmd {
-	[[ -n $4 ]] && local fn="$4"
+function editregion {
+	[[ -n $3 ]] && local fn="$3"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	[[ -z $1 ]] && return 2
 	[[ -z $2 ]] && return 3
-	[[ -z $3 ]] && return 4
  	local begin="$1"
 	local end="$2"
 	[[ $begin == "." ]] && begin="$fl"
@@ -174,8 +187,21 @@ function editcmd {
 	[[ $begin =~ ^\- ]] && begin="${begin/-/}" && begin="$((fl - begin))"
 	[[ $end =~ ^\- ]] && end="${end/-/}" && end="$((fl - end))"
 	editread $begin $end "$fn"
-	cat "$editreadlines" | $3 > "$HOME/.edit/temp"
-	mv "$HOME/.edit/temp" "$editreadlines"
+	echo "$begin,$end"
+}
+
+function editcmd {
+	[[ -n $4 ]] && local fn="$4"
+	[[ -z $fn ]] && return 1
+	[[ -z $3 ]] && return 1
+	local region="$(editregion "$1" "$2" "$fn")"
+	[[ $? -ne 0 ]] && return $?
+	local begin="${region/,*/}"
+	local end="${region/*,/}"
+	[[ -z $begin ]] || [[ -z $end ]] && return 2
+	local tempfile="$HOME/.edit/temp"
+	cat "$editreadlines" | $3 > "$tempfile"
+	mv "$tempfile" "$editreadlines"
 	local res="$(edit "${begin},${end}d\nw")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
@@ -1026,25 +1052,16 @@ function editmediaqueue {
 function editfmt {
 	[[ -n $4 ]] && local fn="$4"
 	[[ -z $fn ]] && return 1
-	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	[[ -z $1 ]] && return 2
-	[[ -z $2 ]] && return 3
-	local size="80"
-	[[ -n $3 ]] && size="$3"
- 	local begin="$1"
-	local end="$2"
-	[[ $begin == "." ]] && begin="$fl"
-	[[ $end == "." ]] && end="$fl"
-	[[ $begin == "$" ]] && begin="$fs"
-	[[ $end == "$" ]] && end="$fs"
-	[[ $begin =~ ^\+ ]] && begin="${begin/+/}" && begin="$((fl + begin))"
-	[[ $end =~ ^\+ ]] && end="${end/+/}" && end="$((fl + end))"
-	[[ $begin =~ ^\- ]] && begin="${begin/-/}" && begin="$((fl - begin))"
-	[[ $end =~ ^\- ]] && end="${end/-/}" && end="$((fl - end))"
-	editread $begin $end "$fn"
+	local edecesch=0
+	local region="$(editregion "$1" "$2" "$fn")"
+	[[ $? -ne 0 ]] && return $?
+	local begin="${region/,*/}"
+	local end="${region/*,/}"
+	[[ -z $begin ]] || [[ -z $end ]] && return 2
 	local ln=0
+	local size=80
+	[[ -n $3 ]] && size="$3"
 	local linesize=$size
-	local n=1
 	local IFS=$' '
 	local lines=()
 	while read -r line
@@ -1063,7 +1080,7 @@ function editfmt {
 			then
 				lines[$ln]="${lines[$ln]} $word"
 				linesize="$((linesize + ${#word} + 1))"
-			elif [[ $n -eq 1 ]]
+			elif [[ ${#lines[@]} -eq 0 ]]
 			then
 				lines[$ln]="$word "
 				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
@@ -1076,25 +1093,33 @@ function editfmt {
 				lines[$ln]="${lines[$ln]} $word"
 				[[ $word =~ \.$ ]] && lines[$ln]="${lines[$ln]} "
 			fi
-
-			n=$((n + 1))
 		done
 	done < "$editreadlines"
 
-	n=1
 	local IFS=$'\n'
+	local tempfile="$HOME/.edit/temp"
 	for i in ${lines[@]}
 	do
-		if [[ $n -eq 1 ]]
-		then
-			echo "$i" > "$HOME/.edit/temp"
-			n="$((n + 1))"
-		else
-			echo "$i" >> "$HOME/.edit/temp"
-		fi
+		[[ -f "$tempfile" ]] && echo "$i" >> "$tempfile" \
+			|| echo "$i" > "$tempfile"
 	done
 
-	mv "$HOME/.edit/temp" "$editreadlines"
+	mv "$tempfile" "$editreadlines"
+	local res="$(edit "${begin},${end}d\nw")"
+	[[ -n $res ]] && echo "$res"
+	editread 0 0 "$fn" $(($begin - 1))
+}
+
+function editexternal {
+	[[ -n $3 ]] && local fn="$3"
+	[[ -z $fn ]] && return 1
+	local edecesch=0
+	local region="$(editregion "$1" "$2" "$fn")"
+	[[ $? -ne 0 ]] && return $?
+	local begin="${region/,*/}"
+	local end="${region/*,/}"
+	[[ -z $begin ]] || [[ -z $end ]] && return 2
+	$EDITOR "$editreadlines"
 	local res="$(edit "${begin},${end}d\nw")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
@@ -1104,6 +1129,7 @@ function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
 function edel { editdelete "$@"; }
+function ee { editexternal "$@"; }
 function efl { editlocate "$@"; }
 function efmt { editfmt "$@"; }
 function ef { editfind "$@"; }

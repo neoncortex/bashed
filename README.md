@@ -693,6 +693,15 @@ efmt 1 10 70
 
 As usual, the first and second argument can be ., or $, or +n, and -n.
 
+### Editing text in the $EDITOR:
+You can edit a region of the text usin $EDITOR.  For example, to edit the current line:
+
+````
+ee . .
+````
+
+Yo can use $, or (+|-)n, and so on.
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -838,6 +847,7 @@ The functions are:
 - editchange, ec: change lines;
 - editclose, eq: close file;
 - editdelete, edel: delete lines;
+- editexternal, ee: edit region in $EDITOR;
 - editfind, ef: find text;
 - editfmt, efmt: format paragraphs;
 - editinsert, ei: insert line;
@@ -862,4 +872,5 @@ There are other functions that are used internally by the ones above:
 - edithi: display text;
 - editimg: display images;
 - editpresent: display file contents; 
+- editregion: used to separate a region of the text and write it in $editreadlines;
 - editsyntax: set the syntax to be used;
