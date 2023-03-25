@@ -479,7 +479,7 @@ es '//,/^\tfi'
 Where // represent the beginning of the file.  The same can be done to search from some point to the end:
 
 ````
-es '\t^if,//
+es '\t^if,//'
 ````
 
 ##### Range:
