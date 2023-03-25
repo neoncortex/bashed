@@ -850,7 +850,7 @@ esu a '\N'
 ````
 
 #### & in substitutions:
-& should be used like \& when you substituting something with it.  Example:
+& should be used like \\& when you substituting something with it.  Example:
 
 ````
 esu x '\&'
