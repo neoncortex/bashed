@@ -470,7 +470,17 @@ You can use two search terms, to display from one to another, for example:
 es '/\t^if,/^\tfi'
 ````
 
-Will display the next if/fi pair of 1 tab level.
+Will display the next if/fi pair of 1 tab level.  Searching from the beginning of the file to some point can be done like this:
+
+````
+es '//,/^\tfi'
+````
+
+Where // represent the beginning of the file.  The same can be done to search from some point to the end:
+
+````
+es '\t^if,//
+````
 
 ##### Range:
 ````
@@ -616,6 +626,15 @@ eu n
 ````
 
 Will substitute the current file with the file n from the stored file list (eu l)
+
+#### Copying:
+You can copy a stored file version somewhere else.  For example:
+
+````
+eu cp 1 /path/to/file
+````
+
+Will copy the stored file version 1 of the current opened file to /path/to/file.
 
 ### Images:
 If a path to a image file is found, bashed will display it. If bashed is configured to use tmux, it will be displayed using chafa, and if it's configured to use terminology, the image will be displayed using tycat.  The image path should be the sole content of the line.  For example:

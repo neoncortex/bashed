@@ -258,7 +258,7 @@ function editundo {
 				n="$((n + 1))"
 			fi
 		done
-	elif [[ $1 == "-" ]] || [[ $2 == "delete" ]]
+	elif [[ $1 == "-" ]] || [[ $2 == "delete" ]] || [[ $2 == "rm" ]]
 	then
 		[[ -z $2 ]] && return 3
 		local head="$2"
@@ -291,13 +291,28 @@ function editundo {
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] \
-			&& edsyntax=0 edcmd=p editshow a "${files[$2]}"
+			&& edsyntax=0 edcmd=p edinclude=0 edesc=0 edimg=0 \
+				editshow a "${files[$2]}"
+	elif [[ $1 == "copy" ]] || [[ $1 == "cp" ]]
+	then
+		[[ -z $2 ]] && [[ -z $3 ]] && return 3
+		local f1="$2"
+		local f2="$3"
+		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
+		[[ $3 =~ ^[0-9]+ ]] && f2="${files[$3]}"
+		if [[ -f $f1 ]] && [[ -f $f2 ]]
+		then
+			cp "$f1" "$f2"
+		else
+			echo "?"
+		fi
 	elif [[ $1 =~ [0-9]+ ]]
 	then
 		[[ -f ${files[$1]} ]] \
 			&& cp "${files[$1]}" "$fn" \
 			|| echo "?"
 		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+		es 1
 	else
 		echo "?"
 		return 4
