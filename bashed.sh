@@ -610,8 +610,9 @@ function editpresent {
 					file="${file/:*/}"
 				fi
 
-				[[ -f $file ]] \
-					&& bash -ic "edcmd=p editshow $arg "$file""
+				[[ $file =~ ^% ]] && file="$(cortex-db -q "$file")"
+				[[ -f $file ]] && [[ -n $arg ]] \
+					&& bash -ic "edcmd=p editshow \"$arg\" \"$file\""
 			else
 				edithi "$i"
 			fi
@@ -779,8 +780,12 @@ function editshow {
 		then
 			local head="${arg/,*/}"
 			local tail="${arg/*,/}"
-			head="$(editlocate "${head/\//}")"
-			tail="$(editlocate "${tail/\//}" $((fl + 1)))"
+			[[ $head == "//" ]] \
+				&& head="1" \
+				|| head="$(editlocate "${head/\//}")"
+			[[ $tail == "//" ]] \
+				&& tail="$fs" \
+				|| tail="$(editlocate "${tail/\//}" $((fl + 1)))"
 			[[ -n $head ]] && [[ -n $tail ]] \
 				&& show="edit ${head},${tail}$edcmd" \
 				&& fl="$tail"
