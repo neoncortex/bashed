@@ -736,6 +736,18 @@ The [[include:...]] line will be replaced with the contents of the file, in that
 
 These arguments are the same accepted by es.  The file including can be turned off by setting edinclude to 0.
 
+### Tables:
+Tables can be created like this:
+
+````
+#+table
+header1     header2     header3
+item1       item2       item3
+#+end_table
+````
+
+Tem separator is a TAB character.  Showing tables can be disabled by setting the variable edtables to 0.  To print the table box using ASCII only, set edtable_ascii to 1.
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -804,6 +816,13 @@ Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
 
 ##### edinclude:
 Controls if files inside [[include:]] shoud be displayed.
+
+#### Tables:
+##### edtables:
+Controls if tables showd be shown.  By default, 1.  Should be 1, or 0.
+
+##### edtable_ascii:
+Controls if ascii characters should be used to print the table box.  By default, 0.  Should be 1, or 0.
 
 ### Using e:
 Commands can be passed directly to ed, using e, like:
@@ -911,3 +930,6 @@ There are other functions that are used internally by the ones above:
 - editpresent: display file contents; 
 - editregion: used internally to separate regions of the text;
 - editsyntax: set the syntax to be used;
+- edittable: display tables;
+- edittable_printbox: print a line of a tale box
+- edittable_printline: print a line of a table text;

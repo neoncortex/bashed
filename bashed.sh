@@ -20,6 +20,35 @@ edtysleep="0.2"
 # diff
 diffarg="--color -c"
 
+# table
+edtable_top_left="╔"
+edtable_top_right="╗"
+edtable_middle_left="╠"
+edtable_middle_right="╣"
+edtable_middle_top="╦"
+edtable_middle_middle="╬"
+edtable_bottom_left="╚"
+edtable_bottom_right="╝"
+edtable_bottom_middle="╩"
+edtable_horizontal="═"
+edtable_vertical="║"
+
+# table ascii
+edtable_top_left_a="+"
+edtable_top_right_a="+"
+edtable_middle_left_a="+"
+edtable_middle_right_a="+"
+edtable_middle_top_a="+"
+edtable_middle_middle_a="+"
+edtable_bottom_left_a="+"
+edtable_bottom_right_a="+"
+edtable_bottom_middle_a="+"
+edtable_horizontal_a="-"
+edtable_vertical_a="|"
+
+edtables=1
+edtable_ascii=0
+
 function editwindow {
 	if [[ $edty -eq 1 ]]
 	then
@@ -27,7 +56,21 @@ function editwindow {
 		do
 			if [[ $i == $1 ]]
 			then
-				wmctrl -a "$i"
+				local gotfocus=0
+				for ((j=0; j < 5; ++j))
+				do
+					wmctrl -a "$i"
+					local wname="$(xdotool getactivewindow getwindowname)"
+					if [[ "$wname" == "$i" ]]
+					then
+						gotfocus=1
+						break
+					else
+						sleep 0.5
+					fi
+				done
+
+				[[ $gotfocus -eq 0 ]] && exit 2
 				if [[ $terminologynew -eq 1 ]]
 				then
 					local dir="$1"
@@ -41,6 +84,8 @@ function editwindow {
 					cmd="$cmd;edtysleep="$edtysleep""
 					cmd="$cmd;edimg="$edimg""
 					cmd="$cmd;edsyntax="$edsyntax""
+					cmd="$cmd;edinclude="$edinclude""
+					cmd="$cmd;edtables="$edtables""
 					cmd="$cmd;edesc="$edesc""
 					cmd="$cmd;edesch="$edesch""
 					cmd="$cmd;edecesch="$edecesch""
@@ -99,6 +144,8 @@ function editwindow {
 				tmux send-keys -t "$pane" "edtmux=$edtmux" Enter
 				tmux send-keys -t "$pane" "edty=$edty" Enter
 				tmux send-keys -t "$pane" "edtysleep=$edtysleep" Enter
+				tmux send-keys -t "$pane" "edtinclude=$edinclude" Enter
+				tmux send-keys -t "$pane" "edttables=$edtables" Enter
 				tmux send-keys -t "$pane" "edesc=$edesc" Enter
 				tmux send-keys -t "$pane" "edesch=$edesch" Enter
 				tmux send-keys -t "$pane" "edecesch=$edesch" Enter
@@ -579,6 +626,9 @@ function editpresent {
 	local n=1
 	local rows=
 	local cols=
+	local in_table=0
+	local table_content=
+	local edcmd_orig="$edcmd"
 	read -r rows cols < <(stty size)
 	[[ -z $rows ]] && return 3
 	[[ -z $cols ]] && return 3
@@ -586,7 +636,13 @@ function editpresent {
 	local IFS=$'\n'
 	for i in $lines
 	do
-		if [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
+		if [[ $in_table -eq 1 ]] && ! [[ $i =~ \#\+end_table ]]
+		then
+			[[ -z $table_content ]] \
+				&& table_content="$i" \
+				|| table_content="$table_content
+$i"
+		elif [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
 			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]]
 		then
 			edithi "$text"
@@ -627,9 +683,43 @@ function editpresent {
 
 				[[ $file =~ ^% ]] && file="$(cortex-db -q "$file")"
 				[[ -f $file ]] && [[ -n $arg ]] \
-					&& bash -ic "edcmd=p editshow \"$arg\" \"$file\""
+					&& local command="edtmux=$edtmux " \
+					&& command="$command edty=$edty " \
+					&& command="$command edtysleep=$edtysleep " \
+					&& command="$command edimg=$edimg " \
+					&& command="$command edsyntax=$edsyntax " \
+					&& command="$command edesc=$edesc " \
+					&& command="$command edinclude=$edinclude " \
+					&& command="$command edtables=$edtables " \
+					&& command="$command edesch=$edesch " \
+					&& command="$command edecesch=$edecesch " \
+					&& command="$command edcmd=p " \
+					&& command="$command editshow \"$arg\" \"$file\"" \
+					&& bash -ic "$command"
 			else
 				edithi "$i"
+			fi
+		elif [[ $i =~ \#\+table ]]
+		then
+			edithi "$text"
+			text=
+			if [[ $edtables -eq 1 ]]
+			then
+				in_table=1
+			else
+				[[ -z $text ]] && text="$i" || text="$text
+$i"
+			fi
+		elif [[ $i =~ \#\+end_table ]]
+		then
+			if [[ $edtables -eq 1 ]]
+			then
+				in_table=0
+				edittable "$table_content"
+				table_content=
+			else
+				[[ -z $text ]] && text="$i" || text="$text
+$i"
 			fi
 		else
 			[[ -z $text ]] && text="$i" || text="$text
@@ -991,7 +1081,8 @@ function edittransfer {
 	local line="$1"
 	[[ $1 == "." ]] && line="$fl"
 	[[ $1 == '$' ]] && line="$fs"
-	[[ -n $2 ]] && local n="$2" \
+	local n=
+	[[ -n $2 ]] && n="$2" \
 		&& [[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fl + n))"
 	if [[ $line -gt 0 ]]
 	then
@@ -999,6 +1090,7 @@ function edittransfer {
 		[[ -n $n ]] && res="$(edit "${fl},${n}t$line\nw")" \
 			|| res="$(edit "${fl}t$line\nw")"
 		[[ -n $res ]] && echo "$res"
+		es $n
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
 		yank="$(edcmd=p edsyntax=0 edesch=1 editshow ${fl},$n)"
@@ -1167,6 +1259,136 @@ function editexternal {
 	editread 0 0 "$fn" $(($begin - 1))
 }
 
+function edittable_printline {
+	local cellsize="$2"
+	local columns="$3"
+	for ((i=0; i < $columns; ++i))
+	do
+		local data="${edtablematrix[$1,$i]}"
+		printf "%s" "$edtable_vertical"
+		printf "%s" "$data"
+		for ((j=${#data}; j < $cellsize; j++))
+		do
+			printf ' '
+		done
+	done
+}
+
+function edittable_printboxline {
+	local left_corner="$1"
+	local right_corner="$2"
+	local middle="$3"
+	local horizontal="$4"
+	local columns="$6"
+	local cellsize="$5"
+	printf "%s" "$left_corner"
+	for ((i=0; i < $6; ++i))
+	do
+		for ((j=0; j < $cellsize; ++j))
+		do
+			printf "%s" "$horizontal"
+		done
+
+		[[ $i -ne $(($columns - 1 )) ]] && printf "%s" "$middle"
+	done
+
+	printf "%s\n" "$right_corner"
+}
+
+function edittable_printbox {
+	local location="$1"
+	local cellsize="$3"
+	local columns="$4"
+	local lines="$5"
+	if [[ $edtable_ascii -eq 1 ]]
+	then
+		local edtable_top_left="$edtable_top_left_a"
+		local edtable_top_right="$edtable_top_right_a"
+		local edtable_middle_left="$edtable_middle_left_a"
+		local edtable_middle_right="$edtable_middle_right_a"
+		local edtable_middle_top="$edtable_middle_top_a"
+		local edtable_middle_middle="$edtable_middle_middle_a"
+		local edtable_bottom_left="$edtable_bottom_left_a"
+		local edtable_bottom_right="$edtable_bottom_right_a"
+		local edtable_bottom_middle="$edtable_bottom_middle_a"
+		local edtable_horizontal="$edtable_horizontal_a"
+		local edtable_vertical="$edtable_vertical_a"
+	fi
+
+	if [[ $location == "top" ]]
+	then
+		edittable_printboxline "$edtable_top_left" "$edtable_top_right" \
+			"$edtable_middle_top" "$edtable_horizontal" "$cellsize" \
+			"$columns"
+	fi
+
+	edittable_printline "$2" "$3" "$4"
+	printf "%s\n" "$edtable_vertical"
+	if [[ $location == "top" ]] || [[ $location == "middle" ]] \
+		&& [[ $lines -gt 1 ]]
+	then
+		edittable_printboxline "$edtable_middle_left" \
+			"$edtable_middle_right" "$edtable_middle_middle" \
+			"$edtable_horizontal" "$cellsize" "$columns"
+	fi
+
+	if [[ $location == "bottom" ]] || [[ $lines -eq 1 ]]
+	then
+		edittable_printboxline "$edtable_bottom_left" \
+			"$edtable_bottom_right" "$edtable_bottom_middle" \
+			"$edtable_horizontal" "$cellsize" "$columns"
+	fi
+}
+
+function edittable {
+	[[ -z $1 ]] && return 1
+	local IFS=$'\n'
+	local table=()
+	for i in $1
+	do
+		local l="$i"
+		if [[ $edcmd == "n" ]]
+		then
+			l="${l#*$'\t'}"
+		fi
+
+		table+=("$l")
+	done
+
+	local cellsize=0
+	local columns=0
+	local lines=0
+	unset edtablematrix
+	declare -A edtablematrix
+	local IFS=$'\t'
+	for ((i=0; i < ${#table[@]}; ++i))
+	do
+		local n=0
+		for j in ${table[$i]}
+		do
+			[[ ${#j} -gt $cellsize ]] && cellsize="${#j}"
+			[[ -n $j ]] && edtablematrix[$i,$n]="$j"
+			n=$((n + 1))
+			[[ $n -gt $columns ]] && columns=$n
+		done
+
+		lines=$((lines + 1))
+	done
+
+	local n=0
+	while true
+	do
+		local location="top"
+		[[ $n -ge 1 ]] && location="middle"
+		[[ $n -eq $((lines - 1)) ]] && [[ ${#table[@]} -gt 1 ]] \
+			&& location="bottom"
+		edittable_printbox "$location" "$n" "$cellsize" "$columns" \
+			"${#table[@]}"
+		n=$((n + 1))
+		[[ $n -eq $lines ]] && break
+	done
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
@@ -1191,3 +1413,4 @@ function et { editstore "$@"; }
 function eu { editundo "$@"; }
 function ey { edittransfer "$@"; }
 function e { edit "$@"; }
+
