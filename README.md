@@ -748,6 +748,17 @@ item1       item2       item3
 
 Tem separator is a TAB character.  Showing tables can be disabled by setting the variable edtables to 0.  To print the table box using ASCII only, set edtable_ascii to 1.
 
+### Hiding text:
+It is possible to hide a portion of the text by using hidden blocks.  For example:
+
+````
+#+hidden
+This text will not be shown
+#+end_hidden
+````
+
+To show these blocks, the variable edhidden should be set to 1.
+
 ### Variables:
 #### fn:
 Contains the complete path to the file beign edited.
@@ -790,6 +801,9 @@ Contains a real number, that is used as interval between xdotool commands that a
 
 #### edimg:
 Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
+
+#### edhidden:
+Contols if hidden blocks should be shown.  By default, 1.  Should be 1, or 0.
 
 #### Highlight:
 ##### syntax:

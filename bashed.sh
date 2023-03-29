@@ -16,6 +16,7 @@ edecesch=1
 edinclude=1
 edty=0
 edtysleep="0.2"
+edhidden=1
 
 # diff
 diffarg="--color -c"
@@ -627,6 +628,7 @@ function editpresent {
 	local rows=
 	local cols=
 	local in_table=0
+	local is_hidden=0
 	local table_content=
 	local edcmd_orig="$edcmd"
 	read -r rows cols < <(stty size)
@@ -642,6 +644,18 @@ function editpresent {
 				&& table_content="$i" \
 				|| table_content="$table_content
 $i"
+		elif [[ $i =~ \#\+end_hidden ]]
+		then
+			if [[ $edhidden -eq 1 ]]
+			then
+				is_hidden=0
+			else
+				[[ -z $text ]] && text="$i" || text="$text
+$i"
+			fi
+		elif [[ $is_hidden -eq 1 ]]
+		then
+			continue
 		elif [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
 			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]]
 		then
@@ -717,6 +731,17 @@ $i"
 				in_table=0
 				edittable "$table_content"
 				table_content=
+			else
+				[[ -z $text ]] && text="$i" || text="$text
+$i"
+			fi
+		elif [[ $i =~ \#\+hidden ]]
+		then
+			if [[ $edhidden -eq 1 ]]
+			then
+				edithi "$text"
+				text=
+				is_hidden=1
 			else
 				[[ -z $text ]] && text="$i" || text="$text
 $i"
