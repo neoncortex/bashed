@@ -87,6 +87,7 @@ function editwindow {
 					cmd="$cmd;edsyntax="$edsyntax""
 					cmd="$cmd;edinclude="$edinclude""
 					cmd="$cmd;edtables="$edtables""
+					cmd="$cmd;edhidden="$edhidden""
 					cmd="$cmd;edesc="$edesc""
 					cmd="$cmd;edesch="$edesch""
 					cmd="$cmd;edecesch="$edecesch""
@@ -147,6 +148,7 @@ function editwindow {
 				tmux send-keys -t "$pane" "edtysleep=$edtysleep" Enter
 				tmux send-keys -t "$pane" "edtinclude=$edinclude" Enter
 				tmux send-keys -t "$pane" "edttables=$edtables" Enter
+				tmux send-keys -t "$pane" "edthidden=$edhidden" Enter
 				tmux send-keys -t "$pane" "edesc=$edesc" Enter
 				tmux send-keys -t "$pane" "edesch=$edesch" Enter
 				tmux send-keys -t "$pane" "edecesch=$edesch" Enter
@@ -705,6 +707,7 @@ $i"
 					&& command="$command edesc=$edesc " \
 					&& command="$command edinclude=$edinclude " \
 					&& command="$command edtables=$edtables " \
+					&& command="$command edhidden=$edtables " \
 					&& command="$command edesch=$edesch " \
 					&& command="$command edecesch=$edecesch " \
 					&& command="$command edcmd=p " \
