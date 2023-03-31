@@ -48,7 +48,7 @@ edty=1
 edtysleep=0.2
 ````
 
-You can tweak edtysleep to a highter value.  It may be necessary if 0.2 is not enough time for your system to open terminology, and paste the commands using xdotool.
+You can tweak edtysleep to a highter value.  It may be necessary if 0.2 is not enough time for your system to open terminology, and paste the commands using xdotool.  In extreme cases, if you machine are under too much load, it may happen that the terminology opening, focusing, and sending commands goes out of sync.  In that case, you will need to set edty to 0, and manage windows manually.
 
 ### Directly:
 Add to your ~/.bashrc, after the sourcing:
@@ -77,6 +77,13 @@ Escape sequences are enabled by default.  To disable, add to your ~/.bashrc, aft
 
 ````
 edesc=0
+````
+
+### Tables:
+Tables are enabled by default.  To disable, add to your ~/.bashrc, after sourcing:
+
+````
+edtables=0
 ````
 
 ### Optional, prompt:

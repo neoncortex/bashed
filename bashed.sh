@@ -57,21 +57,6 @@ function editwindow {
 		do
 			if [[ $i == $1 ]]
 			then
-				local gotfocus=0
-				for ((j=0; j < 5; ++j))
-				do
-					wmctrl -a "$i"
-					local wname="$(xdotool getactivewindow getwindowname)"
-					if [[ "$wname" == "$i" ]]
-					then
-						gotfocus=1
-						break
-					else
-						sleep 0.5
-					fi
-				done
-
-				[[ $gotfocus -eq 0 ]] && exit 2
 				if [[ $terminologynew -eq 1 ]]
 				then
 					local dir="$1"
@@ -118,6 +103,21 @@ function editwindow {
 		terminologynew=1
 		terminology -T "$1" >& /dev/null &
 		sleep $edtysleep
+		local gotfocus=0
+		for ((j=0; j < 5; ++j))
+		do
+			wmctrl -a "$1"
+			local wname="$(xdotool getactivewindow getwindowname)"
+			if [[ "$wname" == "$1" ]]
+			then
+				gotfocus=1
+				break
+			else
+				sleep 0.5
+			fi
+		done
+
+		[[ $gotfocus -eq 0 ]] && return 2
 		editwindow "$1" "$2"
 		return
 	fi
@@ -463,7 +463,8 @@ function editopen {
 	[[ -z $f ]] && return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 	editwindow "$f" "$argument"
-	[[ $? == 1 ]] && return 2
+	[[ $? -eq 1 ]] && return 2
+	[[ $? -eq 2 ]] && return 4
 	if [[ -f $f ]]
 	then
 		if [[ $edtmux -eq 1 ]]
