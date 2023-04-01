@@ -50,84 +50,83 @@ edtable_vertical_a="|"
 edtables=1
 edtable_ascii=0
 
-function editwindow {
-	if [[ $edty -eq 1 ]]
-	then
-		for i in $(xdotool search --name "." getwindowname "%@")
-		do
-			if [[ $i == $1 ]]
+function editwindowty {
+	local IFS=$' \t\n'
+	for i in $(xdotool search --name "." getwindowname "%@")
+	do
+		wmctrl -a "$1"
+		if [[ $i == $1 ]]
+		then
+			if [[ $terminologynew -eq 1 ]]
 			then
-				if [[ $terminologynew -eq 1 ]]
-				then
-					local dir="$1"
-					[[ $dir =~ ^% ]] \
-						&& dir="$(cortex-db -q "$dir")"
-					dir="$(dirname "$dir")"
-					[[ -z $dir ]] && dir="$PWD"
-					local cmd="fn="$1""
-					cmd="$cmd;edtmux="$edtmux""
-					cmd="$cmd;edty="$edty""
-					cmd="$cmd;edtysleep="$edtysleep""
-					cmd="$cmd;edimg="$edimg""
-					cmd="$cmd;edsyntax="$edsyntax""
-					cmd="$cmd;edinclude="$edinclude""
-					cmd="$cmd;edtables="$edtables""
-					cmd="$cmd;edhidden="$edhidden""
-					cmd="$cmd;edesc="$edesc""
-					cmd="$cmd;edesch="$edesch""
-					cmd="$cmd;edecesch="$edecesch""
-					cmd="$cmd;cd "$dir""
-					cmd="$cmd;editsyntax "$1""
-					cmd="$cmd;[[ -f .bashed ]] && source .bashed"
-					cmd="$cmd;clear"
-					cmd="$cmd;es 0"
-					echo "$cmd" | xclip -i 
-					xdotool key Shift+Insert
-					sleep $edtysleep
-					xdotool key Return
-					terminologynew=0
-				fi
-
-				if [[ -n $2 ]]
-				then
-					echo "editarg "$2"" | xclip -i
-					xdotool key Shift+Insert
-					sleep $edtysleep
-					xdotool key Return
-				fi
-
-				return 1
+				local dir="$1"
+				[[ $dir =~ ^% ]] \
+					&& dir="$(cortex-db -q "$dir")"
+				dir="$(dirname "$dir")"
+				[[ -z $dir ]] && dir="$PWD"
+				local cmd="fn="$1""
+				cmd="$cmd;edtmux="$edtmux""
+				cmd="$cmd;edty="$edty""
+				cmd="$cmd;edtysleep="$edtysleep""
+				cmd="$cmd;edimg="$edimg""
+				cmd="$cmd;edsyntax="$edsyntax""
+				cmd="$cmd;edinclude="$edinclude""
+				cmd="$cmd;edtables="$edtables""
+				cmd="$cmd;edhidden="$edhidden""
+				cmd="$cmd;edesc="$edesc""
+				cmd="$cmd;edesch="$edesch""
+				cmd="$cmd;edecesch="$edecesch""
+				cmd="$cmd;cd "$dir""
+				cmd="$cmd;editsyntax "$1""
+				cmd="$cmd;[[ -f .bashed ]] && source .bashed"
+				cmd="$cmd;clear"
+				cmd="$cmd;es 0"
+				echo "$cmd" | xclip -i 
+				xdotool key Shift+Insert
+				sleep $edtysleep
+				xdotool key Return
+				terminologynew=0
 			fi
-		done
 
-		terminologynew=1
-		terminology -T "$1" >& /dev/null &
-		sleep $edtysleep
-		local gotfocus=0
-		for ((j=0; j < 5; ++j))
-		do
-			wmctrl -a "$1"
-			local wname="$(xdotool getactivewindow getwindowname)"
-			if [[ "$wname" == "$1" ]]
+			if [[ -n $2 ]]
 			then
-				gotfocus=1
-				break
-			else
-				sleep 0.5
+				echo "editarg "$2"" | xclip -i
+				xdotool key Shift+Insert
+				sleep $edtysleep
+				xdotool key Return
 			fi
-		done
 
-		[[ $gotfocus -eq 0 ]] && return 2
-		editwindow "$1" "$2"
-		return
-	fi
+			return 1
+		fi
+	done
 
+	terminologynew=1
+	terminology -T "$1" >& /dev/null &
+	sleep $edtysleep
+	local gotfocus=0
+	for ((j=0; j < 5; ++j))
+	do
+		wmctrl -a "$1"
+		local wname="$(xdotool getactivewindow getwindowname)"
+		if [[ "$wname" == "$1" ]]
+		then
+			gotfocus=1
+			break
+		else
+			sleep 0.5
+		fi
+	done
+
+	[[ $gotfocus -eq 0 ]] && return 2
+	editwindow "$1" "$2"
+	return
+}
+
+function editwindowtmux {
+	local IFS=$' \t\n'
 	local window=
 	local pane=
-	[[ $edtmux -eq 0 ]] && [[ -n $2 ]] && editarg "$2"
-	[[ $edtmux -eq 0 ]] && return
-	[[ $edmutx -eq 1 ]] \
-		&& local session="$(tmux display-message -p '#S')"
+	local session="$(tmux display-message -p '#S')"
 	for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
 	do
 		if [[ $i == $1 ]] && [[ -n $window ]] && [[ -n $pane ]]
@@ -136,8 +135,7 @@ function editwindow {
 			then
 				tmux select-window -t "$session:$window"
 				tmux select-pane -t "$pane"
-				tmux send-keys -t "$pane" \
-					"fn=\"$1\"" Enter
+				tmux send-keys -t "$pane" "fn=\"$1\"" Enter
 				tmux send-keys -t "$pane" \
 					"cd \"\$(dirname \"\$fn\")\"" Enter
 				tmux send-keys -t "$pane" "fl=1" Enter
@@ -175,6 +173,22 @@ function editwindow {
 		window="${i/::*/}"
 		pane="${i/*::/}"
 	done
+}
+
+function editwindow {
+	if [[ $edty -eq 1 ]]
+	then
+		editwindowty "$1" "$2"
+		return $?
+	elif [[ $edtmux -eq 1 ]]
+	then
+		editwindowtmux "$1" "$2" "$3"
+		return $?
+	elif [[ $edtmux -eq 0 ]]
+	then
+		[[ -n $2 ]] && editarg "$2"
+		return 0
+	fi
 }
 
 function edit {
@@ -276,6 +290,7 @@ function editundo {
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local dir="$HOME/.edit/$(dirname "$fn")"
 	local files=()
+	local IFS=$' \t\n'
 	if [[ -d "$dir" ]]
 	then
 		local n=1
@@ -790,6 +805,7 @@ function editshow {
 	! [[ $fl =~ [0-9]+ ]] && fl="$fs"
 	local arg="$1"
 	[[ -z $1 ]] && arg="+"
+	local IFS=$' \t\n'
 	local show=
 	if [[ -n $fileresult_a ]] && [[ -n $fileresultindex ]]
 	then
@@ -1291,6 +1307,7 @@ function editexternal {
 function edittable_printline {
 	local cellsize="$2"
 	local columns="$3"
+	local IFS=$' \t\n'
 	for ((i=0; i < $columns; ++i))
 	do
 		local data="${edtablematrix[$1,$i]}"
@@ -1311,6 +1328,7 @@ function edittable_printboxline {
 	local columns="$6"
 	local cellsize="$5"
 	printf "%s" "$left_corner"
+	local IFS=$' \t\n'
 	for ((i=0; i < $6; ++i))
 	do
 		for ((j=0; j < $cellsize; ++j))

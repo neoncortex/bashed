@@ -58,6 +58,8 @@ edtmux=0
 edty=0
 ````
 
+This is the manual way of managing windows.  In this mode, window will be opened directly under the current shell.
+
 ### Syntax highlight:
 Syntax highlight are enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
 
@@ -845,6 +847,9 @@ Controls if tables showd be shown.  By default, 1.  Should be 1, or 0.
 ##### edtable_ascii:
 Controls if ascii characters should be used to print the table box.  By default, 0.  Should be 1, or 0.
 
+##### edtable_top*, edtable_middle*, edtable_bottom*, edtable_horizontal*, edtable_vertical*:
+These variables is where the characters used to draw the tables are set.
+
 ### Using e:
 Commands can be passed directly to ed, using e, like:
 
@@ -954,3 +959,6 @@ There are other functions that are used internally by the ones above:
 - edittable: display tables;
 - edittable_printbox: print a line of a tale box
 - edittable_printline: print a line of a table text;
+- editwindowtmux: used to open and find tmux windows;
+- editwindowty: used to open and find terminology windows;
+- editwindow: open/find windows;
