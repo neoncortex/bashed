@@ -58,7 +58,7 @@ edtmux=0
 edty=0
 ````
 
-This is the manual way of managing windows.  In this mode, window will be opened directly under the current shell.
+This is the manual way of managing windows.  In this mode, the file will be opened directly under the current shell.
 
 ### Syntax highlight:
 Syntax highlight are enabled by default.  To disable, add to your ~/.bashrc, after the sourcing:
@@ -629,6 +629,8 @@ Will present a diff from the file f1, and file f2.  f1, and f2, can be either a 
 eu diff 2 $fn
 ````
 
+The diff arguments can be set be changing the diffarg variable.  By default, ther arguments are: --color -c.
+
 #### Selecting:
 ````
 eu n
@@ -766,7 +768,7 @@ This text will not be shown
 #+end_hidden
 ````
 
-To show these blocks, the variable edhidden should be set to 1.
+To show these blocks, the variable edhidden should be set to 0.
 
 ### Variables:
 #### fn:
