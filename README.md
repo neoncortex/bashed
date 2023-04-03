@@ -706,7 +706,15 @@ And so on.
 Sometimes it will be useful to hide the escape sequences, for example when you want to pass the text to a command.  To do this, you set the variable edesch to 1.
 
 ### Multimedia:
-If you are using Bashed with Terminology, you can view the all the media files in a text file using the command emq.  It will call tyq with all media files present in a text file, like images, audio, and video.
+#### emq:
+If you are using Bashed with Terminology, you can view the all the media files in a text file using the command emq.  It receives the same argument as es, and call tyq on each result.  For example, to see all media from the line 10 to line 20:
+
+````
+emq 10,20
+````
+
+#### etycat:
+You can cat media on the terminal using etycat.  It works the same as emq, but execute tycat instead of tyq.
 
 ### efmt:
 This is the internal paragraph formatter.  For example:
@@ -842,6 +850,16 @@ Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
 ##### edinclude:
 Controls if files inside [[include:]] shoud be displayed.
 
+#### Files:
+##### editdir:
+Contains the path to the edit directory.  By default: $HOME/.edit
+
+##### editversiondir:
+Contains the path to the edit versioning directory.  By default: $editdir/version.
+
+##### hidir:
+Contains the path to the custom highlight files.  By default: $editdir/hi.
+
 #### Tables:
 ##### edtables:
 Controls if tables showd be shown.  By default, 1.  Should be 1, or 0.
@@ -961,6 +979,7 @@ There are other functions that are used internally by the ones above:
 - edittable: display tables;
 - edittable_printbox: print a line of a tale box
 - edittable_printline: print a line of a table text;
+- edittycat, etycat: print media on the terminal using Terminology tycat;
 - editwindowtmux: used to open and find tmux windows;
 - editwindowty: used to open and find terminology windows;
 - editwindow: open/find windows;

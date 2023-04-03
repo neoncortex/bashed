@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
+# files and directories
+editdir="$HOME/.edit"
+editreadlines="$editdir/readlines"
+editversiondir="$editdir/version"
+hidir="$editdir/hi"
+
 # highlight
 himode="xterm256"
 hitheme="bluegreen"
 
 # edit
-editreadlines="$HOME/.edit/readlines"
 edcmd="n"
 edsyntax=1
 edimg=1
@@ -51,10 +56,10 @@ edtables=1
 edtable_ascii=0
 
 function editwindowty {
+	wmctrl -a "$1"
 	local IFS=$' \t\n'
 	for i in $(xdotool search --name "." getwindowname "%@")
 	do
-		wmctrl -a "$1"
 		if [[ $i == $1 ]]
 		then
 			if [[ $terminologynew -eq 1 ]]
@@ -215,7 +220,7 @@ function editread {
 				es "${1},${2}" "$fn")"
 		fi
 
-		mkdir -p "$HOME/.edit"
+		mkdir -p "$editdir"
 		echo "$lines" > "$editreadlines"
 	fi
 
@@ -264,7 +269,7 @@ function editcmd {
 	local begin="${region/,*/}"
 	local end="${region/*,/}"
 	[[ -z $begin ]] || [[ -z $end ]] && return 2
-	local tempfile="$HOME/.edit/temp"
+	local tempfile="$editdir/temp"
 	cat "$editreadlines" | $3 > "$tempfile"
 	mv "$tempfile" "$editreadlines"
 	local res="$(edit "${begin},${end}d\nw")"
@@ -278,17 +283,17 @@ function editstore {
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-	local dir="$HOME/.edit/$(dirname "$fn")"
+	local dir="$editversiondir/$(dirname "$fn")"
 	mkdir -p "$dir"
 	cp "$fn" "$dir"
-	mv "$HOME/.edit/$fn" "$HOME/.edit/${fn}_${date}"
+	mv "$editversiondir/$fn" "$editversiondir/${fn}_${date}"
 }
 
 function editundo {
 	[[ -n $4  ]] && local fn="$4"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	local dir="$HOME/.edit/$(dirname "$fn")"
+	local dir="$editversiondir/$(dirname "$fn")"
 	local files=()
 	local IFS=$' \t\n'
 	if [[ -d "$dir" ]]
@@ -323,7 +328,7 @@ function editundo {
 				n="$((n + 1))"
 			fi
 		done
-	elif [[ $1 == "-" ]] || [[ $2 == "delete" ]] || [[ $2 == "rm" ]]
+	elif [[ $1 == "-" ]] || [[ $1 == "delete" ]] || [[ $1 == "rm" ]]
 	then
 		[[ -z $2 ]] && return 3
 		local head="$2"
@@ -450,9 +455,9 @@ function editsyntax {
 	[[ $1 =~ \.objc$ ]] && syntax="objc"
 	if [[ $1 =~ \.org$ ]]
 	then
-		local f="$HOME/.highlight/org-simple.lang"
+		local f="$hidir/org-simple.lang"
 		[[ -f $f ]] \
-			&& syntax="$HOME/.highlight/org-simple.lang" \
+			&& syntax="$hidir/org-simple.lang" \
 			|| syntax="org"
 	fi
 
@@ -1190,42 +1195,43 @@ function editmore {
 
 function editmediaqueue {
 	[[ $TERM_PROGRAM != "terminology" ]] && return 1
-	if [[ -n $1 ]]
-	then
-		local fn="$1"
-		[[ $fn =~ ^% ]] && fn="$(cortex-db -q "$fn")"
-		local syntax=
-		editsyntax "$fn"
-		local fl="$fl"
-		local fs=
-		local edtmux=0
-		local edty=0
-	fi
-
 	[[ -z $fn ]] && return 2
-	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	[[ -d $fn ]] && return 2
-	local media=""
-	local old_ifs="$IFS"
+	local files=()
+	local data="$@"
 	local IFS=$'\n'
-	while read -r line
+	[[ -z $data ]] && data="$fl"
+	for i in $data
 	do
-		if [[ $line =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
-			|xpm|XPM|svg|SVG|mp4|MP4|avi|AVI|webm|WEBM\
-			flac|FLAC|mp3|MP3|ogg|OGG)$ ]]
-		then
-			local item="$line"
-			[[ $item =~ ^% ]] && item="$(cortex-db -q "$item")"
-			if [[ $item =~ ^\/ ]]
-			then
-				[[ -z $media ]] && media="$item" \
-					|| media="$media $item"
-			fi
-		fi
-	done < "$fn"
+		local lines="$(edcmd=p edimg=0 edsyntax=0 edtables=0 \
+			edhidden=0 edesc=0 es $i "$fn")"
+		for j in $lines
+		do
+			local line="$j"
+			[[ $line =~ ^% ]] && line="$(cortex-db -q "$line")"
+			[[ -n $line ]] && files+=("$line")
+		done
+	done
 
-	IFS="$old_ifs"
-	[[ -n $media ]] && tyq $media
+	[[ ${#files[@]} -gt 0 ]] && tyq "${files[@]}"
+}
+
+function edittycat {
+	[[ $TERM_PROGRAM != "terminology" ]] && return 1
+	[[ -z $fn ]] && return 2
+	local data="$@"
+	[[ -z $data ]] && data="$fl"
+	local IFS=$'\n'
+	for i in $data
+	do
+		local lines="$(edcmd=p edimg=0 edsyntax=0 edtables=0 \
+			edhidden=0 edesc=0 es $i "$fn")"
+		for j in $lines
+		do
+			local line="$j"
+			[[ $line =~ ^% ]] && line="$(cortex-db -q "$line")"
+			[[ -n $line ]] && tycat "$line"
+		done
+	done
 }
 
 function editfmt {
@@ -1276,7 +1282,7 @@ function editfmt {
 	done < "$editreadlines"
 
 	local IFS=$'\n'
-	local tempfile="$HOME/.edit/temp"
+	local tempfile="$editdir/temp"
 	for i in ${lines[@]}
 	do
 		[[ -f "$tempfile" ]] && echo "$i" >> "$tempfile" \
@@ -1456,6 +1462,7 @@ function eq { editclose "$@"; }
 function er { editread "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
+function etycat { edittycat "$@"; }
 function et { editstore "$@"; }
 function eu { editundo "$@"; }
 function ey { edittransfer "$@"; }
