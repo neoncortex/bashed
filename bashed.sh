@@ -105,6 +105,7 @@ function editwindowty {
 		fi
 	done
 
+	[[ $terminologynew -eq 1 ]] && return
 	terminologynew=1
 	terminology -T "$1" >& /dev/null &
 	sleep $edtysleep
@@ -482,38 +483,34 @@ function editopen {
 
 	[[ -z $f ]] && return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
+	! [[ -f $f ]] && return 2
 	editwindow "$f" "$argument"
-	[[ $? -eq 1 ]] && return 2
+	[[ $? -eq 1 ]] && return 3
 	[[ $? -eq 2 ]] && return 4
-	if [[ -f $f ]]
+	if [[ $edtmux -eq 1 ]]
 	then
-		if [[ $edtmux -eq 1 ]]
-		then
-			[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
-			[[ $2 == 'd' ]] && tmux splitw -c "$f"
-			[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
-			[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
-			[[ $2 == 'n' ]] && tmux neww -c "$f"
-			tmux select-pane -T "$f"
-		fi
+		[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
+		[[ $2 == 'd' ]] && tmux splitw -c "$f"
+		[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
+		[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
+		[[ $2 == 'n' ]] && tmux neww -c "$f"
+		tmux select-pane -T "$f"
+	fi
 
-		if [[ -z $2 ]] || [[ $edtmux -eq 0 ]]
-		then
-			fn="$f"
-			cd "$(dirname "$fn")"
-			fl=1
-			syntax=
-			editsyntax "$fn"
-			[[ -f $PWD/.bashed ]] && source "$PWD/.bashed"
-			[[ -n $argument ]] \
-				&& editarg "$argument" \
-				|| editshow 1
-			[[ $edtmux -eq 1 ]] && tmux select-pane -T "$f"
-		else
-			editwindow "$f" "$argument" n
-		fi
+	if [[ -z $2 ]] || [[ $edtmux -eq 0 ]]
+	then
+		fn="$f"
+		cd "$(dirname "$fn")"
+		fl=1
+		syntax=
+		editsyntax "$fn"
+		[[ -f $PWD/.bashed ]] && source "$PWD/.bashed"
+		[[ -n $argument ]] \
+			&& editarg "$argument" \
+			|| editshow 1
+		[[ $edtmux -eq 1 ]] && tmux select-pane -T "$f"
 	else
-		return 3
+		editwindow "$f" "$argument" n
 	fi
 }
 
@@ -691,12 +688,25 @@ $i"
 			edithi "$i"
 			text=
 			block_syntax="${i#*\ }"
+			block_syntax="${block_syntax#*\ }"
 			block_syntax="${block_syntax/\ */}"
+			local edimg_orig="$edimg"
+			local edtables_orig="$edtables"
+			local edhidden_orig="$edhidden"
+			local edesc_orig="$edesc"
+			edimg=0
+			edtables=0
+			edhidden=0
+			edesc=0
 		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]]
 		then
 			edithi "$text"
 			text=
 			block_syntax=
+			edimg="$edimg_orig"
+			edtables="$edtables_orig"
+			edhidden="$edhidden_orig"
+			edesc="$edesc_orig"
 			edithi "$i"
 		elif [[ $i =~ \[\[\\[0-9][0-9][0-9]\[.*\ .*\]\] ]] && [[ $edesc -eq 1 ]]
 		then
