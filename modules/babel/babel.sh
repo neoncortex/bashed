@@ -51,19 +51,24 @@ function babel {
 	[[ -n $2 ]] && local fn="$2" && local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fn ]] && return 1
 	! [[ -d $babeldir ]] && mkdir -p "$babeldir"
-	if ! [[ $block_line =~ [0-9]+ ]]
+	if ! [[ $block_line =~ ^[0-9]+$ ]]
 	then
-		[[ $n -gt "$fs" ]] && return 2
 		local n=1
-		local line="$(e ${n}p "$fn")"
-		line="${line/\#+name: /}"
-		line="${line/\#+name:/}"
-		[[ $line == $block_line ]] && local block_name="$line" && break
-		n="$((n + 1))"
+		while read -r line
+		do
+			local line="$(e ${n}p "$fn")"
+			if [[ $line =~ \#\+name:\ ?${block_line}$ ]]
+			then
+				local block_line="$n"
+				break
+			fi
+
+			n="$((n + 1))"
+		done < "$fn"
 	else
 		local block_name="$(e ${block_line}p "$fn")"
 		block_name="${block_name/\#+name: /}"
-		glock_name="${block_name/\#+name:/}"
+		block_name="${block_name/\#+name:/}"
 	fi
 
 	local block_header="$(e $((block_line + 1))p "$fn")"
@@ -101,9 +106,11 @@ function babel {
 		if [[ $line == "#+end_src" ]]
 		then
 			break
-		elif [[ $line =~ ^\<\<.*\>\> ]] && [[ $noweb -eq 1 ]]
+		elif [[ $line =~ ^\<\<.*\>\>$ ]] && [[ $noweb -eq 1 ]]
 		then
-			babel "$line" "$fn"
+			local b="${line/\<\</}"
+			local b="${b/\>\>/}"
+			babel "$b" "$fn"
 		else
 			echo "$line" >> "$babelblock"
 		fi
