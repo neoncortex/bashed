@@ -56,7 +56,6 @@ function babel {
 		local n=1
 		while read -r line
 		do
-			local line="$(e ${n}p "$fn")"
 			if [[ $line =~ \#\+name:\ ?${block_line}$ ]]
 			then
 				local block_line="$n"
@@ -65,10 +64,6 @@ function babel {
 
 			n="$((n + 1))"
 		done < "$fn"
-	else
-		local block_name="$(e ${block_line}p "$fn")"
-		block_name="${block_name/\#+name: /}"
-		block_name="${block_name/\#+name:/}"
 	fi
 
 	local block_header="$(e $((block_line + 1))p "$fn")"

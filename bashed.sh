@@ -679,14 +679,12 @@ $i"
 		elif [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
 			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]]
 		then
-			edithi "$text"
+			[[ -n $text ]] && edithi "$text" && text=
 			[[ $i =~ ^[0-9] ]] && editimg "${i/*$'\t'/}" || editimg "$i"
-			text=
 		elif [[ ${i/*$'\t'/} =~ ^\#\+begin_src ]] || [[ $i =~ \#\+begin_src ]]
 		then
-			edithi "$text"
+			[[ -n $text ]] && edithi "$text" && text=
 			edithi "$i"
-			text=
 			block_syntax="${i#*\ }"
 			block_syntax="${block_syntax#*\ }"
 			block_syntax="${block_syntax/\ */}"
@@ -700,8 +698,7 @@ $i"
 			edesc=0
 		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]]
 		then
-			edithi "$text"
-			text=
+			[[ -n $text ]] && edithi "$text" && text=
 			block_syntax=
 			edimg="$edimg_orig"
 			edtables="$edtables_orig"
@@ -710,13 +707,11 @@ $i"
 			edithi "$i"
 		elif [[ $i =~ \[\[\\[0-9][0-9][0-9]\[.*\ .*\]\] ]] && [[ $edesc -eq 1 ]]
 		then
-			edithi "$text"
-			text=
+			[[ -n $text ]] && edithi "$text" && text=
 			editescape "$i"
 		elif [[ $i =~ \[\[include:.*\]\] ]]
 		then
-			edithi "$text"
-			text=
+			[[ -n $text ]] && edithi "$text" && text=
 			if [[ $edinclude -eq 1 ]]
 			then
 				local file="${i/*\[\[include:/}"
@@ -749,8 +744,7 @@ $i"
 			fi
 		elif [[ $i =~ \#\+table ]]
 		then
-			edithi "$text"
-			text=
+			[[ -n $text ]] && edithi "$text" && text=
 			if [[ $edtables -eq 1 ]]
 			then
 				in_table=1
@@ -773,21 +767,23 @@ $i"
 		then
 			if [[ $edhidden -eq 1 ]]
 			then
-				edithi "$text"
-				text=
+				[[ -n $text ]] && edithi "$text" && text=
 				is_hidden=1
 			else
 				[[ -z $text ]] && text="$i" || text="$text
 $i"
 			fi
+		elif [[ $i =~ \<\<.*\>\>$ ]]
+		then
+			[[ -n $text ]] && edithi "$text" && text=
+			echo "$i"
 		else
 			[[ -z $text ]] && text="$i" || text="$text
 $i"
 			if [[ $n -eq $rows ]]
 			then
-				edithi "$text"
+				[[ -n $text ]] && edithi "$text" && text=
 				n=1
-				text=
 			fi
 
 			n="$((n + 1))"
