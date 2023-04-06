@@ -1102,3 +1102,20 @@ The path/to/result/file will contain:
 echo "hello"
 echo "world"
 ````
+
+### Execution langs available:
+By default, babel come with these langs;
+- as;
+- c;
+- cpp;
+- python;
+- python_2;
+- sh;
+- tex_png;
+- yasm;
+- yasm_gcc;
+- yasm_gcc_no_pie;
+
+#### How to customized it:
+You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
+
