@@ -26,7 +26,7 @@ It wraps the ed editor in bash functions, allowing it use directly on command li
 Add to your ~/.bashrc:
 
 ````
-source /path/to/bashed.sh
+source /path/to/bashed/bashed.sh
 ````
 
 Then you should configure if you want to use it with tmux, terminology, or directly:
@@ -983,3 +983,122 @@ There are other functions that are used internally by the ones above:
 - editwindowtmux: used to open and find tmux windows;
 - editwindowty: used to open and find terminology windows;
 - editwindow: open/find windows;
+
+# org files:
+Bashed have it's own flavor of org.  For now, there's only a subset of babel, described below.
+
+## syntax:
+To configure org syntax highlight:
+
+````
+mkdir -l ~/.edit/hi
+cp /path/to/bashed/extra/highlight/org-simple.lang ~/.edit/hi/
+````
+
+# Modules:
+## Babel:
+Bashed have a module that can do some things that org-babel, from Emacs can.  It does:
+- Block execution;
+- noweb;
+- tangle;
+
+### Configuration:
+Add to your ~/.bashrc, after sourcing bashed:
+
+````
+source /path/to/bashed/modules/babel/babel.sh
+````
+
+### Source blocks:
+Source blocks are written like this:
+
+````
+#+name: block_name
+#+begin_src lang syntax dir noweb tangle
+code ...
+#+end_src
+````
+
+Where:
+- lang is how the block will be executed;
+- syntax is the syntax highlight to be used for the source code inside the block
+- dir is a path to cd when executing the block, or 0;
+- noweb is 1, or 0;
+- tangle is a path to write the block, or 0;
+
+### How to use it:
+For example, a simple shell block:
+
+````
+#+name: example
+#+begin_src sh sh 0 0 0
+ls
+#+end_src
+````
+
+After that, with the file containing the block opened, you can executing the block like this:
+
+````
+babel example
+````
+
+Or you can do
+
+````
+babel n
+````
+
+Where n is the line number of the #+name line.  Also, you can:
+
+````
+es n
+babel
+````
+
+Where n, again, is the line number of the #+name line.
+
+#### noweb:
+A block can include source code from another block.  For example:
+
+````
+#+name: block_1
+#+begin_src sh sh 0 0 0
+echo "hello"
+#+end_src
+
+#+name: block_2
+#+begin_src sh sh 0 1 0
+<<block_1>>
+echo "world"
+#+end_src
+````
+
+If you execute the block_2, the output will be:
+
+````
+hello
+world
+````
+
+#### tangle:
+Tangle works like this:
+
+````
+#+name: block_1
+#+begin_src sh sh 0 0 0
+echo "hello"
+#+end_src
+
+#+name: block_2
+#+begin_src sh sh 0 1 /path/to/result/file
+<<block_1>>
+echo "world"
+#+end_src
+````
+
+The path/to/result/file will contain:
+
+````
+echo "hello"
+echo "world"
+````

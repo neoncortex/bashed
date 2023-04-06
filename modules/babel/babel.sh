@@ -118,7 +118,7 @@ function babel {
 		n="$((n + 1))"
 	done
 
-	[[ $tangle != "0" ]] && cp "$babelblock" "$tangle"
+	[[ $tangle != "0" ]] && cp "$babelblock" "$tangle" && return
 	for ((i=0; i < ${#babel_exec[@]}; i++))
 	do
 		pattern="${babel_exec[$i]/:::*}"
