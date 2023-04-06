@@ -984,6 +984,8 @@ There are other functions that are used internally by the ones above:
 - editwindowty: used to open and find terminology windows;
 - editwindow: open/find windows;
 
+Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.
+
 # org files:
 Bashed have it's own flavor of org.  For now, there's only a subset of babel, described below.
 
