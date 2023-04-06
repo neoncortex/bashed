@@ -991,7 +991,7 @@ Bashed have it's own flavor of org.  For now, there's only a subset of babel, de
 To configure org syntax highlight:
 
 ````
-mkdir -l ~/.edit/hi
+mkdir -p ~/.edit/hi
 cp /path/to/bashed/extra/highlight/org-simple.lang ~/.edit/hi/
 ````
 
