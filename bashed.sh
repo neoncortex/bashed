@@ -1068,7 +1068,8 @@ function editchange {
 	[[ -z $1 ]] && return 1
 	local data="$1"
 	[[ -n $2 ]] && local to="$2"
-	[[ $2 =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
+	[[ $to =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
+	[[ $to == "$" ]] && to="$fs"
 	[[ $to -gt $fs ]] && return 2
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw")" \
@@ -1109,6 +1110,7 @@ function editjoin {
 	local l=
 	[[ -z $1 ]] && l="$((fl + 1))"
 	[[ $1 =~ ^\+[0-9]+ ]] && l="${1/\+/}" && l="$((fl + l))"
+	[[ $l == '$' ]] && l="$fs"
 	[[ $l -gt $fs ]] && return 1
 	local res=
 	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw")" && editshow ${fl}
@@ -1124,8 +1126,10 @@ function editmove {
 	[[ $dest -gt $fs ]] && return 1
 	[[ $dest -lt 1 ]] && return 1
 	local to="$2"
-	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + l))"
+	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + to))"
 	[[ $to == "$" ]] && to="$fs"
+	[[ $to -gt $fs ]] && return 1
+	[[ $to -lt 1 ]] && return 1
 	local res=
 	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw")" \
 		|| res="$(edit "${fl}m$dest\nw")"
@@ -1474,3 +1478,274 @@ function eu { editundo "$@"; }
 function ey { edittransfer "$@"; }
 function e { edit "$@"; }
 
+function _editappend {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -W "#+begin_src #+end_src #+table \
+				#+end_table #+hidden #+end_hidden [[include \
+				#[[\\\\\\\\033[ ]]" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editappend editappend
+complete -F _editappend ea
+complete -F _editappend editinsert
+complete -F _editappend ei
+
+function _editchange {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editchange editchange
+complete -F _editchange ech
+
+function _edcmd {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			;;
+		3)
+			COMPREPLY=($(compgen -c))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _edcmd edcmd
+complete -F _edcmd ec
+
+function _editdelete {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+
+}
+
+complete -F _editdelete editdelete
+complete -F _editdelete edel
+
+function _editexternal {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editexternal editexternal
+complete -F _editexternal ee
+
+function _editfmt {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+function _editjoin {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editjoin editjoin
+complete -F _editjoin ej
+
+
+function _editmediaqueue {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+
+}
+
+complete -F _editmediaqueue editmediaqueue
+complete -F _editmediaqueue emq
+
+function _editmore {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editmore editmore
+complete -F _editmore emore
+
+function _editmove {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editmove editmove
+complete -F _editmove em
+
+function _editshow {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -W "a b c d e f g G l m n p u v / \
+				. $ + - {1..$fs}" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editshow editshow
+complete -F _editshow es
+
+function _editread {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		4)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editread editread
+complete -F _editread er
+
+function _editsub {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		3)
+			COMPREPLY=($(compgen -W "% \'\'"))
+			;;
+		4)
+			COMPREPLY=($(compgen -W "g \'\'"))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editsub editsub
+complete -F _editsub esu
+
+function _edittransfer {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} . $" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} +" -- $cur))
+			;;
+		3)
+			COMPREPLY=($(compgen -W "x"))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _edittransfer edittransfer
+complete -F _edittransfer ey
+
+function _etycat {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs}" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _etycat edittycat
+complete -F _etycat etycat
+
+function _editundo {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o bashdefault -W "copy cp delete \
+				diff list print show" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _editundo editundo
+complete -F _editundo eu

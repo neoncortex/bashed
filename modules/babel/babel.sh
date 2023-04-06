@@ -3,6 +3,12 @@
 babeldir="$editdir/babel"
 babelblock="$babeldir/block"
 
+babel_as="as -o a.o %src% && ld -o a.out a.o && ./a.out"
+babel_c="gcc -Wall %src% && ./a.out"
+babel_cpp="g++ -Wall %src% && .a.out"
+babel_python="python3 %src%"
+babel_python_2="python %src%"
+babel_sh="bash %src%"
 babel_tex_png="
 echo -e '\
 \documentclass[12pt]{slides}
@@ -24,31 +30,30 @@ xelatex -no-pdf -interaction nonstopmode tex_png.tex; \
 dvisvgm -n -b min tex_png.xdv > tex_png.svg; \
 convert -trim -quality 100 -density 1000 tex_png.svg tex_png.png ;\
 rm tex_png.xdv tex_png.tex tex_png.aux tex_png.log tex_png.svg"
-
-babel_sh="bash %src%"
-babel_python="python3 %src%"
-babel_python2="python %src%"
-babel_c="gcc %src% && ./a.out"
 babel_yasm="yasm -g dwarf2 -f elf64 %src% -o asm.o && ld -g asm.o -o asm && ./asm"
 babel_yasm_gcc="yasm -g dwarf2 -f elf64 %src% -o asm.o && gcc -g asm.o -o asm \
 	&& ./asm"
 babel_yasm_gcc_no_pie="yasm -g dwarf2 -f elf64 %src% -o asm.o \
 	&& gcc -g -no-pie asm.o -o asm && ./asm"
+
 babel_exec=(
+	"asm:::babel_as"
 	"bash:::babel_sh"
-	"sh:::babel_sh"
-	"tex-png:::babel_tex_png"
+	"c:::babel_c"
+	"cpp:::babel_cpp"
 	"python:::bale_python"
 	"python2:::babel_python"
-	"c:::babel_c"
+	"sh:::babel_sh"
+	"tex-png:::babel_tex_png"
 	"yasm:::babel_yasm"
 	"yasm-gcc:::babel_yasm_gcc"
 	"yasm-gcc-no-pie:::babel_yasm_gcc_no_pie"
 )
+
 function babel {
 	local block_line="$fl"
 	[[ -n $1 ]] && block_line="$1"
-	[[ -n $2 ]] && local fn="$2" && local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	[[ -n $2 ]] && local fn="$2"
 	[[ -z $fn ]] && return 1
 	! [[ -d $babeldir ]] && mkdir -p "$babeldir"
 	if ! [[ $block_line =~ ^[0-9]+$ ]]
@@ -128,3 +133,16 @@ function babel {
 	done
 }
 
+function _babel {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs}" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default))
+			;;
+	esac
+}
+
+complete -F _babel babel
