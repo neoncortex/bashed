@@ -55,20 +55,25 @@ function babel {
 	[[ -n $1 ]] && block_line="$1"
 	[[ -n $2 ]] && local fn="$2"
 	[[ -z $fn ]] && return 1
+	! [[ -f $fn ]] && return 1
 	! [[ -d $babeldir ]] && mkdir -p "$babeldir"
 	if ! [[ $block_line =~ ^[0-9]+$ ]]
 	then
+		local found=0
 		local n=1
 		while read -r line
 		do
 			if [[ $line =~ \#\+name:\ ?${block_line}$ ]]
 			then
 				local block_line="$n"
+				found=1
 				break
 			fi
 
 			n="$((n + 1))"
 		done < "$fn"
+
+		[[ $found -eq 0 ]] && return 2
 	fi
 
 	local block_header="$(e $((block_line + 1))p "$fn")"
@@ -97,11 +102,13 @@ function babel {
 		index="$((index + 1))"
 	done
 
-	[[ $3 -eq 0 ]] && [[ -f $babelblock ]] && rm "$babelblock"
+	[[ -z $3 ]] && [[ -f $babelblock ]] && rm "$babelblock"
+	local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	local n="$((block_line + 2))"
 	local IFS=$'\n'
 	while true
 	do
+		[[ $n -gt $fs ]] && break
 		local line="$(e ${n}p "$fn")"
 		if [[ $line == "#+end_src" ]]
 		then
@@ -125,8 +132,8 @@ function babel {
 		n="$((n + 1))"
 	done
 
+	[[ $3 -eq 1 ]] && return 0
 	[[ $tangle != "0" ]] && cp "$babelblock" "$tangle" && return 0
-	[[ $3 -eq 1 ]] && return
 	for ((i=0; i < ${#babel_exec[@]}; i++))
 	do
 		pattern="${babel_exec[$i]/:::*}"

@@ -1057,7 +1057,14 @@ es n
 babel
 ````
 
-Where n, again, is the line number of the #+name line.
+Where n, again, is the line number of the #+name line.  Blocks from another files can be executed like this:
+
+````
+babel n filename
+babel name filename
+````
+
+Where n is the line number of the block, name is the name of the block, and filename is the name of the file containing the block.
 
 #### noweb:
 A block can include source code from another block.  For example:
