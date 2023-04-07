@@ -97,8 +97,8 @@ function babel {
 		index="$((index + 1))"
 	done
 
-	[[ -f $babelblock ]] && rm "$babelblock"
-	local n="$((block_line + 1))"
+	[[ $3 -eq 0 ]] && [[ -f $babelblock ]] && rm "$babelblock"
+	local n="$((block_line + 2))"
 	local IFS=$'\n'
 	while true
 	do
@@ -110,7 +110,14 @@ function babel {
 		then
 			local b="${line/\<\</}"
 			local b="${b/\>\>/}"
-			babel "$b" "$fn"
+			if [[ $b =~ ::: ]]
+			then
+				local block_name="${b/*:::/}"
+				local file_name="${b/:::*/}"
+				babel "$block_name" "$file_name" 1
+			else
+				babel "$b" "$fn" 1
+			fi
 		else
 			echo "$line" >> "$babelblock"
 		fi
@@ -119,6 +126,7 @@ function babel {
 	done
 
 	[[ $tangle != "0" ]] && cp "$babelblock" "$tangle" && return 0
+	[[ $3 -eq 1 ]] && return
 	for ((i=0; i < ${#babel_exec[@]}; i++))
 	do
 		pattern="${babel_exec[$i]/:::*}"

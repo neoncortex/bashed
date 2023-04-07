@@ -1082,6 +1082,23 @@ hello
 world
 ````
 
+You can also include blocks from other files, like this:
+
+````
+#+begin_src sh sh 0 1 0
+<</path/to/file:::block_1>>
+echo "world"
+#+end_src
+````
+
+If file is in the current directory, you can use just "file":
+
+````
+...
+<<file:::block_1>>>
+...
+````
+
 #### tangle:
 Tangle works like this:
 
@@ -1119,5 +1136,5 @@ By default, babel come with these langs;
 - yasm_gcc_no_pie;
 
 #### How to customized it:
-You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
+You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the lang name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
 
