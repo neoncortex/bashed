@@ -841,6 +841,12 @@ Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
 #### edhidden:
 Contols if hidden blocks should be shown.  By default, 1.  Should be 1, or 0.
 
+#### edinclude:
+Controls if files inside [[include:]] shoud be displayed.
+
+#### edblock:
+Controls if source blocks should be displayed with the syntax highlighting.
+
 #### Highlight:
 ##### syntax:
 Contains the name of the syntax file used by highlight for the current file.
@@ -863,12 +869,6 @@ Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, o
 
 ##### edecesch:
 Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
-
-##### edinclude:
-Controls if files inside [[include:]] shoud be displayed.
-
-##### edblock:
-Controls if source blocks should be displayed with the syntax highlighting.
 
 #### Files:
 ##### editdir:
