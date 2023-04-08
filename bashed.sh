@@ -22,6 +22,7 @@ edinclude=1
 edty=0
 edtysleep="0.2"
 edhidden=1
+edblock=1
 
 # diff
 diffarg="--color -c"
@@ -431,29 +432,51 @@ function editsyntax {
 	[[ $shebang =~ \#\!.*\ ?perl ]] && syntax="perl"
 	[[ $shebang =~ \#\!.*\ ?ruby ]] && syntax="ruby"
 	[[ $shebang =~ \#\!.*\ ?python ]] && syntax="python"
-	[[ -n $syntax ]] && return
-	[[ $1 == $HOME/.bashrc ]] && syntax="bash"
-	[[ $1 =~ \.awk$ ]] && syntax="awk"
-	[[ $1 =~ \.build$ ]] && syntax="meson"
-	[[ $1 =~ \.conf$ ]] && syntax="conf"
-	[[ $1 =~ \.cmake$ ]] && syntax="cmake"
-	[[ $1 =~ \.css$ ]] && syntax="css"
-	[[ $1 =~ \.(c|cpp)$ ]] && syntax="c"
-	[[ $1 =~ \.diff$ ]] && syntax="diff"
-	[[ $1 == /etc/fstab ]] && syntax="fstab"
-	[[ $1 =~ \.(el|elisp|lisp)$ ]] && syntax="lisp"
-	[[ $1 =~ \.gdb$ ]] && syntax="gdb"
-	[[ $1 =~ \/(GNUmakefile|makefile|Makefile)$ ]] && syntax="makefile"
-	[[ $1 =~ \.html$ ]] && syntax="html"
-	[[ $1 =~ \.(ini|INI)$ ]] && syntax="ini"
-	[[ $1 =~ \.java$ ]] && syntax="java"
-	[[ $1 =~ \.(json|lang)$ ]] && syntax="json"
-	[[ $1 =~ \.js$ ]]  && syntax="javascript"
-	[[ $1 =~ \.lua$ ]] && syntax="lua"
-	[[ $1 =~ \.latex$ ]] && syntax="latex"
-	[[ $1 =~ \.less$ ]] && syntax="less"
-	[[ $1 =~ \.md$ ]] && syntax="markdown"
-	[[ $1 =~ \.objc$ ]] && syntax="objc"
+	if [[ -z $syntax ]]
+	then
+		[[ $1 == $HOME/.bashrc ]] && syntax="bash"
+		[[ $1 =~ \.awk$ ]] && syntax="awk"
+		[[ $1 =~ \.build$ ]] && syntax="meson"
+		[[ $1 =~ \.conf$ ]] && syntax="conf"
+		[[ $1 =~ \.cmake$ ]] && syntax="cmake"
+		[[ $1 =~ \.css$ ]] && syntax="css"
+		[[ $1 =~ \.(c|cpp)$ ]] && syntax="c"
+		[[ $1 =~ \.diff$ ]] && syntax="diff"
+		[[ $1 == /etc/fstab ]] && syntax="fstab"
+		[[ $1 =~ \.(el|elisp|lisp)$ ]] && syntax="lisp"
+		[[ $1 =~ \.gdb$ ]] && syntax="gdb"
+		[[ $1 =~ \/(GNUmakefile|makefile|Makefile)$ ]] && syntax="makefile"
+		[[ $1 =~ \.html$ ]] && syntax="html"
+		[[ $1 =~ \.(ini|INI)$ ]] && syntax="ini"
+		[[ $1 =~ \.java$ ]] && syntax="java"
+		[[ $1 =~ \.(json|lang)$ ]] && syntax="json"
+		[[ $1 =~ \.js$ ]]  && syntax="javascript"
+		[[ $1 =~ \.lua$ ]] && syntax="lua"
+		[[ $1 =~ \.latex$ ]] && syntax="latex"
+		[[ $1 =~ \.less$ ]] && syntax="less"
+		[[ $1 =~ \.md$ ]] && syntax="markdown"
+		[[ $1 =~ \.objc$ ]] && syntax="objc"
+		[[ $1 =~ \.php$ ]] && syntax="php"
+		[[ $1 =~ \.(pl|perl)$ ]] && syntax="perl"
+		[[ $1 =~ \.py$ ]] && syntax="python"
+		[[ $1 =~ \.qmake$ ]] && syntax="qmake"
+		[[ $1 =~ \.ruby$ ]] && syntax="ruby"
+		[[ $1 =~ \.sh$ ]] && syntax="bash"
+		[[ $1 =~ \.s$ ]] && syntax="assembler"
+		[[ $1 =~ \.tex$ ]] && syntax="latex"
+	fi
+
+	if [[ -n $syntax ]]
+	then
+		edimg=0
+		edtables=0
+		edblock=0
+		edinclude=0
+		edesc=0
+		return
+	fi
+
+	[[ $1 =~ \.txt$ ]] && syntax="text"
 	if [[ $1 =~ \.org$ ]]
 	then
 		local f="$hidir/org-simple.lang"
@@ -462,14 +485,15 @@ function editsyntax {
 			|| syntax="org"
 	fi
 
-	[[ $1 =~ \.php$ ]] && syntax="php"
-	[[ $1 =~ \.(pl|perl)$ ]] && syntax="perl"
-	[[ $1 =~ \.py$ ]] && syntax="python"
-	[[ $1 =~ \.qmake$ ]] && syntax="qmake"
-	[[ $1 =~ \.ruby$ ]] && syntax="ruby"
-	[[ $1 =~ \.sh$ ]] && syntax="bash"
-	[[ $1 =~ \.s$ ]] && syntax="assembler"
-	[[ $1 =~ \.tex$ ]] && syntax="latex"
+	if [[ -z $syntax ]]
+	then
+		edimg=0
+		edtables=0
+		edblock=0
+		edinclude=0
+		edesc=0
+		return
+	fi
 }
 
 function editopen {
@@ -681,7 +705,8 @@ $i"
 		then
 			[[ -n $text ]] && edithi "$text" && text=
 			[[ $i =~ ^[0-9] ]] && editimg "${i/*$'\t'/}" || editimg "$i"
-		elif [[ ${i/*$'\t'/} =~ ^\#\+begin_src ]] || [[ $i =~ \#\+begin_src ]]
+		elif [[ ${i/*$'\t'/} =~ ^\#\+begin_src ]] || [[ $i =~ \#\+begin_src ]] \
+			&& [[ $edblock -eq 1 ]]
 		then
 			[[ -n $text ]] && edithi "$text" && text=
 			edithi "$i"
@@ -696,7 +721,8 @@ $i"
 			edtables=0
 			edhidden=0
 			edesc=0
-		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]]
+		elif [[ ${i/*$'\t'/} =~ ^\#\+end_src ]] || [[ $i =~ \#\+end_src ]] \
+			&& [[ $edblock -eq 1 ]]
 		then
 			[[ -n $text ]] && edithi "$text" && text=
 			block_syntax=
@@ -1482,9 +1508,9 @@ function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -W "#+begin_src #+end_src #+table \
-				#+end_table #+hidden #+end_hidden [[include \
-				#[[\\\\\\\\033[ ]]" -- $cur))
+			local words="#+begin_src #+end_src #+table #+end_table"
+			words="$words #+hidden #+end_hidden [[include [[\\\\\\\\033[ ]]"
+			COMPREPLY=($(compgen -W "$words" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -o default))

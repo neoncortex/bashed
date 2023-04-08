@@ -88,6 +88,20 @@ Tables are enabled by default.  To disable, add to your ~/.bashrc, after sourcin
 edtables=0
 ````
 
+### Blocks:
+Source blocks are enabled by default.  To disable, add to your ~/.bashrc, after sourceing:
+
+````
+edblock=0
+````
+
+### Include:
+Including are enabled by default.  To disable, add to your ~/.bashrc, after sourcing:
+
+````
+edinclude=0
+````
+
 ### Optional, prompt:
 You can customize the prompt to show the file size, and current line.  For example, in ~/.bashrc:
 
@@ -116,6 +130,9 @@ set -g pane-border-format "#T, #P, #{pane_current_command}"
 set-window-option -g pane-active-border-style "fg=green,bold"
 set-option -g display-panes-time 10000
 ````
+
+## A note about file types:
+The features: images, source blocks, tables, including external files, and escaping are disabled in any file that have an extension that is not .org, or .txt.  This is done like this because these features can misinterpret source code, and configuration files.
 
 ## How to use it:
 ### Opening files:
@@ -849,6 +866,9 @@ Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
 
 ##### edinclude:
 Controls if files inside [[include:]] shoud be displayed.
+
+##### edblock:
+Controls if source blocks should be displayed with the syntax highlighting.
 
 #### Files:
 ##### editdir:
