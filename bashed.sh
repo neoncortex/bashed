@@ -82,6 +82,7 @@ function editwindowty {
 				cmd="$cmd;edesc="$edesc""
 				cmd="$cmd;edesch="$edesch""
 				cmd="$cmd;edecesch="$edecesch""
+				cmd="$cmd;editblock="$editblock""
 				cmd="$cmd;cd "$dir""
 				cmd="$cmd;editsyntax "$1""
 				cmd="$cmd;[[ -f .bashed ]] && source .bashed"
@@ -157,6 +158,7 @@ function editwindowtmux {
 				tmux send-keys -t "$pane" "edesc=$edesc" Enter
 				tmux send-keys -t "$pane" "edesch=$edesch" Enter
 				tmux send-keys -t "$pane" "edecesch=$edesch" Enter
+				tmux send-keys -t "$pane" "editblock=$editblock" Enter
 				tmux send-keys -t "$pane" "syntax=" Enter
 				tmux send-keys -t "$pane" \
 					"editsyntax \"\$fn\"" Enter
@@ -762,6 +764,7 @@ $i"
 					&& command="$command edhidden=$edtables " \
 					&& command="$command edesch=$edesch " \
 					&& command="$command edecesch=$edecesch " \
+					&& command="$command editblock=$editbloxk " \
 					&& command="$command edcmd=p " \
 					&& command="$command editshow \"$arg\" \"$file\"" \
 					&& bash -ic "$command"
@@ -1513,7 +1516,7 @@ function _editappend {
 			COMPREPLY=($(compgen -W "$words" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1530,7 +1533,7 @@ function _editchange {
 			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1551,7 +1554,7 @@ function _edcmd {
 			COMPREPLY=($(compgen -c))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1566,7 +1569,7 @@ function _editdelete {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 
@@ -1585,7 +1588,7 @@ function _editexternal {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1603,7 +1606,7 @@ function _editfmt {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1615,7 +1618,7 @@ function _editjoin {
 			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1643,7 +1646,7 @@ function _editmore {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1661,7 +1664,7 @@ function _editmove {
 			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1677,7 +1680,7 @@ function _editshow {
 				. $ + - {1..$fs}" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1698,7 +1701,7 @@ function _editread {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1716,7 +1719,7 @@ function _editsub {
 			COMPREPLY=($(compgen -W "g \'\'"))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1737,7 +1740,7 @@ function _edittransfer {
 			COMPREPLY=($(compgen -W "x"))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1752,7 +1755,7 @@ function _etycat {
 			COMPREPLY=($(compgen -o nosort -W "{1..$fs}" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
@@ -1768,7 +1771,7 @@ function _editundo {
 				diff list print show" -- $cur))
 			;;
 		*)
-			COMPREPLY=($(compgen -o default))
+			COMPREPLY=($(compgen -o default -- $cur))
 			;;
 	esac
 }
