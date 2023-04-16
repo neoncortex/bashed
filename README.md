@@ -1282,8 +1282,10 @@ editdbaction move tag1,tag2 /path/to/destiny
 #### Executing commands on tagged files:
 
 ````
-editdbaction command tag1,tag2 "command"
+editdbaction command tag1,tag2 "command %file% ..."
 ````
+
+The command will run once for each file.  The %file% will be substituted for the file name at each iteration.
 
 ### Clean:
 To delete files from the database tha don't exist anymore in the filesystem:
