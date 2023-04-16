@@ -1165,3 +1165,137 @@ By default, babel come with these langs;
 #### How to customized it:
 You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the lang name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
 
+## db:
+This module is a file tagging system.
+
+### Configuration:
+Add to your ~/.bashrc, after sourcing bashed:
+
+````
+source /path/to/bashed/modules/db/db.sh
+````
+
+### How it works:
+#### Inserting:
+To insert a file, use the editdbinsert function.  For example:
+
+````
+editdbinsert /path/to/file tag1,tag2
+````
+
+#### Deleting:
+To delete a file from the database, use editdbdelete:
+
+````
+editdbdelete /path/to/file
+````
+
+#### Moving:
+To move a file on the database, use editdbmove:
+
+````
+editdbmove /path/to/file /new/path/to/file
+````
+
+#### Searching:
+##### Searching tags:
+To search tagged files:
+
+````
+editdbsearch tag1,tag2
+````
+
+##### Searching files:
+To search for files, use editdbquery:
+
+````
+editdbquery files 'regex'
+````
+
+For example:
+
+````
+editdbquery files 'sh$'
+````
+
+##### Tags of a file:
+To see what tags a file have, use editdbquery:
+
+````
+editdbquery tags /path/to/file
+````
+
+#### Tag operations:
+##### Adding tags to a file:
+To add a tag to a file that was previously inserted in the database:
+
+````
+editdbinserttag /path/to/file tag3,tag4
+````
+
+##### Deleting tags of a file:
+To remove a tag of a file that was previously inserted in the database:
+
+````
+editdbdeletetag /path/to/file tag3,tag4
+````
+
+##### Moving tags of a file:
+To move a tag of a file that was previously inserted in the dabatase, that is, change a set of tags to a new one:
+
+````
+editdbmovetag /path/to/file tag3,tag4 tag5,tag6
+````
+
+#### Actions:
+You can apply acions on tagged files.  The actions are: delete, move, and command.  These actions will be applied in the database, and in the files, that means, for example, that a delete action will delete the entries of the database, and the corresponding files in the filesystem, so be careful =D.
+
+##### Deleting tagged files:
+To delete tagged files:
+
+````
+editdbaction delete tag1,tag2
+````
+
+#### Moving taggeed files:
+To move tagged files:
+
+````
+editdbaction move tag1,tag2 /path/to/destiny
+````
+
+#### Executing commands on tagged files:
+
+````
+editdbaction command tag1,tag2 "command"
+````
+
+### Clean:
+To delete files from the database tha don't exist anymore in the filesystem:
+
+````
+editdbclean
+````
+
+### Auto completion:
+Before use auto completing, you need to generate the cache files:
+
+````
+editdbgeneratecache
+````
+
+After executing it, you can use auto completion on the editdb* commands.
+
+### Function dictionary:
+function edb, editdbsearch;
+function edba, editdbaction;
+function edbc, editdbclean;
+function edbdt, editdbdeletetag;
+function edbd, editdbdelete;
+function edbg, editdbgeneratecache;
+function edbit, editdbinserttag;
+function edbi, editdbinsert
+function edbm, editdbmove;
+function edbmt, editdbmovetag;
+function edbq, editdbquery;
+
