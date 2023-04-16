@@ -1287,15 +1287,15 @@ editdbgeneratecache
 After executing it, you can use auto completion on the editdb* commands.
 
 ### Function dictionary:
-function edb, editdbsearch;
-function edba, editdbaction;
-function edbc, editdbclean;
-function edbdt, editdbdeletetag;
-function edbd, editdbdelete;
-function edbg, editdbgeneratecache;
-function edbit, editdbinserttag;
-function edbi, editdbinsert
-function edbm, editdbmove;
-function edbmt, editdbmovetag;
-function edbq, editdbquery;
+- edb, editdbsearch;
+- edba, editdbaction;
+- edbc, editdbclean;
+- edbdt, editdbdeletetag;
+- edbd, editdbdelete;
+- edbg, editdbgeneratecache;
+- edbit, editdbinserttag;
+- edbi, editdbinsert
+- edbm, editdbmove;
+- edbmt, editdbmovetag;
+- edbq, editdbquery;
 
