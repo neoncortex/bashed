@@ -7,8 +7,7 @@ edbtagscache="$editdir/db/dbtags.cache"
 
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 1
 	local exist=0
 	local IFS=$'\n'
 	while read -r line
@@ -71,8 +70,7 @@ function editdbinsert {
 
 function editdbdelete {
 	! [[ -f $edbfile ]] && return 1
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 2
 	local n=1
 	local found=0
 	local IFS=$'\n'
@@ -85,13 +83,12 @@ function editdbdelete {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ $found -eq 1 ]] && e "${n}d\nw" "$edbfile" > /dev/null
+	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
 }
 
 function editdbmove {
 	! [[ -f $edbfile ]] && return 1
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 2
 	local n=1
 	local found=0
 	local IFS=$'\n'
@@ -106,7 +103,7 @@ function editdbmove {
 	done < "$edbfile"
 
 	[[ $tags == $filename ]] && tags=
-	[[ $found -eq 1 ]] && e "${n}d\nw" "$edbfile" > /dev/null
+	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
 	local entry="$2/$(basename "$filename")	$tags"
 	[[ -z $tags ]] && entry="$2/$(basename "$filename")"
 	echo "$entry" >> "$edbfile"
@@ -116,8 +113,7 @@ function editdbmove {
 
 function editdbinserttag {
 	! [[ -f $edbfile ]] && return 1
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 2
 	local IFS=$'\n'
 	local n=1
 	local found=0
@@ -132,7 +128,7 @@ function editdbinserttag {
 	done < "$edbfile"
 
 	[[ $tags == $filename ]] && tags=
-	[[ $found -eq 1 ]] && e "${n}d\nw" "$edbfile" > /dev/null
+	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
 	local tags_a=()
 	local IFS=$','
 	for i in $tags
@@ -177,8 +173,7 @@ function editdbinserttag {
 
 function editdbdeletetag {
 	! [[ -f $edbfile ]] && return 1
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 2
 	local n=1
 	local IFS=$'\n'
 	while read -r line
@@ -190,8 +185,8 @@ function editdbdeletetag {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ -z $tags ]] && return 2
-	e "${n}d\nw" "$edbfile" > /dev/null
+	[[ -z $tags ]] && return 3
+	$(e "${n}d\nw" "$edbfile")
 	local tags_r=()
 	local tags_a=()
 	local IFS=$','
@@ -237,8 +232,7 @@ function editdbdeletetag {
 
 function editdbmovetag {
 	! [[ -f $edbfile ]] && return 1
-	local filename="$fn"
-	[[ -n $1 ]] && filename="$1"
+	[[ -n $1 ]] && filename="$1" || return 2
 	local n=1
 	local IFS=$'\n'
 	while read -r line
@@ -250,8 +244,8 @@ function editdbmovetag {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ -z $tags ]] && return 2
-	e "${n}d\nw" "$edbfile" > /dev/null
+	[[ -z $tags ]] && return 3
+	$(e "${n}d\nw" "$edbfile")
 	local tags_r=()
 	local tags_a=()
 	local IFS=$','
@@ -417,7 +411,7 @@ function editdbclean {
 		local f="${line/$'\t'*/}"
 		if ! [[ -f $f ]] && ! [[ -d $f ]]
 		then
-			e "${n}d\nw"
+			$(e "${n}d\nw")
 		fi
 
 		n="$((n + 1))"
