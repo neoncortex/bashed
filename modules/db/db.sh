@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-edbfile="$editdir/db"
-edbfiletemp="$editdir/db.temp"
-edbfilescache="$editdir/dbfiles.cache"
-edbtagscache="$editdir/dbtags.cache"
+edbfile="$editdir/db/db"
+edbfiletemp="$editdir/db/db.temp"
+edbfilescache="$editdir/db/dbfiles.cache"
+edbtagscache="$editdir/db/dbtags.cache"
 
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
@@ -343,6 +343,7 @@ function editdbsearch {
 				
 			found_a+=("$found")
 		done
+
 		! [[ ${found_a[@]} =~ 0 ]] \
 			&& local f="${line/$'\t'*/}" \
 			&& files+=("$f")
@@ -424,15 +425,22 @@ function editdbclean {
 }
 
 function editdbgeneratecache {
-	[[ -f $eddbfilescache ]] && rm "$edbfilescache"
-	[[ -f $eddbtagscache ]] && rm "$edbtagscache"
+	[[ -f $edbfilescache ]] && rm "$edbfilescache"
+	[[ -f $edbtagscache ]] && rm "$edbtagscache"
+	local IFS=$','
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
 		local t="${line/*$'\t'/}"
 		echo "$f" >> "$edbfilescache"
-		echo "$t" >> "$edbtagscache"
+		for i in $t
+		do
+			echo "$i" >> "$edbtagscache"
+		done
 	done < "$edbfile"
+
+	cat "$edbtagscache" | sort | uniq > "$editdir/db/.tags"
+	mv "$editdir/db/.tags" "$edbtagscache"
 }
 
 function edb { editdbsearch "$@"; }
