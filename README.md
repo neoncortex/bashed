@@ -1303,6 +1303,15 @@ editdbgeneratecache
 
 After executing it, you can use auto completion on the editdb* commands.
 
+### The database file:
+The database file is a text file.  It's path is setted in the edbfile variable.  By default, it will be ~/.edit/db/db.  You can change this variable to something else, this allows you to have multiple databases.  For example:
+
+````
+edbfile=/home/user/Documents/db
+````
+
+Now all the editdb* commands will work with this database file.
+
 ### Function dictionary:
 - edb, editdbsearch;
 - edba, editdbaction;
