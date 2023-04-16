@@ -1247,6 +1247,21 @@ To move a tag of a file that was previously inserted in the dabatase, that is, c
 editdbmovetag /path/to/file tag3,tag4 tag5,tag6
 ````
 
+#### Tag directories, and inheritance:
+You can add a directory to the database, with tags.  After that, any file added to the database that is under the added directory will inherit it's tags.  For example, if you add:
+
+````
+editdbinsert /path/to/directory d1,d2
+````
+
+And then:
+
+````
+editdbinsert /path/to/directory/f1 t1,t2
+````
+
+The directory will have tags d1, and d2, and f1 will have tags d1, d2, t1, and t2.
+
 #### Actions:
 You can apply acions on tagged files.  The actions are: delete, move, and command.  These actions will be applied in the database, and in the files, that means, for example, that a delete action will delete the entries of the database, and the corresponding files in the filesystem, so be careful =D.
 
