@@ -278,7 +278,7 @@ function editdbmovetag {
 		[[ $match -eq 0 ]] && tags_n+=("${tags_a[$i]}")
 	done
 
-	local tags_sorted=($(printf '%s\n' "${tags_n[@]}" | sort))
+	local tags_sorted=($(printf '%s\n' "${tags_n[@]}" | sort | uniq))
 	local tags_entry=
 	local IFS=$'\n'
 	for i in $tags_sorted
@@ -345,7 +345,9 @@ function editdbsearch {
 
 	for i in ${files[@]}
 	do
-		echo "$i"
+		[[ -d $i ]] \
+			&& echo "$i/" \
+			|| echo "$i"
 	done
 }
 
@@ -371,6 +373,18 @@ function editdbaction {
 				local cmd="${3/\%file%/\"$i\"}"
 				eval $cmd
 			fi
+		elif [[ $1 == inserttags ]] || [[ $1 == it ]]
+		then
+			[[ -z $3 ]] && return 3
+			editdbinserttag "$i" "$3"
+		elif [[ $1 == deletetags ]] || [[ $1 == dt ]]
+		then
+			[[ -z $3 ]] || [[ -z $4 ]] && return 3
+			editdbdeletetag "$i" "$3" "$4"
+		elif [[ $1 == movetags ]] || [[ $1 == mt ]]
+		then
+			[[ -z $3 ]] || [[ -z $4 ]] && return 3
+			editdbmovetag "$i" "$3" "$4"
 		fi
 	done
 }
@@ -399,7 +413,9 @@ function editdbquery {
 	then
 		for i in ${files[@]}
 		do
-			echo "$i"
+			[[ -d $i ]] \
+				&& echo "$i/" \
+				|| echo "$i"
 		done
 	fi
 }
@@ -454,7 +470,8 @@ function _editdbaction {
 	case "$COMP_CWORD" in
 		1)
 			COMPREPLY=($(compgen -o bashdefault -W "delete d move \
-				m command c" -- $cur))
+				m command c inserttags it movetagsmt  mt \
+				deletetags dt" -- $cur))
 			;;
 		2)
 			local entries="$(cat "$edbfilescache")"

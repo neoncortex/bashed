@@ -1263,7 +1263,7 @@ editdbinsert /path/to/directory/f1 t1,t2
 The directory will have tags d1, and d2, and f1 will have tags d1, d2, t1, and t2.
 
 #### Actions:
-You can apply acions on tagged files.  The actions are: delete, move, and command.  These actions will be applied in the database, and in the files, that means, for example, that a delete action will delete the entries of the database, and the corresponding files in the filesystem, so be careful =D.
+You can apply acions on tagged files.  The actions are: delete, move, command, inserttags, deletetags, movetags.  These actions will be applied in the database, and in the files, that means, for example, that a delete action will delete the entries of the database, and the corresponding files in the filesystem, so be careful =D.
 
 ##### Deleting tagged files:
 To delete tagged files:
@@ -1287,6 +1287,27 @@ editdbaction command tag1,tag2 "command %file% ..."
 
 The command will run once for each file.  The %file% will be substituted for the file name at each iteration.
 
+#### Inserting tags on tagged files:
+````
+edbtdbaction inserttags tag1,tag2 tag3,tag4
+````
+
+This will insert tag3, and tag4 in all files tagged with tag1, and tag2
+
+#### Deleting tags on tagged files:
+````
+editdbaction deletetags tag1,tag2 tag3,tag4
+````
+
+This will delete tag3, and tag4 for every file tagged with tag1, and tag2.
+
+#### Moving tagged files:
+````
+editdbaction movetags tag1,tag2, tag3,tag4 tag5,tag6
+````
+
+This will move tag3, and tag4 to tag5, and tag6, in every file tagged with tag1, and tag2.
+ 
 ### Clean:
 To delete files from the database tha don't exist anymore in the filesystem:
 
