@@ -1194,8 +1194,10 @@ editdbdelete /path/to/file
 To move a file on the database, use editdbmove:
 
 ````
-editdbmove /path/to/file /new/path/to/file
+editdbmove /path/to/file /new/path/to/dir
 ````
+
+File will be move to dir.
 
 #### Searching:
 ##### Searching tags:
@@ -1203,6 +1205,13 @@ To search tagged files:
 
 ````
 editdbsearch tag1,tag2
+````
+
+###### Tag subtraction:
+Tags can be subtracted from the search.  For example, to search all the files containing the tags t1, and t3, but not t2:
+
+````
+editdbsearch t1,-t2,t3
 ````
 
 ##### Searching files:
@@ -1244,8 +1253,10 @@ editdbdeletetag /path/to/file tag3,tag4
 To move a tag of a file that was previously inserted in the dabatase, that is, change a set of tags to a new one:
 
 ````
-editdbmovetag /path/to/file tag3,tag4 tag5,tag6
+editdbmovetag /path/to/dir tag3,tag4 tag5,tag6
 ````
+
+All the tagged files will be moved to dir.
 
 #### Tag directories, and inheritance:
 You can add a directory to the database, with tags.  After that, any file added to the database that is under the added directory will inherit it's tags.  For example, if you add:
