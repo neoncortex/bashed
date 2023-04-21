@@ -5,6 +5,22 @@ edbfiletemp="$editdir/db/db.temp"
 edbfilescache="$editdir/db/dbfiles.cache"
 edbtagscache="$editdir/db/dbtags.cache"
 
+function editdbsorttags {
+	[[ -z $1 ]] && return 1
+	local tags_a=("$@")
+	local tags_sorted="$(printf '%s\n' "${tags_a[@]}" | sort | uniq)"
+	local tags_entry=
+	local IFS=$'\n'
+	for i in $tags_sorted
+	do
+		[[ -z $tags_entry ]] \
+			&& tags_entry="$i" \
+			|| tags_entry="$tags_entry,$i"
+	done
+
+	echo "$tags_entry"
+}
+
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
 	[[ -n $1 ]] && filename="$1" || return 1
@@ -42,24 +58,7 @@ function editdbinsert {
 		tags_a+=("$i")
 	done
 
-	local tags_entry=
-	for ((i=0; i < ${#tags_a[@]}; ++i))
-	do
-		[[ -z $tags_entry ]] \
-			&& tags_entry="$i" \
-			|| tags_entry="$tags_entry,$i"
-	done
-
-	local tags_sorted=($(printf '%s\n' "${tags_a[@]}" | sort | uniq))
-	local tags_entry=
-	local IFS=$'\n'
-	for i in $tags_sorted
-	do
-		[[ -z $tags_entry ]] \
-			&& tags_entry="$i" \
-			|| tags_entry="$tags_entry,$i"
-	done
-
+	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	[[ -n $tags_entry ]] \
 		&& entry="$filename	$tags_entry" \
 		|| entry="$filename"
@@ -155,16 +154,7 @@ function editdbinserttag {
 		tags_a+=("$i")
 	done
 
-	local tags_sorted=($(printf '%s\n' "${tags_a[@]}" | sort | uniq))
-	local tags_entry=
-	local IFS=$'\n'
-	for i in $tags_sorted
-	do
-		[[ -z $tags_entry ]] \
-			&& tags_entry="$i" \
-			|| tags_entry="$tags_entry,$i"
-	done
-
+	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
 	echo "$entry" >> "$edbfile"
 	cat "$edbfile" | sort > "$edbfiletemp"
@@ -214,16 +204,7 @@ function editdbdeletetag {
 		[[ $match -eq 0 ]] && tags_n+=("${tags_a[$i]}")
 	done
 
-	local tags_sorted=($(printf '%s\n' "${tags_n[@]}" | sort))
-	local tags_entry=
-	local IFS=$'\n'
-	for i in $tags_sorted
-	do
-		[[ -z $tags_entry ]] \
-			&& tags_entry="$i" \
-			|| tags_entry="$tags_entry,$i"
-	done
-
+	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
 	echo "$entry" >> $edbfile
 	cat "$edbfile" | sort > "$edbfiletemp"
@@ -278,16 +259,7 @@ function editdbmovetag {
 		[[ $match -eq 0 ]] && tags_n+=("${tags_a[$i]}")
 	done
 
-	local tags_sorted=($(printf '%s\n' "${tags_n[@]}" | sort | uniq))
-	local tags_entry=
-	local IFS=$'\n'
-	for i in $tags_sorted
-	do
-		[[ -z $tags_entry ]] \
-			&& tags_entry="$i" \
-			|| tags_entry="$tags_entry,$i"
-	done
-
+	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
 	echo "$entry" >> $edbfile
 	cat "$edbfile" | sort > "$edbfiletemp"
@@ -305,6 +277,7 @@ function editdbsearch {
 
 	local files=()
 	local IFS=$'\n'
+	local n=1
 	while read -r line
 	do
 		local tags="${line/*$'\t'/}"
@@ -339,8 +312,9 @@ function editdbsearch {
 		done
 
 		! [[ ${found_a[@]} =~ 0 ]] \
-			&& local f="${line/$'\t'*/}" \
-			&& files+=("$f")
+			&& { [[ $2 -eq 1 ]] && files+=("$n") \
+				|| files+=("${line/$'\t'*/}"); }
+		n="$((n + 1))"
 	done < "$edbfile"
 
 	for i in ${files[@]}
@@ -353,46 +327,122 @@ function editdbsearch {
 
 function editdbaction {
 	[[ -z $2 ]] && return 1
-	local files="$(editdbsearch "$2")"
+	local IFS=$'\n\t '
+	local files="$(editdbsearch "$2" 1)"
 	[[ -z $files ]] && return 2
+	local lines=()
+	local remove=()
 	for i in $files
 	do
+		lines+=("$(e ${i}p "$edbfile")")
+		remove+=("$i")
+	done
+
+	for ((i=$((${#remove[@]} - 1)); i >= 0; --i))
+	do
+		local res="$(e "${remove[$i]}d\nw" "$edbfile")"
+		[[ -n $res ]] && echo "$res"
+	done
+
+	for ((i=0; i < "${#lines[@]}"; ++i))
+	do
+		local line="${lines[$i]}"
+		local filename="${line/$'\t'*/}"
+		local tags="${line/*$'\t'/}"
 		if [[ $1 == delete ]] || [[ $1 == d ]]
 		then
-			editdbdelete "$i"
+			lines[$i]=""
 			[[ -f $i ]] && rm "$i"
 		elif [[ $1 == move ]] || [[ $1 == m ]]
 		then
 			[[ -z $3 ]] && return 3
-			editdbmove "$i" "$3"
+			lines[$i]="$3	$tags"
 			[[ -f $i ]] && mv "$i" "$3"
 		elif [[ $1 == command ]] || [[ $1 == c ]]
 		then
-			if [[ -f $i ]] || [[ -d $i ]]
+			if [[ -f $filename ]] || [[ -d $filename ]]
 			then
-				local cmd="${3/\%file%/\"$i\"}"
+				local cmd="${3/\%file%/\"$filename\"}"
 				eval $cmd
 			fi
 		elif [[ $1 == inserttags ]] || [[ $1 == it ]]
 		then
 			[[ -z $3 ]] && return 3
-			editdbinserttag "$i" "$3"
+			tags="$tags,$3"
+			local tags_a=()
+			local IFS=$','
+			for j in $tags
+			do
+				tags_a+=("$j")
+			done
+
+			local IFS=$'\n\t '
+			local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+			[[ -n $tags_entry ]] \
+				&& lines[$i]="$filename	$tags_entry" \
+				|| lines[$i]="$filename"
 		elif [[ $1 == deletetags ]] || [[ $1 == dt ]]
 		then
-			[[ -z $3 ]] || [[ -z $4 ]] && return 3
-			editdbdeletetag "$i" "$3" "$4"
+			[[ -z $3 ]] && return 3
+			local tags_a=()
+			local IFS=$','
+			for j in $tags
+			do
+				local found=0
+				for k in $3
+				do
+					echo "< $j"
+					echo "> $k"
+					[[ $j == $k ]] && found=1 && break
+				done
+
+				[[ $found -eq 0 ]] && tags_a+=("$j")
+			done
+
+			local IFS=$'\n\t '
+			local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+			[[ -n $tags_entry ]] \
+				&& lines[$i]="$filename	$tags_entry" \
+				|| lines[$i]="$filename"
 		elif [[ $1 == movetags ]] || [[ $1 == mt ]]
 		then
 			[[ -z $3 ]] || [[ -z $4 ]] && return 3
-			editdbmovetag "$i" "$3" "$4"
+			tags="$tags,$4"
+			local tags_a=()
+			local IFS=$','
+			for j in $tags
+			do
+				local found=0
+				for k in $3
+				do
+					[[ $j == $k ]] && found=1 && break
+				done
+
+				[[ $found -eq 0 ]] && tags_a+=("$j")
+			done
+
+			local IFS=$'\n\t '
+			local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+			[[ -n $tags_entry ]] \
+				&& lines[$i]="$filename	$tags_entry" \
+				|| lines[$i]="$filename"
 		fi
 	done
+
+	for i in "${lines[@]}"
+	do
+		echo "$i" >> "$edbfile"
+	done
+
+	cat "$edbfile" | sort > "$edbfiletemp"
+	mv "$edbfiletemp" "$edbfile"
 }
 
 function editdbquery {
 	[[ -z $1 ]] && return 1
 	[[ -z $2 ]] && return 2
 	local files_a=()
+	local IFS=$'\n\t '
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
@@ -422,6 +472,7 @@ function editdbquery {
 
 function editdbclean {
 	local n=1
+	local IFS=$'\n\t '
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
@@ -470,11 +521,26 @@ function _editdbaction {
 	case "$COMP_CWORD" in
 		1)
 			COMPREPLY=($(compgen -o bashdefault -W "delete d move \
-				m command c inserttags it movetagsmt  mt \
+				m command c inserttags it movetags  mt \
 				deletetags dt" -- $cur))
 			;;
 		2)
-			local entries="$(cat "$edbfilescache")"
+			local prev=${COMP_WORDS[COMP_CWORD-1]}
+			if [[ $prev == command ]] || [[ $prev == "c" ]]
+			then
+				COMPREPLY=($(compgen -o default -- $cur))
+			else
+				local entries="$(cat "$edbtagscache")"
+				COMPREPLY=($(compgen -o bashdefault -W "$entries" -- $cur))
+			fi
+			;;
+
+		3)
+			local entries="$(cat "$edbtagscache")"
+			COMPREPLY=($(compgen -o bashdefault -W "$entries" -- $cur))
+			;;
+		4)
+			local entries="$(cat "$edbtagscache")"
 			COMPREPLY=($(compgen -o bashdefault -W "$entries" -- $cur))
 			;;
 		*)
