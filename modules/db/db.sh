@@ -21,6 +21,49 @@ function editdbsorttags {
 	echo "$tags_entry"
 }
 
+function editdbassemblemovetags {
+	[[ -z $1 ]] && return 1
+	[[ -z $2 ]] && return 2
+	local filedir="$(dirname "$1")"
+	local dirtags="$(edbq tags "$filedir")"
+	local removetags=()
+	local IFS=$','
+	if [[ -n $dirtags ]]
+	then
+		for j in $dirtags
+		do
+			removetags+=("$j")
+		done
+	fi
+
+	local tags_a=()
+	for j in $tags
+	do
+		local found=0
+		for k in "${removetags[@]}"
+		do
+			[[ $j == $k ]] && found=1 && break
+		done
+
+		[[ $found -eq 0 ]] && tags_a+=("$j")
+	done
+
+	local newdirtags="$(edbq tags "$2")"
+	for j in $newdirtags
+	do
+		tags_a+=("$j")
+	done
+
+	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+	echo "$tags_entry"
+}
+
+function editdbwrite {
+	[[ -n $1 ]] && echo "$entry" >> "$edbfile"
+	cat "$edbfile" | sort > "$edbfiletemp"
+	mv "$edbfiletemp" "$edbfile"
+}
+
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
 	[[ -n $1 ]] && filename="$1" || return 1
@@ -62,9 +105,7 @@ function editdbinsert {
 	[[ -n $tags_entry ]] \
 		&& entry="$filename	$tags_entry" \
 		|| entry="$filename"
-	echo "$entry" >> $edbfile
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	editdbwrite "$entry"
 }
 
 function editdbdelete {
@@ -103,11 +144,13 @@ function editdbmove {
 
 	[[ $tags == $filename ]] && tags=
 	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
-	local entry="$2/$(basename "$filename")	$tags"
-	[[ -z $tags ]] && entry="$2/$(basename "$filename")"
-	echo "$entry" >> "$edbfile"
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	local entry=
+	local base="$(basename "$filename")"
+	local tags_entry="$(editdbassemblemovetags "$filename" "$2")"
+	[[ -n $tags_entry ]] \
+		&& entry="$2/$base	$tags_entry" \
+		|| entry="$2/$base"
+	editdbwrite "$entry"
 }
 
 function editdbinserttag {
@@ -156,9 +199,7 @@ function editdbinserttag {
 
 	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
-	echo "$entry" >> "$edbfile"
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	editdbwrite "$entry"
 }
 
 function editdbdeletetag {
@@ -206,9 +247,7 @@ function editdbdeletetag {
 
 	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
-	echo "$entry" >> $edbfile
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	editdbwrite "$entry"
 }
 
 function editdbmovetag {
@@ -261,9 +300,7 @@ function editdbmovetag {
 
 	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
 	local entry="$filename	$tags_entry"
-	echo "$entry" >> $edbfile
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	editdbwrite "$entry"
 }
 
 function editdbsearch {
@@ -338,12 +375,6 @@ function editdbaction {
 		remove+=("$i")
 	done
 
-	for ((i=$((${#remove[@]} - 1)); i >= 0; --i))
-	do
-		local res="$(e "${remove[$i]}d\nw" "$edbfile")"
-		[[ -n $res ]] && echo "$res"
-	done
-
 	for ((i=0; i < "${#lines[@]}"; ++i))
 	do
 		local line="${lines[$i]}"
@@ -352,12 +383,19 @@ function editdbaction {
 		if [[ $1 == delete ]] || [[ $1 == d ]]
 		then
 			lines[$i]=""
-			[[ -f $i ]] && rm "$i"
+			[[ -f $filename ]] && rm "$filename"
 		elif [[ $1 == move ]] || [[ $1 == m ]]
 		then
 			[[ -z $3 ]] && return 3
-			lines[$i]="$3	$tags"
-			[[ -f $i ]] && mv "$i" "$3"
+			local base="$(basename "$filename")"
+			[[ $last_dirname != $(dirname "$filename") ]] \
+				&& local tags_entry="$(editdbassemblemovetags \
+					"$filename" "$3")"
+			[[ -n $tags_entry ]] \
+				&& lines[$i]="$3/$base	$tags_entry" \
+				|| lines[$i]="$3/$base"
+			local last_dirname="$(dirname "$filename")"
+			[[ -f $i ]] && mv "$filename" "$3"
 		elif [[ $1 == command ]] || [[ $1 == c ]]
 		then
 			if [[ -f $filename ]] || [[ -d $filename ]]
@@ -429,13 +467,18 @@ function editdbaction {
 		fi
 	done
 
+	for ((i=$((${#remove[@]} - 1)); i >= 0; --i))
+	do
+		local res="$(e "${remove[$i]}d\nw" "$edbfile")"
+		[[ -n $res ]] && echo "$res"
+	done
+
 	for i in "${lines[@]}"
 	do
 		echo "$i" >> "$edbfile"
 	done
 
-	cat "$edbfile" | sort > "$edbfiletemp"
-	mv "$edbfiletemp" "$edbfile"
+	edbfilewrite
 }
 
 function editdbquery {
