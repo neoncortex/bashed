@@ -245,7 +245,7 @@ function editdbdeletetag {
 		[[ $match -eq 0 ]] && tags_n+=("${tags_a[$i]}")
 	done
 
-	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+	local tags_entry="$(editdbsorttags "${tags_n[@]}")"
 	local entry="$filename	$tags_entry"
 	editdbwrite "$entry"
 }
@@ -298,7 +298,7 @@ function editdbmovetag {
 		[[ $match -eq 0 ]] && tags_n+=("${tags_a[$i]}")
 	done
 
-	local tags_entry="$(editdbsorttags "${tags_a[@]}")"
+	local tags_entry="$(editdbsorttags "${tags_n[@]}")"
 	local entry="$filename	$tags_entry"
 	editdbwrite "$entry"
 }
