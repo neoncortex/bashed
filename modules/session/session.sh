@@ -13,6 +13,7 @@ function editsessionopen {
 	fi
 
 	[[ -n $2 ]] && argument="$2"
+	[[ $filename =~ ^%.*% ]] && filename="$(edbq files "$filename")"
 	! [[ -d $editsessiondir ]] && mkdir -p "$editsessiondir"
 	! [[ $filename =~ ^\/ ]] && filename="$PWD/$filename"
 	local file="$editsessiondir/${filename//\//___}"

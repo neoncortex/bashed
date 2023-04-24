@@ -518,6 +518,15 @@ function editdbquery {
 	[[ -z $2 ]] && return 2
 	local files_a=()
 	local IFS=$'\n\t '
+	local rex="$2"
+	local tail=
+	if [[ $1 == files ]] && [[ $rex =~ ^%.*% ]]
+	then
+		tail="${rex/*%/}"
+		rex="${rex/\%/}"
+		rex="${rex/\%*/}"
+	fi
+
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
@@ -528,8 +537,12 @@ function editdbquery {
 				&& break
 		elif [[ $1 == files ]]
 		then
-			[[ $f =~ $2 ]] \
-				&& local files+=("$f")
+			if [[ $f =~ $rex ]]
+			then
+				local data="$f"
+				[[ -n $tail ]] && data="$f$tail"
+				local files+=("$data")
+			fi
 		fi
 	done < "$edbfile"
 

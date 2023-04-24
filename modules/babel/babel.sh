@@ -54,6 +54,7 @@ function babel {
 	local block_line="$fl"
 	[[ -n $1 ]] && block_line="$1"
 	[[ -n $2 ]] && local fn="$2"
+	[[ $fn =~ ^%.*% ]] && fn="$(edbq files "$fn")"
 	[[ -z $fn ]] && return 1
 	! [[ -f $fn ]] && return 1
 	! [[ -d $babeldir ]] && mkdir -p "$babeldir"

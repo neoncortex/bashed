@@ -67,7 +67,7 @@ function editwindowty {
 			then
 				local dir="$1"
 				[[ $dir =~ ^% ]] \
-					&& dir="$(cortex-db -q "$dir")"
+					&& dir="$(edbq files "$dir")"
 				dir="$(dirname "$dir")"
 				[[ -z $dir ]] && dir="$PWD"
 				local cmd="fn="$1""
@@ -504,7 +504,7 @@ function editopen {
 		local argument="${1#*:}"
 		local f="${1/:*/}"
 		[[ $f == $argument ]] && argument=
-		[[ $f =~ ^% ]] && f="$(cortex-db -q "$f")"
+		[[ $f =~ ^% ]] && f="$(edbq files "$f")"
 	fi
 
 	[[ -z $f ]] && return 1
@@ -589,7 +589,7 @@ function editlocate {
 function editimg {
 	[[ -z $1 ]] && return 1
 	local f="$1"
-	[[ $f =~ ^% ]] && f="$(cortex-db -q "$f")"
+	[[ $f =~ ^% ]] && f="$(edbq files "$f")"
 	[[ -z $f ]] && edithi "$f" && return 2
 	[[ $TERMINOLOGY -eq 1 ]] && [[ $edtmux -eq 0 ]] && tycat "$f" && return
 	[[ $edty -eq 1 ]] && tycat "$f" || chafa --animate=off "$f"
@@ -751,7 +751,7 @@ $i"
 					file="${file/:*/}"
 				fi
 
-				[[ $file =~ ^% ]] && file="$(cortex-db -q "$file")"
+				[[ $file =~ ^% ]] && file="$(edbq files "$file")"
 				[[ -f $file ]] && [[ -n $arg ]] \
 					&& local command="edtmux=$edtmux " \
 					&& command="$command edty=$edty " \
@@ -826,7 +826,7 @@ function editshow {
 	if [[ -n $2 ]]
 	then
 		local fn="$2"
-		[[ $fn =~ ^% ]] && fn="$(cortex-db -q "$fn")"
+		[[ $fn =~ ^% ]] && fn="$(edbq files "$fn")"
 		local syntax=
 		editsyntax "$fn"
 		local fl="$fl"
@@ -1246,7 +1246,7 @@ function editmediaqueue {
 		for j in $lines
 		do
 			local line="$j"
-			[[ $line =~ ^% ]] && line="$(cortex-db -q "$line")"
+			[[ $line =~ ^% ]] && line="$(edbq files "$line")"
 			[[ -n $line ]] && files+=("$line")
 		done
 	done
@@ -1267,7 +1267,7 @@ function edittycat {
 		for j in $lines
 		do
 			local line="$j"
-			[[ $line =~ ^% ]] && line="$(cortex-db -q "$line")"
+			[[ $line =~ ^% ]] && line="$(edbq files "$line")"
 			[[ -n $line ]] && tycat "$line"
 		done
 	done
