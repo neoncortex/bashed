@@ -1165,7 +1165,7 @@ By default, babel come with these langs;
 #### How to customized it:
 You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the lang name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
 
-## db:
+## Db:
 This module is a file tagging system.
 
 ### Configuration:
@@ -1213,6 +1213,8 @@ Tags can be subtracted from the search.  For example, to search all the files co
 ````
 editdbsearch t1,-t2,t3
 ````
+
+You can search using a curses interface, by using editdbsearchcurses.  The command used to opening the result of the curses search is setted in the variable edbopencommand, that is setted by default to eo.
 
 ##### Searching files:
 To search for files, use editdbquery:
@@ -1356,4 +1358,84 @@ Now all the editdb* commands will work with this database file.
 - edbm, editdbmove;
 - edbmt, editdbmovetag;
 - edbq, editdbquery;
+- edbu, editdbsearchcurses;
 
+## Session:
+This module is a more traditional way of handling files.  It will provide a list of files you have opened, mechanism to open, close, switch, save state, etc.
+
+### Configuration:
+Add to your ~/.bashrc, after sourcing bashed:
+
+````
+source /path/to/bashed/modules/session/session.sh
+````
+
+You will also need to set edtmux, and edty, to 0.
+
+### Opening files:
+Use the command editsessionopen, eso for short:
+
+````
+editsessionopen /path/to/file
+````
+
+Files can be opened with arguments, like:
+
+````
+editsessionopen /path/to/file argument
+editsessionopen /path/to/file:argument
+````
+
+It works the same as editopen/eo.
+
+### Closing files:
+To close a file, use the editsessionclose command, esq for short:
+
+````
+editsessionclose
+````
+
+### Writing state:
+To write the state of the session, use editsessionwrite, esw for short:
+
+````
+editsessionwrite
+````
+
+This will save the state of the editing session for the current file.  By state I mean the content of the variables used to configure bashed, like edcmd, edimg, edesc, etc.
+
+### Listing sessions:
+To list the sessions, that is, the opened files, use the editsession command, ese for short, with list argument:
+
+````
+editsession list
+````
+
+Each session will be given a number, this number is used to select a session.
+
+### Selecting a session:
+To select a session, use the editsession command, ese for short, with a number argument:
+
+````
+editsession 1
+````
+
+This number should be one of the numbers displayed for each session by editsession list.
+
+### Deleting session:
+To delete a session, use the editsession command, ese for short, with delete argument, and a number:
+
+````
+editsession delete 1
+````
+
+This number should be one of the numbers displayed for each session by editsession list.
+
+### db and sessions:
+You may want to set the edbopencommand to eso, so the curses search will open files using eso, instead of the default eo.
+
+### Function dictionary:
+- editsession, ese;
+- editsessionopen, eso;
+- editsessionclose, esq;
+- editsessionwrite, esw;

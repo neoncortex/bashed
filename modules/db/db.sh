@@ -4,6 +4,7 @@ edbfile="$editdir/db/db"
 edbfiletemp="$editdir/db/db.temp"
 edbfilescache="$editdir/db/dbfiles.cache"
 edbtagscache="$editdir/db/dbtags.cache"
+edbopencommand="eo"
 
 function editdbsorttags {
 	[[ -z $1 ]] && return 1
@@ -362,6 +363,37 @@ function editdbsearch {
 	done
 }
 
+function editdbsearchcurses {
+	[[ -z $1 ]] && return 1
+	local files="$(editdbsearch "$1")"
+	[[ -z $files ]] && return 2
+	local files_a=()
+	local IFS=$'\n\t '
+	for i in $files
+	do
+		files_a+=("$i")
+	done
+
+	local rows=
+	local cols=
+	read -r rows cols < <(stty size)
+	local dialog="dialog --colors --menu 'Select:' "
+	local n=1
+	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
+	for i in $files
+	do
+		dialog="$dialog $n "$i""
+		n="$((n + 1))"
+	done
+
+	exec 3>&1
+	echo "$dialog"
+	local res="$($dialog 2>&1 1>&3)"
+	exec 3>&-
+	clear
+	[[ -n $res ]] && $edbopencommand "${files_a[$((res - 1))]}"
+}
+
 function editdbaction {
 	[[ -z $2 ]] && return 1
 	local IFS=$'\n\t '
@@ -550,6 +582,7 @@ function editdbgeneratecache {
 function edb { editdbsearch "$@"; }
 function edba { editdbaction "$@"; }
 function edbc { editdbclean "$@"; }
+function edbu { editdbsearchcurses "$@"; }
 function edbdt { editdbdeletetag "$@"; }
 function edbd { editdbdelete "$@"; }
 function edbg { editdbgeneratecache "$@"; }
