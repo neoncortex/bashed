@@ -5,7 +5,14 @@ editsessiondir="$editdir/session"
 function editsessionopen {
 	[[ -z $1 ]] && return 1
 	local filename="$1"
-	local argument="$2"
+	local argument=
+	if [[ $filename =~ .*:.* ]]
+	then
+		filename="${filename/:*/}"
+		argument="${filename/*:/}"
+	fi
+
+	[[ -n $2 ]] && argument="$2"
 	! [[ -d $editsessiondir ]] && mkdir -p "$editsessiondir"
 	! [[ $filename =~ ^\/ ]] && filename="$PWD/$filename"
 	local file="$editsessiondir/${filename//\//___}"
@@ -40,6 +47,7 @@ function editsessionclose {
 	[[ -z $fn ]] && return 1
 	[[ -n $editsessiondir/${fn//\//___} ]] && rm "$editsessiondir/${fn//\//___}"
 	editclose
+	printf "\033]2;bash\a"
 }
 
 function editsessionwrite {
@@ -104,3 +112,33 @@ function eso { editsessionopen "$@"; }
 function esq { editsessionclose "$@"; }
 function ese { editsession "$@"; }
 function esw { editsessionwrite "$@"; }
+
+function _editsession {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	local files=()
+	shopt -s dotglob
+	local n=1
+	for i in $editsessiondir/*
+	do
+		files+=("$n")
+		n="$((n + 1))"
+	done
+
+	shopt -u dotglob
+	local numbers="${files[@]}"
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o bashdefault \
+				-W "delete d list l $numbers" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o bashdefault -W "$numbers" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o bashdefault -- $cur))
+			;;
+	esac
+}
+
+complete -F _editsession editsession
+complete -F _editsession ese
