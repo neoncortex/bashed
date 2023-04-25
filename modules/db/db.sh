@@ -363,9 +363,9 @@ function editdbsearch {
 	done
 }
 
-function editdbsearchcurses {
+function editdbcurses {
 	[[ -z $1 ]] && return 1
-	local files="$(editdbsearch "$1")"
+	local files="$($1)"
 	[[ -z $files ]] && return 2
 	local files_a=()
 	local IFS=$'\n\t '
@@ -392,6 +392,11 @@ function editdbsearchcurses {
 	exec 3>&-
 	clear
 	[[ -n $res ]] && $edbopencommand "${files_a[$((res - 1))]}"
+}
+
+function editdbsearchcurses {
+	[[ -z $1 ]] && return 1
+	editdbcurses "editdbsearch "$1""
 }
 
 function editdbaction {
@@ -558,6 +563,12 @@ function editdbquery {
 	fi
 }
 
+function editdbquerycurses {
+	[[ -z $1 ]] && return 1
+	[[ -z $2 ]] && return 2
+	editdbcurses "editdbquery "$1" "$2""
+}
+
 function editdbclean {
 	local n=1
 	local IFS=$'\n\t '
@@ -604,6 +615,7 @@ function edbi { editdbinsert "$@"; }
 function edbm { editdbmove "$@"; }
 function edbmt { editdbmovetag "$@"; }
 function edbq { editdbquery "$@"; }
+function edbqu { editdbquery "$@"; }
 
 function _editdbaction {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -734,6 +746,7 @@ function _editdbsearch {
 
 complete -F _editdbsearch editdbsearch
 complete -F _editdbsearch edb
+complete -F _editdbsearch edbu
 
 function _editdbquery {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -757,3 +770,4 @@ function _editdbquery {
 
 complete -F _editdbquery editdbquery
 complete -F _editdbquery edbq
+complete -F _editdbquery edbqu
