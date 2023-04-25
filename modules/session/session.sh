@@ -24,23 +24,13 @@ function editsessionopen {
 	then
 		if [[ -n $argument ]]
 		then
-			echo "fl=$fl" > "$file"
-			echo "edcmd=$edcmd" >> "$file"
-			echo "edimg=$edimg" >> "$file"
-			echo "edesc=$edesc" >> "$file"
-			echo "edesch=$edesch" >> "$file"
-			echo "edinclude=$edinclude" >> "$file"
-			echo "edhidden=$edhidden" >> "$file"
-			echo "edblock=$edblock" >> "$file"
-			echo "diffarg=$diffarg" >> "$file"
-			echo "edtables=$edtables" >> "$file"
-			echo "edtable_ascii=$edtable_ascii" >> "$file"
+			editsessionwrite "$filename"
 		fi
 
 		source "$file"
 		editshow "$fl"
 	else
-		echo "fl=$fl" > "$file"
+		editsessionwrite "$filename"
 	fi
 }
 
@@ -53,7 +43,9 @@ function editsessionclose {
 
 function editsessionwrite {
 	[[ -z $fn ]] && return 1
-	local file="$editsessiondir/${fn//\//___}"
+	[[ -z $1 ]] && return 2
+	local file="$1"
+	local file="$editsessiondir/${file//\//___}"
 	echo "fl=$fl" > "$file"
 	echo "edcmd=$edcmd" >> "$file"
 	echo "edimg=$edimg" >> "$file"
@@ -62,9 +54,19 @@ function editsessionwrite {
 	echo "edinclude=$edinclude" >> "$file"
 	echo "edhidden=$edhidden" >> "$file"
 	echo "edblock=$edblock" >> "$file"
-	echo "diffarg=$diffarg" >> "$file"
+	echo "diffarg="$diffarg"" >> "$file"
 	echo "edtables=$edtables" >> "$file"
 	echo "edtable_ascii=$edtable_ascii" >> "$file"
+}
+
+function editsessionedit {
+	[[ -z $1 ]] && return 1
+	local n=1
+	for i in $editsessiondir/*
+	do
+		[[ $n -eq $1 ]] && eo "$i" && break
+		n="$((n + 1))"
+	done
 }
 
 function editsession {
@@ -112,10 +114,10 @@ function editsession {
 function eso { editsessionopen "$@"; }
 function esq { editsessionclose "$@"; }
 function ese { editsession "$@"; }
+function esee { editsessionedit "$@"; }
 function esw { editsessionwrite "$@"; }
 
-function _editsession {
-	local cur=${COMP_WORDS[COMP_CWORD]}
+function _editsessioncompletion {
 	local files=()
 	shopt -s dotglob
 	local n=1
@@ -126,6 +128,12 @@ function _editsession {
 	done
 
 	shopt -u dotglob
+	echo "${files[@]}"
+}
+
+function _editsession {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	local files=("$(_editsessioncompletion)")
 	local numbers="${files[@]}"
 	case "$COMP_CWORD" in
 		1)
@@ -143,3 +151,13 @@ function _editsession {
 
 complete -F _editsession editsession
 complete -F _editsession ese
+
+function _editsessionedit {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	local files=("$(_editsessioncompletion)")
+	local numbers="${files[@]}"
+	COMPREPLY=($(compgen -o bashdefault -W "$numbers" -- $cur))
+}
+
+complete -F _editsessionedit editsessionedit
+complete -F _editsessionedit esee

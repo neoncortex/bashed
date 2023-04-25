@@ -1153,12 +1153,16 @@ function editmove {
 	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fl - dest))"
 	[[ $dest == "$" ]] && dest="$fs"
 	[[ $dest -gt $fs ]] && return 1
-	[[ $dest -lt 1 ]] && return 1
-	local to="$2"
-	[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + to))"
-	[[ $to == "$" ]] && to="$fs"
-	[[ $to -gt $fs ]] && return 1
-	[[ $to -lt 1 ]] && return 1
+	[[ $dest -lt 1 ]] && return 2
+	if [[ -n $2 ]]
+	then
+		local to="$2"
+		[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + to))"
+		[[ $to == "$" ]] && to="$fs"
+		[[ $to -gt $fs ]] && return 3
+		[[ $to -lt 1 ]] && return 4
+	fi
+
 	local res=
 	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw")" \
 		|| res="$(edit "${fl}m$dest\nw")"
