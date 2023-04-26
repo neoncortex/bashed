@@ -1229,6 +1229,8 @@ For example:
 editdbquery files 'sh$'
 ````
 
+You can use editdbquerycurses, or edbqu for short, to have a curses interface.
+
 ##### Tags of a file:
 To see what tags a file have, use editdbquery:
 
@@ -1337,6 +1339,16 @@ editdbgeneratecache
 
 After executing it, you can use auto completion on the editdb* commands.
 
+### file name shorting:
+If you can identify one filename uniquely with a regex, you can use a short version of it.  For example, let's say you have a file called my-unique-file in your database.  You can reference it like this: %my-unique-file%.  Commands like, eo, eso, es, etc, will use the editdbquery command to find the file.
+
+If you have two or more files with the same name, you can use it's parent directory to differentiate:
+
+````
+%proj1/my-file.c%
+%proj2/my-file.c%
+````
+
 ### The database file:
 The database file is a text file.  It's path is setted in the edbfile variable.  By default, it will be ~/.edit/db/db.  You can change this variable to something else, this allows you to have multiple databases.  For example:
 
@@ -1358,6 +1370,7 @@ Now all the editdb* commands will work with this database file.
 - edbm, editdbmove;
 - edbmt, editdbmovetag;
 - edbq, editdbquery;
+- edbqu, editdbquerycurses;
 - edbu, editdbsearchcurses;
 
 ## Session:
@@ -1430,6 +1443,21 @@ editsession delete 1
 ````
 
 This number should be one of the numbers displayed for each session by editsession list.
+
+### Defaults:
+The session module override these variables:
+- edcmd, with editsessioncmd;
+- edsyntax, with editsessionsyntax;
+- edimg, with editsessionimg;
+- edesc, with editsessionesc;
+- edesch, with editsessionesch;
+- edinclude, with editsessioninclude;
+- edhidden, with editsessionhidden;
+- edblock, with editsessionblock;
+- edtables, with editsessiontables;
+- edtable_ascii, with editsessiontable_ascii;
+
+You can, of couse, change the default value of these variables in your ~/.bashrc.
 
 ### db and sessions:
 You may want to set the edbopencommand to eso, so the curses search will open files using eso, instead of the default eo.

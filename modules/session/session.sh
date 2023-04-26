@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
 editsessiondir="$editdir/session"
+editsessioncmd="n"
+editsessionsyntax=1
+editsessionimg=1
+editsessionesc=1
+editsessionesch=0
+editsessioninclude=1
+editsessionhidden=1
+editsessionblock=1
+editsessiontables=1
+editsessiontable_ascii=0
 
 function editsessionopen {
 	[[ -z $1 ]] && return 1
@@ -17,6 +27,16 @@ function editsessionopen {
 	! [[ -d $editsessiondir ]] && mkdir -p "$editsessiondir"
 	! [[ $filename =~ ^\/ ]] && filename="$PWD/$filename"
 	local file="$editsessiondir/${filename//\//___}"
+	edcmd="$editsessioncmd"
+	edsyntax="$editsessionsyntax"
+	edimg="$editsessionimg"
+	edesc="$editsessionesc"
+	edesch="$editsessionesch"
+	edinclude="$editsessioninclude"
+	edhidden="$editsessionhidden"
+	edblock="$editsessionblock"
+	edtables="$editsessiontables"
+	edtable_ascii="$editsessiontable_ascii"
 	editopen "$filename" > /dev/null
 	[[ -n $argument ]] && editarg "$argument" > /dev/null
 	printf "\033]2;$filename\a"
