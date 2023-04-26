@@ -74,7 +74,7 @@ function editsessionwrite {
 	echo "edinclude=$edinclude" >> "$file"
 	echo "edhidden=$edhidden" >> "$file"
 	echo "edblock=$edblock" >> "$file"
-	echo "diffarg="$diffarg"" >> "$file"
+	echo "diffarg=\"$diffarg\"" >> "$file"
 	echo "edtables=$edtables" >> "$file"
 	echo "edtable_ascii=$edtable_ascii" >> "$file"
 }

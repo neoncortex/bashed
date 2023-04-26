@@ -513,6 +513,7 @@ function editopen {
 	editwindow "$f" "$argument"
 	[[ $? -eq 1 ]] && return 3
 	[[ $? -eq 2 ]] && return 4
+	[[ $edtmux -eq 0 ]] && [[ $edty -eq 0 ]] && printf "\033]2;$f\a"
 	if [[ $edtmux -eq 1 ]]
 	then
 		[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
@@ -550,6 +551,7 @@ function editclose {
 	[[ -n $fileresultindex ]] && fileresultindex=
 	[[ -n $fileresult_a ]] && fileresult_a=
 	[[ $edtmux -eq 1 ]] && tmux select-pane -T "$(hostname)"
+	[[ $edtmux -eq 0 ]] && [[ $edty -eq 0 ]] && printf "\033]2;bash\a"
 }
 
 function editfind {
