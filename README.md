@@ -1229,7 +1229,7 @@ For example:
 editdbquery files 'sh$'
 ````
 
-You can use editdbquerycurses, or edbqu for short, to have a curses interface.
+You can use editdbquerycurses, or edbqu for short, to have a curses interface.  The command for opening the selected file is the same that is used for editdbsearchcurses, setted in the variable edbopencommand.
 
 ##### Tags of a file:
 To see what tags a file have, use editdbquery:
@@ -1340,13 +1340,13 @@ editdbgeneratecache
 After executing it, you can use auto completion on the editdb* commands.
 
 ### file name shorting:
-If you can identify one filename uniquely with a regex, you can use a short version of it.  For example, let's say you have a file called my-unique-file in your database.  You can reference it like this: %my-unique-file%.  Commands like, eo, eso, es, etc, will use the editdbquery command to find the file.
+If you can identify one filename uniquely with a regex, you can use a short version of it.  For example, let's say you have a file called /path/to/my/my-unique-file in your database.  You can reference it like this: %my-unique-file%.  Commands like, eo, eso, es, etc, will use the editdbquery command to find the file.
 
 If you have two or more files with the same name, you can use it's parent directory to differentiate:
 
 ````
-%proj1/my-file.c%
-%proj2/my-file.c%
+eso %proj1/my-file.c%
+eso %proj2/my-file.c%
 ````
 
 ### The database file:
