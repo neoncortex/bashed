@@ -149,11 +149,28 @@ function babel {
 	done
 }
 
+function _babelcompletion {
+	[[ -z $fn ]] && return 1
+	local blocks=()
+	while read -r line
+	do
+		if [[ $line =~ ^\#\+name: ]]
+		then
+			local b="${b/\#\+name:\ /}"
+			b="${line/\#\+name:/}"
+			blocks+=("$b")
+		fi
+	done < "$fn"
+
+	echo "${blocks[@]}"
+}
+
 function _babel {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs}" -- $cur))
+			local blocks="$(_babelcompletion)"
+			COMPREPLY=($(compgen -o nosort -W "$blocks" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -o default))

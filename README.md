@@ -1424,7 +1424,11 @@ To list the sessions, that is, the opened files, use the editsession command, es
 editsession list
 ````
 
-Each session will be given a number, this number is used to select a session.
+Each session will be given a number, this number is used to select a session.  You can use editsession listcurses, or lu, for short, to select a session using a curses interface:
+
+````
+ese lu
+````
 
 ### Selecting a session:
 To select a session, use the editsession command, ese for short, with a number argument:
@@ -1442,7 +1446,24 @@ To delete a session, use the editsession command, ese for short, with delete arg
 editsession delete 1
 ````
 
-This number should be one of the numbers displayed for each session by editsession list.
+This number should be one of the numbers displayed for each session by editsession list.  You can use editsession deletecurses, or du, for short, to select the session to delete using a curses interface:
+
+````
+ese du
+````
+
+### Editing sessions:
+You can edit the session file, that is, the file that contain the variables that control the session, using editsessionedit, or esee, for short:
+
+````
+esee 1
+````
+
+You can use editsessioneditcurses, or eseeu, for short, to select a session file to edit using a curses interface.
+
+````
+eseeu
+````
 
 ### Defaults:
 The session module override these variables:

@@ -81,12 +81,63 @@ function editsessionwrite {
 
 function editsessionedit {
 	[[ -z $1 ]] && return 1
+	local IFS=$' \n\t'
 	local n=1
 	for i in $editsessiondir/*
 	do
 		[[ $n -eq $1 ]] && eo "$i" && break
 		n="$((n + 1))"
 	done
+}
+
+function editsessioncurses {
+	local IFS=$'\n'
+	local files="$*"
+	[[ -z $files ]] && return 2
+	local files_a=()
+	for i in $files
+	do
+		local filename="${i//___/\/}"
+		filename="${filename/$editsessiondir/}"
+		filename="${filename//\/\//\/}"
+		files_a+=("$filename")
+	done
+
+	local IFS=$'\n\t '
+	local rows=
+	local cols=
+	read -r rows cols < <(stty size)
+	local dialog="dialog --colors --menu 'Select:' "
+	local n=1
+	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
+	for i in "${files_a[@]}"
+	do
+		dialog="$dialog $n "$i""
+		n="$((n + 1))"
+	done
+
+	exec 3>&1
+	echo "$dialog"
+	local res="$($dialog 2>&1 1>&3)"
+	exec 3>&-
+	clear
+	[[ -n $res ]] && edsession_uresult="$res"
+}
+
+function editsessioneditcurses {
+	local IFS=$'\n\t '
+	local files=()
+	shopt -s dotglob
+	for i in $editsessiondir/*
+	do
+		files+=("$i")
+	done
+
+	shopt -u dotglob
+	[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
+	[[ -n $edsession_uresult ]] \
+		&& eo "${files[$((edsession_uresult - 1))]}" \
+		&& edsession_uresult=
 }
 
 function editsession {
@@ -122,12 +173,34 @@ function editsession {
 				n="$((n + 1))"
 			fi
 		done
+	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
+		if [[ -n $edsession_uresult ]]
+		then
+			local filename="${files[$((edsession_uresult - 1))]}"
+			filename="${filename//___/\/}"
+			filename="${filename/$editsessiondir/}"
+			filename="${filename//\/\//\/}"
+			eso "$filename"
+			edsession_uresult=
+		fi
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
 		[[ -z $2 ]] && return 3
 		local filename="${files[$(($2 - 1))]}"
 		filename="${filename//\/\//\/}"
 		[[ -n $filename ]] && rm "$filename"
+	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
+		if [[ -n $edsession_uresult ]]
+		then
+			local f="${files[$((edsession_uresult - 1))]}"
+			f="${f//\/\//\/}"
+			[[ -n $f ]] && rm "$f"
+			edsession_uresult=
+		fi
 	fi
 }
 
@@ -135,6 +208,7 @@ function eso { editsessionopen "$@"; }
 function esq { editsessionclose "$@"; }
 function ese { editsession "$@"; }
 function esee { editsessionedit "$@"; }
+function eseeu { editsessioneditcurses "$@"; }
 function esw { editsessionwrite "$@"; }
 
 function _editsessioncompletion {
@@ -158,7 +232,8 @@ function _editsession {
 	case "$COMP_CWORD" in
 		1)
 			COMPREPLY=($(compgen -o bashdefault \
-				-W "delete d list l $numbers" -- $cur))
+				-W "delete d list l listcurses lu deletecurses \
+				du $numbers" -- $cur))
 			;;
 		2)
 			COMPREPLY=($(compgen -o bashdefault -W "$numbers" -- $cur))
