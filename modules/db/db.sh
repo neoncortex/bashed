@@ -387,7 +387,6 @@ function editdbcurses {
 	done
 
 	exec 3>&1
-	echo "$dialog"
 	local res="$($dialog 2>&1 1>&3)"
 	exec 3>&-
 	clear
@@ -546,21 +545,18 @@ function editdbquery {
 			then
 				local data="$f"
 				[[ -n $tail ]] && data="$f$tail"
-				local files+=("$data")
+				files_a+=("$data")
 			fi
 		fi
 	done < "$edbfile"
 
 	[[ -n $tags ]] && echo "$tags"
-	if [[ -n $files ]]
-	then
-		for i in ${files[@]}
-		do
-			[[ -d $i ]] \
-				&& echo "$i/" \
-				|| echo "$i"
-		done
-	fi
+	for i in ${files_a[@]}
+	do
+		[[ -d $i ]] \
+			&& echo "$i/" \
+			|| echo "$i"
+	done
 }
 
 function editdbquerycurses {

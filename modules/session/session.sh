@@ -63,8 +63,8 @@ function editsessionclose {
 
 function editsessionwrite {
 	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
 	local file="$1"
+	[[ -z $1 ]] && file="$fn"
 	local file="$editsessiondir/${file//\//___}"
 	echo "fl=$fl" > "$file"
 	echo "edcmd=$edcmd" >> "$file"
@@ -117,7 +117,6 @@ function editsessioncurses {
 	done
 
 	exec 3>&1
-	echo "$dialog"
 	local res="$($dialog 2>&1 1>&3)"
 	exec 3>&-
 	clear
