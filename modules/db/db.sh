@@ -611,7 +611,7 @@ function edbi { editdbinsert "$@"; }
 function edbm { editdbmove "$@"; }
 function edbmt { editdbmovetag "$@"; }
 function edbq { editdbquery "$@"; }
-function edbqu { editdbquery "$@"; }
+function edbqu { editdbquerycurses "$@"; }
 
 function _editdbaction {
 	local cur=${COMP_WORDS[COMP_CWORD]}
