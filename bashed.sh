@@ -929,7 +929,6 @@ function editshow {
 			return
 		elif [[ $arg == "d" ]]
 		then
-			echo "${#fileresult_a[@]}"
 			if [[ $fileresultindex -eq $((${#fileresult_a[@]} - 1)) ]]
 			then
 				fileresultindex=0
