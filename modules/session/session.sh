@@ -103,21 +103,23 @@ function editsessioncurses {
 		files_a+=("$filename")
 	done
 
-	local IFS=$'\n\t '
 	local rows=
 	local cols=
+	local IFS=$'\n\t '
 	read -r rows cols < <(stty size)
 	local dialog="dialog --colors --menu 'Select:' "
+	local items=()
 	local n=1
 	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
+	#local IFS=$'\n'
 	for i in "${files_a[@]}"
 	do
-		dialog="$dialog $n "$i""
+		items+=("$n" "$i")
 		n="$((n + 1))"
 	done
 
 	exec 3>&1
-	local res="$($dialog 2>&1 1>&3)"
+	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
 	exec 3>&-
 	clear
 	[[ -n $res ]] && edsession_uresult="$res"

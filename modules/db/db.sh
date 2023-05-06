@@ -326,6 +326,7 @@ function editdbsearch {
 			tags_a+=("$i")
 		done
 
+		local IFS=$'\n'
 		local found_a=()
 		for ((i=0; i < ${#tags_s[@]}; ++i))
 		do
@@ -367,8 +368,9 @@ function editdbcurses {
 	[[ -z $1 ]] && return 1
 	local files="$($1)"
 	[[ -z $files ]] && return 2
-	local files_a=()
 	local IFS=$'\n\t '
+	local files_a=()
+	local IFS=$'\n'
 	for i in $files
 	do
 		files_a+=("$i")
@@ -376,18 +378,22 @@ function editdbcurses {
 
 	local rows=
 	local cols=
+	local IFS=$'\n\t '
 	read -r rows cols < <(stty size)
 	local dialog="dialog --colors --menu 'Select:' "
+	local items=()
 	local n=1
 	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
+	local IFS=$'\n'
 	for i in $files
 	do
-		dialog="$dialog $n "$i""
+		items+=("$n" "$i")
 		n="$((n + 1))"
 	done
 
+	local IFS=$'\n\t '
 	exec 3>&1
-	local res="$($dialog 2>&1 1>&3)"
+	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
 	exec 3>&-
 	clear
 	[[ -n $res ]] && $edbopencommand "${files_a[$((res - 1))]}"
