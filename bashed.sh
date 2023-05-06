@@ -293,6 +293,36 @@ function editstore {
 	mv "$editversiondir/$fn" "$editversiondir/${fn}_${date}"
 }
 
+function editcurses {
+	[[ -z $fn ]] && return 1
+	local IFS=$'\n'
+	local files="$*"
+	local files_a=()
+	for i in $files
+	do
+		files_a+=("$i")
+	done
+
+	local IFS=$'\n\t '
+	local rows=
+	local cols=
+	read -r rows cols < <(stty size)
+	local dialog="dialog --colors --menu 'Select:' "
+	local n=1
+	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
+	for i in "${files_a[@]}"
+	do
+		dialog="$dialog $n "$i""
+		n="$((n + 1))"
+	done
+
+	exec 3>&1
+	local res="$($dialog 2>&1 1>&3)"
+	exec 3>&-
+	clear
+	[[ -n $res ]] && e_uresult="$res"
+}
+
 function editundo {
 	[[ -n $4  ]] && local fn="$4"
 	[[ -z $fn ]] && return 1
@@ -319,7 +349,7 @@ function editundo {
 	fi
 
 	[[ ${#files[@]} -eq 0 ]] && return 2
-	if [[ $1 == "l" ]] || [[ $1 == "list" ]]
+	if [[ $1 == l ]] || [[ $1 == list ]]
 	then
 		local n=1
 		for i in ${files[@]}
@@ -332,7 +362,16 @@ function editundo {
 				n="$((n + 1))"
 			fi
 		done
-	elif [[ $1 == "-" ]] || [[ $1 == "delete" ]] || [[ $1 == "rm" ]]
+	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editcurses "${files[@]}"
+		if [[ -n $e_uresult ]]
+		then
+			local filename="${files[$e_uresult]}"
+			eo "$filename"
+			e_uresult=
+		fi
+	elif [[ $1 == - ]] || [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
 		[[ -z $2 ]] && return 3
 		local head="$2"
@@ -344,7 +383,16 @@ function editundo {
 				&& rm "${files[$i]}" \
 				|| echo "?"
 		done
-	elif [[ $1 == "diff" ]]
+	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editcurses "${files[@]}"
+		if [[ -n $e_uresult ]]
+		then
+			local filename="${files[$e_uresult]}"
+			[[ -f $filename ]] && rm "${files[$e_uresult]}"
+			e_uresult=
+		fi
+	elif [[ $1 == diff ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] && return 3
 		local f1="$2"
@@ -357,17 +405,17 @@ function editundo {
 		else
 			echo "?"
 		fi
-	elif [[ $1 == "es" ]] || [[ $1 == "show" ]]
+	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
-	elif [[ $1 == "p" ]] || [[ $1 == "print" ]]
+	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] \
 			&& edsyntax=0 edcmd=p edinclude=0 edesc=0 edimg=0 \
 				editshow a "${files[$2]}"
-	elif [[ $1 == "copy" ]] || [[ $1 == "cp" ]]
+	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] && return 3
 		local f1="$2"
@@ -869,27 +917,28 @@ function editshow {
 		then
 			if [[ $fileresultindex -eq 0 ]] || [[ $fileresultindex -eq -1 ]]
 			then
-				fileresultindex="$((${#fileresult[@]}-1))"
+				fileresultindex="$((${#fileresult_a[@]} - 1))"
 			elif [[ $fileresultindex -gt 0 ]]
 			then
-				fileresultindex="$((fileresultindex-1))"
+				fileresultindex="$((fileresultindex - 1))"
 			fi
 
-			fl="${fileresult[$fileresultindex]}"
+			fl="${fileresult_a[$fileresultindex]}"
 			printf "$fileresultindex:"
 			editshow $fl
 			return
 		elif [[ $arg == "d" ]]
 		then
-			if [[ $fileresultindex -eq $((${#fileresult[@]}-1)) ]]
+			echo "${#fileresult_a[@]}"
+			if [[ $fileresultindex -eq $((${#fileresult_a[@]} - 1)) ]]
 			then
 				fileresultindex=0
-			elif [[ $fileresultindex -lt $((${#fileresult[@]}-1)) ]]
+			elif [[ $fileresultindex -lt $((${#fileresult_a[@]} - 1)) ]]
 			then
-				fileresultindex="$((fileresultindex+1))"
+				fileresultindex="$((fileresultindex + 1))"
 			fi
 
-			fl="${fileresult[$fileresultindex]}"
+			fl="${fileresult_a[$fileresultindex]}"
 			printf "$fileresultindex:"
 			editshow $fl
 			return
@@ -1515,16 +1564,7 @@ function e { edit "$@"; }
 
 function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	case "$COMP_CWORD" in
-		1)
-			local words="#+begin_src #+end_src #+table #+end_table"
-			words="$words #+hidden #+end_hidden [[include [[\\\\\\\\033[ ]]"
-			COMPREPLY=($(compgen -W "$words" -- $cur))
-			;;
-		*)
-			COMPREPLY=($(compgen -o default -- $cur))
-			;;
-	esac
+	COMPREPLY=($(compgen -o default -- $cur))
 }
 
 complete -F _editappend editappend
