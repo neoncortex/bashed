@@ -620,7 +620,7 @@ eu l
 eu list
 ````
 
-Will show a list of the copies of the current file previously stored using et.
+Will show a list of the copies of the current file previously stored using et.  listcurses, or lu, can be used instead of l, or list, to list files using a curses interface.  The selected file version will substitute your current file.
 
 #### Showing:
 ##### With syntax:
@@ -629,11 +629,14 @@ eu show n
 eu es n
 ````
 
+showcurses, or esu, can be used instead of show, or es, to select the file to show using a curses interface.
+
 ##### Plain:
 ````
 eu print n
 eu p n
 ````
+printcurses, or pu, can be used instead of print, or p, to select the file to print using a curses interface.
 
 #### Diff:
 ````
@@ -646,7 +649,7 @@ Will present a diff from the file f1, and file f2.  f1, and f2, can be either a 
 eu diff 2 $fn
 ````
 
-The diff arguments can be set be changing the diffarg variable.  By default, ther arguments are: --color -c.
+The diff arguments can be set be changing the diffarg variable.  By default, ther arguments are: --color -c.  diffcurses can be used instead of diff, to select the files to diff using a curses interface.  You should select two files from the curses interface, or one, if you pass a filename.  For example:
 
 #### Selecting:
 ````
@@ -662,7 +665,22 @@ You can copy a stored file version somewhere else.  For example:
 eu cp 1 /path/to/file
 ````
 
-Will copy the stored file version 1 of the current opened file to /path/to/file.
+Will copy the stored file version 1 of the current opened file to /path/to/file.  copycurses, or cpu, can be used instead of copy, or cp, to select the file to copy using the curses interface:
+
+````
+eu copycurses /path/to/file
+````
+
+will copy the selected file to /path/to/file.
+
+#### Deleting:
+You can delete file versions using delete, or rm:
+
+````
+eu delete n
+````
+
+You can use deletecurses, or du, to select the version files to delete using a curses interface.
 
 ### Images:
 If a path to a image file is found, bashed will display it. If bashed is configured to use tmux, it will be displayed using chafa, and if it's configured to use terminology, the image will be displayed using tycat.  The image path should be the sole content of the line.  For example:
@@ -723,15 +741,15 @@ And so on.
 Sometimes it will be useful to hide the escape sequences, for example when you want to pass the text to a command.  To do this, you set the variable edesch to 1.
 
 ### Multimedia:
-#### emq:
-If you are using Bashed with Terminology, you can view the all the media files in a text file using the command emq.  It receives the same argument as es, and call tyq on each result.  For example, to see all media from the line 10 to line 20:
+#### etyq:
+If you are using Bashed with Terminology, you can view the all the media files in a text file using the command etyq.  It receives the same argument as es, and call tyq on each result.  For example, to see all media from the line 10 to line 20:
 
 ````
-emq 10,20
+etyq 10,20
 ````
 
 #### etycat:
-You can cat media on the terminal using etycat.  It works the same as emq, but execute tycat instead of tyq.
+You can cat media on the terminal using etycat.  It works the same as etyq, but execute tycat instead of tyq.
 
 ### efmt:
 This is the internal paragraph formatter.  For example:
@@ -846,6 +864,9 @@ Controls if files inside [[include:]] shoud be displayed.
 
 #### edblock:
 Controls if source blocks should be displayed with the syntax highlighting.
+
+#### e_uresult:
+Contains the last selections of a curses menu.
 
 #### Highlight:
 ##### syntax:
@@ -976,7 +997,6 @@ The functions are:
 - editjoin, ej: join lines;
 - editlevel, el: count tab indentation;
 - editlocate, efl: find line;
-- editmediaqueue, emq: show all media files in a text file when using Terminology.
 - editmore, emore, scroll file forward using more;
 - editmove, em: move lines;
 - editopen, eo: open file;
@@ -987,19 +1007,22 @@ The functions are:
 - editsub, esu; substitution;
 - edittransfer, ey: copy lines;
 - editundo, eu: show, diff, restore, delete stored version files;
+- edittycat, etycat: print media on the terminal using Terminology tycat;
+- edittyq, etyq, queue files and play using Terminology tyq;
 
 There are other functions that are used internally by the ones above:
 - editarg: parse the arguments of a file;
+- editcurses: used to generate curses menus;
 - editescape: manipulate and print escape sequences;
 - edithi: display text;
 - editimg: display images;
+- editmedia: used by edittycat, and edittyq;
 - editpresent: display file contents; 
 - editregion: used internally to separate regions of the text;
 - editsyntax: set the syntax to be used;
 - edittable: display tables;
 - edittable_printbox: print a line of a tale box
 - edittable_printline: print a line of a table text;
-- edittycat, etycat: print media on the terminal using Terminology tycat;
 - editwindowtmux: used to open and find tmux windows;
 - editwindowty: used to open and find terminology windows;
 - editwindow: open/find windows;
@@ -1162,7 +1185,7 @@ By default, babel come with these langs;
 - yasm_gcc;
 - yasm_gcc_no_pie;
 
-#### How to customized it:
+### How to customized it:
 You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the lang name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
 
 ## Db:
@@ -1177,21 +1200,21 @@ source /path/to/bashed/modules/db/db.sh
 
 ### How it works:
 #### Inserting:
-To insert a file, use the editdbinsert function.  For example:
+To insert a file, use the editdbinsert, or edbi, for short.  For example:
 
 ````
 editdbinsert /path/to/file tag1,tag2
 ````
 
 #### Deleting:
-To delete a file from the database, use editdbdelete:
+To delete a file from the database, use editdbdelete, or edbd, for short:
 
 ````
 editdbdelete /path/to/file
 ````
 
 #### Moving:
-To move a file on the database, use editdbmove:
+To move a file on the database, use editdbmove, or edbm, for short:
 
 ````
 editdbmove /path/to/file /new/path/to/dir
@@ -1201,11 +1224,13 @@ File will be move to dir.
 
 #### Searching:
 ##### Searching tags:
-To search tagged files:
+To search tagged files, use editdbsearch, or edb, for short:
 
 ````
 editdbsearch tag1,tag2
 ````
+
+editdbsearchcurses, or edbu, for short, can be used to list the results using a curses interface.  The selected file will be opened using $edbopencommand.
 
 ###### Tag subtraction:
 Tags can be subtracted from the search.  For example, to search all the files containing the tags t1, and t3, but not t2:
@@ -1217,7 +1242,7 @@ editdbsearch t1,-t2,t3
 You can search using a curses interface, by using editdbsearchcurses.  The command used to opening the result of the curses search is setted in the variable edbopencommand, that is setted by default to eo.
 
 ##### Searching files:
-To search for files, use editdbquery:
+To search for files, use editdbquery, or edbq for short:
 
 ````
 editdbquery files 'regex'
@@ -1229,10 +1254,14 @@ For example:
 editdbquery files 'sh$'
 ````
 
-You can use editdbquerycurses, or edbqu for short, to have a curses interface.  The command for opening the selected file is the same that is used for editdbsearchcurses, setted in the variable edbopencommand.
+You can use editdbquerycurses, or edbqu for short, to have a curses interface.  The command for opening the selected file is the same that is used for editdbsearch, setted in the variable edbopencommand.
+
+````
+edbqu files 'sh4'
+````
 
 ##### Tags of a file:
-To see what tags a file have, use editdbquery:
+To see what tags a file have, use editdbquery, or edbq, for short:
 
 ````
 editdbquery tags /path/to/file
@@ -1240,21 +1269,21 @@ editdbquery tags /path/to/file
 
 #### Tag operations:
 ##### Adding tags to a file:
-To add a tag to a file that was previously inserted in the database:
+To add a tag to a file that was previously inserted in the database, use editdbinserttag, or edbit, for short:
 
 ````
 editdbinserttag /path/to/file tag3,tag4
 ````
 
 ##### Deleting tags of a file:
-To remove a tag of a file that was previously inserted in the database:
+To remove a tag of a file that was previously inserted in the database, use editdbdeletetag, or edbdt, for short:
 
 ````
 editdbdeletetag /path/to/file tag3,tag4
 ````
 
 ##### Moving tags of a file:
-To move a tag of a file that was previously inserted in the dabatase, that is, change a set of tags to a new one:
+To move a tag of a file that was previously inserted in the dabatase, that is, change a set of tags to a new one, use editdbmovetag, o edbmt, for short:
 
 ````
 editdbmovetag /path/to/dir tag3,tag4 tag5,tag6
@@ -1446,7 +1475,7 @@ To delete a session, use the editsession command, ese for short, with delete arg
 editsession delete 1
 ````
 
-This number should be one of the numbers displayed for each session by editsession list.  You can use editsession deletecurses, or du, for short, to select the session to delete using a curses interface:
+This number should be one of the numbers displayed for each session by editsession list.  You can use editsession deletecurses, or du, for short, to select the sessions to delete using a curses interface:
 
 ````
 ese du
