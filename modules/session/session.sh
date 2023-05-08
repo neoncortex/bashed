@@ -90,39 +90,17 @@ function editsessionedit {
 	done
 }
 
-function editsessioncurses {
+function editsession_encodepaths {
 	local IFS=$'\n'
 	local files="$*"
 	[[ -z $files ]] && return 2
-	local files_a=()
 	for i in $files
 	do
 		local filename="${i//___/\/}"
 		filename="${filename/$editsessiondir/}"
 		filename="${filename//\/\//\/}"
-		files_a+=("$filename")
+		echo "$filename"
 	done
-
-	local rows=
-	local cols=
-	local IFS=$'\n\t '
-	read -r rows cols < <(stty size)
-	local dialog="dialog --colors --menu 'Select:' "
-	local items=()
-	local n=1
-	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
-	#local IFS=$'\n'
-	for i in "${files_a[@]}"
-	do
-		items+=("$n" "$i")
-		n="$((n + 1))"
-	done
-
-	exec 3>&1
-	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
-	exec 3>&-
-	clear
-	[[ -n $res ]] && edsession_uresult="$res"
 }
 
 function editsessioneditcurses {
@@ -136,16 +114,18 @@ function editsessioneditcurses {
 
 	shopt -u dotglob
 	[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
-	[[ -n $edsession_uresult ]] \
-		&& eo "${files[$((edsession_uresult - 1))]}" \
-		&& edsession_uresult=
+	[[ ${#files[@]} -gt 0 ]] \
+		&& editcurses 0 "$(editsession_encodepaths ${files[@]})"
+	[[ -n $e_uresult ]] \
+		&& eo "${files[$((e_uresult - 1))]}" \
+		&& e_uresult=
 }
 
 function editsession {
 	[[ -z $1 ]] && return 1
-	local IFS=$' \n\t'
 	local files=()
 	shopt -s dotglob
+	local IFS=$'\n'
 	for i in $editsessiondir/*
 	do
 		files+=("$i")
@@ -176,15 +156,16 @@ function editsession {
 		done
 	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
-		if [[ -n $edsession_uresult ]]
+		[[ ${#files[@]} -gt 0 ]] \
+			&& editcurses 0 "$(editsession_encodepaths ${files[@]})"
+		if [[ $e_uresult -gt 0 ]]
 		then
-			local filename="${files[$((edsession_uresult - 1))]}"
+			local filename="${files[$((e_uresult - 1))]}"
 			filename="${filename//___/\/}"
 			filename="${filename/$editsessiondir/}"
 			filename="${filename//\/\//\/}"
 			eso "$filename"
-			edsession_uresult=
+			e_uresult=
 		fi
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
@@ -194,13 +175,18 @@ function editsession {
 		[[ -n $filename ]] && rm "$filename"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && editsessioncurses "${files[@]}"
-		if [[ -n $edsession_uresult ]]
+		[[ ${#files[@]} -gt 0 ]] \
+			&& editcurses 1 "$(editsession_encodepaths ${files[@]})"
+		if [[ ${#e_uresult[@]} -gt 0 ]]
 		then
-			local f="${files[$((edsession_uresult - 1))]}"
-			f="${f//\/\//\/}"
-			[[ -n $f ]] && rm "$f"
-			edsession_uresult=
+			for i in ${e_uresult[@]}
+			do
+				local f="${files[$((i - 1))]}"
+				f="${f//\/\//\/}"
+				[[ -n $f ]] && rm "$f"
+			done
+
+			e_uresult=
 		fi
 	fi
 }

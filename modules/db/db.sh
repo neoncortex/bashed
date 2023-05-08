@@ -364,44 +364,12 @@ function editdbsearch {
 	done
 }
 
-function editdbcurses {
-	[[ -z $1 ]] && return 1
-	local files="$($1)"
-	[[ -z $files ]] && return 2
-	local IFS=$'\n\t '
-	local files_a=()
-	local IFS=$'\n'
-	for i in $files
-	do
-		files_a+=("$i")
-	done
-
-	local rows=
-	local cols=
-	local IFS=$'\n\t '
-	read -r rows cols < <(stty size)
-	local dialog="dialog --colors --menu 'Select:' "
-	local items=()
-	local n=1
-	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
-	local IFS=$'\n'
-	for i in $files
-	do
-		items+=("$n" "$i")
-		n="$((n + 1))"
-	done
-
-	local IFS=$'\n\t '
-	exec 3>&1
-	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
-	exec 3>&-
-	clear
-	[[ -n $res ]] && $edbopencommand "${files_a[$((res - 1))]}"
-}
-
 function editdbsearchcurses {
 	[[ -z $1 ]] && return 1
-	editdbcurses "editdbsearch "$1""
+	local IFS=$'\n'
+	local files=($(editdbsearch "$1"))
+	editcurses 0 "${files[@]}"
+	[[ -n $e_uresult ]] && $edbopencommand "${files[$((e_uresult - 1))]}"
 }
 
 function editdbaction {
@@ -537,6 +505,7 @@ function editdbquery {
 		rex="${rex/\%*/}"
 	fi
 
+	local IFS=$'\n'
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
@@ -568,7 +537,10 @@ function editdbquery {
 function editdbquerycurses {
 	[[ -z $1 ]] && return 1
 	[[ -z $2 ]] && return 2
-	editdbcurses "editdbquery "$1" "$2""
+	local IFS=$'\n'
+	local files=($(editdbquery "$1" "$2"))
+	editcurses 0 "${files[@]}"
+	[[ -n $e_uresult ]] && $edbopencommand "${files[$((e_uresult - 1))]}"
 }
 
 function editdbclean {

@@ -296,6 +296,8 @@ function editstore {
 function editcurses {
 	[[ -z $fn ]] && return 1
 	local IFS=$'\n'
+	local multiple="$1"
+	shift
 	local files="$*"
 	local files_a=()
 	for i in $files
@@ -308,12 +310,16 @@ function editcurses {
 	local IFS=$'\n\t '
 	read -r rows cols < <(stty size)
 	local dialog="dialog --colors --menu 'Select:' "
+	[[ $multiple -eq 1 ]] \
+		&& dialog="dialog --colors --checklist 'Select:' "
 	local items=()
 	local n=1
 	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
 	for i in "${files_a[@]}"
 	do
-		items+=("$n" "$i")
+		[[ $multiple -eq 1 ]] \
+			&& items+=("$n" "$i" "off") \
+			|| items+=("$n" "$i")
 		n="$((n + 1))"
 	done
 
@@ -321,7 +327,19 @@ function editcurses {
 	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
 	exec 3>&-
 	clear
-	[[ -n $res ]] && e_uresult="$res"
+	if [[ $multiple -eq 1 ]]
+	then
+		e_uresult=()
+		if [[ -n $res ]]
+		then
+			for i in $res
+			do
+				e_uresult+=("$i")
+			done
+		fi
+	else
+		[[ -n $res ]] && e_uresult="$res"
+	fi
 }
 
 function editundo {
@@ -365,7 +383,7 @@ function editundo {
 		done
 	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && editcurses "${files[@]}"
+		[[ ${#files[@]} -gt 0 ]] && editcurses 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
 			local filename="${files[$e_uresult]}"
@@ -386,11 +404,15 @@ function editundo {
 		done
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && editcurses "${files[@]}"
-		if [[ -n $e_uresult ]]
+		[[ ${#files[@]} -gt 0 ]] && editcurses 1 "${files[@]}"
+		if [[ $e_uresult -gt 0 ]]
 		then
-			local filename="${files[$e_uresult]}"
-			[[ -f $filename ]] && rm "${files[$e_uresult]}"
+			local IFS=$'\n'
+			for i in "${e_uresult[@]}"
+			do
+				echo "${files[$i]}"
+			done
+
 			e_uresult=
 		fi
 	elif [[ $1 == diff ]]
@@ -406,16 +428,57 @@ function editundo {
 		else
 			echo "?"
 		fi
+	elif [[ $1 == diffcurses ]]
+	then
+		if [[ -n $2 ]]
+		then
+			[[ ${#files[@]} -gt 0 ]] && editcurses 0 "${files[@]}"
+			if [[ -n $e_uresult ]]
+			then
+				local filename="${files[$e_uresult]}"
+				[[ -f $filename ]] && diff $diffarg "$2" "$filename"
+				e_uresult=
+			fi
+		else
+			[[ ${#files[@]} -gt 0 ]] && editcurses 1 "${files[@]}"
+			if [[ $e_uresult -gt 0 ]]
+			then
+				local f1="${files[${e_uresult[0]}]}"
+				local f2="${files[${e_uresult[1]}]}"
+				diff $diffarg "$f1" "$f2"
+				e_uresult=
+			fi
+		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
+	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editcurses 0 "${files[@]}"
+		if [[ -n $e_uresult ]]
+		then
+			local filename="${files[$e_uresult]}"
+			[[ -f $filename ]] && editshow a "$filename"
+			e_uresult=
+		fi
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
 		[[ -z $2 ]] && return 3
 		[[ -f ${files[$2]} ]] \
 			&& edsyntax=0 edcmd=p edinclude=0 edesc=0 edimg=0 \
 				editshow a "${files[$2]}"
+	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
+	then
+		[[ ${#files[@]} -gt 0 ]] && editcurses 0 "${files[@]}"
+		if [[ -n $e_uresult ]]
+		then
+			local filename="${files[$e_uresult]}"
+			[[ -f $filename ]] \
+				&& edsyntax=0 edcmd=p edinclude=0 edesc=0 edimg=0 \
+					editshow a "$filename"
+			e_uresult=
+		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] && return 3
@@ -428,6 +491,16 @@ function editundo {
 			cp "$f1" "$f2"
 		else
 			echo "?"
+		fi
+	elif [[ $1 == copycurses ]] || [[ $1 == cpu ]]
+	then
+		[[ -z $2 ]] && return 3
+		[[ ${#files[@]} -gt 0 ]] && editcurses 0 "${files[@]}"
+		if [[ -n $e_uresult ]]
+		then
+			local filename="${files[$e_uresult]}"
+			[[ -f $filename ]] && cp "$filename" "$2"
+			e_uresult=
 		fi
 	elif [[ $1 =~ [0-9]+ ]]
 	then
@@ -1287,45 +1360,39 @@ function editmore {
 	edimg=0 edtmux=0 edty=0 editshow $line,$fs "$fn" | more -lf
 }
 
-function editmediaqueue {
+function editmedia {
 	[[ $TERM_PROGRAM != "terminology" ]] && return 1
 	[[ -z $fn ]] && return 2
-	local files=()
+	local player="$1"
+	shift
 	local data="$@"
-	local IFS=$'\n'
 	[[ -z $data ]] && data="$fl"
+	local files=()
+	local IFS=$'\t\n '
 	for i in $data
 	do
 		local lines="$(edcmd=p edimg=0 edsyntax=0 edtables=0 \
-			edhidden=0 edesc=0 es $i "$fn")"
+			edhidden=0 edesc=0 es "$i" "$fn")"
+		local IFS=$'\n'
 		for j in $lines
 		do
 			local line="$j"
 			[[ $line =~ ^% ]] && line="$(edbq files "$line")"
-			[[ -n $line ]] && files+=("$line")
+			files+=("$line")
 		done
+
+		local IFS=$'\t\n '
 	done
 
-	[[ ${#files[@]} -gt 0 ]] && tyq "${files[@]}"
+	[[ ${#files[@]} -gt 0 ]] && $player "${files[@]}"
 }
 
 function edittycat {
-	[[ $TERM_PROGRAM != "terminology" ]] && return 1
-	[[ -z $fn ]] && return 2
-	local data="$@"
-	[[ -z $data ]] && data="$fl"
-	local IFS=$'\n'
-	for i in $data
-	do
-		local lines="$(edcmd=p edimg=0 edsyntax=0 edtables=0 \
-			edhidden=0 edesc=0 es $i "$fn")"
-		for j in $lines
-		do
-			local line="$j"
-			[[ $line =~ ^% ]] && line="$(edbq files "$line")"
-			[[ -n $line ]] && tycat "$line"
-		done
-	done
+	editmedia tycat "$@"
+}
+
+function edittyq {
+	editmedia tyq "$@"
 }
 
 function editfmt {
@@ -1557,6 +1624,7 @@ function er { editread "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
 function etycat { edittycat "$@"; }
+function etyq { edittyq "$@"; }
 function et { editstore "$@"; }
 function eu { editundo "$@"; }
 function ey { edittransfer "$@"; }
@@ -1808,13 +1876,17 @@ function _etycat {
 
 complete -F _etycat edittycat
 complete -F _etycat etycat
+complete -F _etycat edittyq
+complete -F _etycat etyq
 
 function _editundo {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o bashdefault -W "copy cp delete \
-				diff list print show" -- $cur))
+			COMPREPLY=($(compgen -o bashdefault -W "copy cp copycurses \
+				cpu delete deletecurses du diff diffcurses list \
+				listcurses lu print printcurses pu es esu show \
+				showcurses" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -o default -- $cur))
