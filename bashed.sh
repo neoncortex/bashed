@@ -390,7 +390,7 @@ function editundo {
 			eo "$filename"
 			e_uresult=
 		fi
-	elif [[ $1 == - ]] || [[ $1 == delete ]] || [[ $1 == rm ]]
+	elif [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
 		[[ -z $2 ]] && return 3
 		local head="$2"
@@ -1617,7 +1617,7 @@ function els { editspaces "$@"; }
 function el { editlevel "$@"; }
 function em { editmove "$@"; }
 function emore { editmore "$@"; }
-function emq { editmediaqueue "$@"; }
+function emedia { editmedia "$@"; }
 function eo { editopen "$@"; }
 function eq { editclose "$@"; }
 function er { editread "$@"; }
@@ -1740,15 +1740,23 @@ function _editjoin {
 complete -F _editjoin editjoin
 complete -F _editjoin ej
 
-
-function _editmediaqueue {
+function _editmedia {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
-
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -c -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default -- $cur))
+			;;
+	esac
 }
 
-complete -F _editmediaqueue editmediaqueue
-complete -F _editmediaqueue emq
+complete -F _editmedia editmedia
+complete -F _editmedia emedia
 
 function _editmore {
 	local cur=${COMP_WORDS[COMP_CWORD]}

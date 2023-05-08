@@ -488,7 +488,7 @@ function editdbaction {
 		echo "$i" >> "$edbfile"
 	done
 
-	edbfilewrite
+	editdbwrite
 }
 
 function editdbquery {
