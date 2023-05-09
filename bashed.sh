@@ -294,7 +294,6 @@ function editstore {
 }
 
 function editcurses {
-	[[ -z $fn ]] && return 1
 	local IFS=$'\n'
 	local multiple="$1"
 	shift
@@ -305,6 +304,7 @@ function editcurses {
 		files_a+=("$i")
 	done
 
+	[[ ${#files_a[@]} -eq 0 ]] && return
 	local rows=
 	local cols=
 	local IFS=$'\n\t '
@@ -323,6 +323,7 @@ function editcurses {
 		n="$((n + 1))"
 	done
 
+	[[ ${#items[@]} -eq 0 ]] && return
 	exec 3>&1
 	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
 	exec 3>&-

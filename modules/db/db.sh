@@ -540,7 +540,13 @@ function editdbquerycurses {
 	local IFS=$'\n'
 	local files=($(editdbquery "$1" "$2"))
 	editcurses 0 "${files[@]}"
-	[[ -n $e_uresult ]] && $edbopencommand "${files[$((e_uresult - 1))]}"
+	local file="${files[$((e_uresult - 1))]}"
+	if [[ -n $e_uresult ]]
+	then
+		[[ -d $file ]] \
+			&& cd "$file" \
+			|| $edbopencommand "$file"
+	fi
 }
 
 function editdbclean {

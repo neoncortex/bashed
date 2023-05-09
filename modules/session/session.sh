@@ -104,7 +104,7 @@ function editsession_encodepaths {
 }
 
 function editsessioneditcurses {
-	local IFS=$'\n\t '
+	local IFS=$'\n'
 	local files=()
 	shopt -s dotglob
 	for i in $editsessiondir/*
@@ -139,7 +139,9 @@ function editsession {
 		local filename="${session//___/\/}"
 		filename="${filename/$editsessiondir/}"
 		filename="${filename/\/\//\/}"
-		editsessionopen "$filename" "$2"
+		[[ -d $filename ]] \
+			&& cd "$filename" \
+			|| editsessionopen "$filename" "$2"
 	elif [[ $1 == list ]] || [[ $1 == l ]]
 	then
 		local n=1
@@ -158,13 +160,15 @@ function editsession {
 	then
 		[[ ${#files[@]} -gt 0 ]] \
 			&& editcurses 0 "$(editsession_encodepaths ${files[@]})"
-		if [[ $e_uresult -gt 0 ]]
+		if [[ -n $e_uresult ]]
 		then
 			local filename="${files[$((e_uresult - 1))]}"
 			filename="${filename//___/\/}"
 			filename="${filename/$editsessiondir/}"
 			filename="${filename//\/\//\/}"
-			eso "$filename"
+			[[ -d $filename ]] \
+				&& cd "$filename" \
+				|| eso "$filename"
 			e_uresult=
 		fi
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
