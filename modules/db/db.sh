@@ -5,6 +5,7 @@ edbfiletemp="$editdir/db/db.temp"
 edbfilescache="$editdir/db/dbfiles.cache"
 edbtagscache="$editdir/db/dbtags.cache"
 edbopencommand="eo"
+edbextensions=(org ms tex)
 
 function editdbsorttags {
 	[[ -z $1 ]] && return 1
@@ -125,7 +126,9 @@ function editdbdelete {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
+	[[ $found -eq 1 ]] \
+		&& $(e "${n}d\nw" "$edbfile") \
+		&& rm "$filename"
 }
 
 function editdbmove {
@@ -153,6 +156,7 @@ function editdbmove {
 		&& entry="$2/$base	$tags_entry" \
 		|| entry="$2/$base"
 	editdbwrite "$entry"
+	mv "$filename" "$2/$base"
 }
 
 function editdbrename {
@@ -173,12 +177,8 @@ function editdbrename {
 
 	[[ $tags == $filename ]] && tags=
 	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
-	local entry=
 	local dirname="$(dirname "$filename")"
-	local tags_entry="$(editdbassemblemovetags "$filename" "$2")"
-	[[ -n $tags_entry ]] \
-		&& entry="$dirname/$2	$tags_entry" \
-		|| entry="$dirname/$2"
+	entry="$dirname/$2	$tags"
 	editdbwrite "$entry"
 	mv "$filename" "$dirname/$2"
 }
@@ -594,6 +594,53 @@ function editdbclean {
 	done < "$edbfile"
 }
 
+function editdbscan {
+	[[ -n $1 ]] && local path="$1" || return 1
+	! [[ -d $path ]] && return 2
+	local IFS=
+	local dirname="$(basename "$path")"
+	editdbinsert "$path" "$dirname"
+	if [[ -f $path/.bashed ]]
+	then
+		local dirtags=()
+		while read -r line
+		do
+			if [[ $line =~ ^\#\+db: ]]
+			then
+				local t="${line/\#\+db:/}"
+				t="${line/\#\+db:\ /}"
+				local IFS=$','
+				for i in $t
+				do
+					dirtags+=("$i")
+				done
+
+				local IFS=
+			fi
+		done < "$path/.bashed"
+
+		[[ ${#dirtags} -gt 0 ]] && edbit "$path" "${dirtags[@]}"
+	fi
+
+	for i in $path
+	do
+		if [[ -f $i ]]
+		then
+			local ext
+			for j in $edbextensions
+			do
+				[[ $i =~ ${j}$ ]] && ext=1
+			done
+
+			[[ -z $ext ]] && continue
+			editdbinsert "$i"
+		elif [[ -d $i ]]
+		then
+			editdbscan "$i"
+		fi
+	done
+}
+
 function editdbgeneratecache {
 	[[ -f $edbfilescache ]] && rm "$edbfilescache"
 	[[ -f $edbtagscache ]] && rm "$edbtagscache"
@@ -624,9 +671,10 @@ function edbit { editdbinserttag "$@"; }
 function edbi { editdbinsert "$@"; }
 function edbm { editdbmove "$@"; }
 function edbmt { editdbmovetag "$@"; }
-function edbr { editdbrename "$@"; }
 function edbq { editdbquery "$@"; }
 function edbqu { editdbquerycurses "$@"; }
+function edbr { editdbrename "$@"; }
+function edbs { editdbscan "$@"; }
 
 function _editdbaction {
 	local cur=${COMP_WORDS[COMP_CWORD]}
