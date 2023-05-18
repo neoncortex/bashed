@@ -68,6 +68,7 @@ function editdbwrite {
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
 	[[ -n $1 ]] && filename="$1" || return 1
+	! [[ -f $filename ]] && ! [[ -d $filename ]] && return 3
 	local exist=0
 	local IFS=$'\n'
 	while read -r line
@@ -154,9 +155,38 @@ function editdbmove {
 	editdbwrite "$entry"
 }
 
+function editdbrename {
+	! [[ -f $edbfile ]] && return 1
+	[[ -n $1 ]] && filename="$1" || return 2
+	local n=1
+	local found=0
+	local IFS=$'\n'
+	while read -r line
+	do
+		local f="${line/$'\t'*/}"
+		[[ $f == $filename ]] \
+			&& local tags="${line/*$'\t'/}" \
+			&& found=1 \
+			&& break
+		n="$((n + 1))"
+	done < "$edbfile"
+
+	[[ $tags == $filename ]] && tags=
+	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
+	local entry=
+	local dirname="$(dirname "$filename")"
+	local tags_entry="$(editdbassemblemovetags "$filename" "$2")"
+	[[ -n $tags_entry ]] \
+		&& entry="$dirname/$2	$tags_entry" \
+		|| entry="$dirname/$2"
+	editdbwrite "$entry"
+	mv "$filename" "$dirname/$2"
+}
+
 function editdbinserttag {
 	! [[ -f $edbfile ]] && return 1
 	[[ -n $1 ]] && filename="$1" || return 2
+	! [[ -f $filename ]] && ! [[ -d $filename ]] && return 3
 	local IFS=$'\n'
 	local n=1
 	local found=0
@@ -594,6 +624,7 @@ function edbit { editdbinserttag "$@"; }
 function edbi { editdbinsert "$@"; }
 function edbm { editdbmove "$@"; }
 function edbmt { editdbmovetag "$@"; }
+function edbr { editdbrename "$@"; }
 function edbq { editdbquery "$@"; }
 function edbqu { editdbquerycurses "$@"; }
 
@@ -700,6 +731,11 @@ function _editdbmove {
 			;;
 	esac
 }
+
+complete -F _editdbmove editdbmove
+complete -F _editdbmove edbm
+complete -F _editdbmove editdbrename
+complete -F _editdbmove edbr
 
 function _editdbmovetag {
 	local cur=${COMP_WORDS[COMP_CWORD]}

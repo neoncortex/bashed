@@ -88,7 +88,7 @@ function editwindowty {
 				cmd="$cmd;[[ -f .bashed ]] && source .bashed"
 				cmd="$cmd;clear"
 				cmd="$cmd;es 0"
-				echo "$cmd" | xclip -i 
+				echo "$cmd" | xclip -r -i 
 				xdotool key Shift+Insert
 				sleep $edtysleep
 				xdotool key Return
@@ -97,7 +97,7 @@ function editwindowty {
 
 			if [[ -n $2 ]]
 			then
-				echo "editarg "$2"" | xclip -i
+				echo "editarg "$2"" | xclip -r -i
 				xdotool key Shift+Insert
 				sleep $edtysleep
 				xdotool key Return
@@ -526,7 +526,7 @@ function editarg {
 	if [[ $argument =~ ^[0-9]+$ ]]
 	then
 		[[ $edty -eq 1 ]] \
-			&& echo "es "$argument"" | xclip -i \
+			&& echo "es "$argument"" | xclip -r -i \
 			&& xdotool key Shift+Insert \
 			&& sleep $edtysleep \
 			&& xdotool key Return \
@@ -538,7 +538,7 @@ function editarg {
 		argument="${argument//\//\\/}"
 		argument="${argument//\*/\\*}"
 		[[ $edty -eq 1 ]] \
-			&& echo "es "$(e "/${argument}/n" | cut -f1)"" | xclip -i \
+			&& echo "es "$(e "/${argument}/n" | cut -f1)"" | xclip -r -i \
 			&& xdotool key Shift+Insert \
 			&& sleep $edtysleep \
 			&& xdotool key Return \
@@ -1316,7 +1316,7 @@ function edittransfer {
 		yank="$(edcmd=p edsyntax=0 edesch=1 editshow l)"
 	fi
 
-	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -i
+	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -r -i
 }
 
 function editlevel {

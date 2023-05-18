@@ -1222,6 +1222,21 @@ editdbmove /path/to/file /new/path/to/dir
 
 File will be move to dir.
 
+#### Renaming:
+To rename a file on the dabatase, use editdbrename, or edbr, for short:
+
+````
+editdbrename /path/to/file new-file-name
+````
+
+For example:
+
+````
+editdbrename /home/user/doc/bash.org programming-bash.org
+````
+
+The file /home/user/doc/bash.org will be renamed to /home/user/doc/programming-bash.org
+
 #### Searching:
 ##### Searching tags:
 To search tagged files, use editdbsearch, or edb, for short:
@@ -1398,6 +1413,7 @@ Now all the editdb* commands will work with this database file.
 - edbi, editdbinsert
 - edbm, editdbmove;
 - edbmt, editdbmovetag;
+- edbr, editdbrename;
 - edbq, editdbquery;
 - edbqu, editdbquerycurses;
 - edbu, editdbsearchcurses;
