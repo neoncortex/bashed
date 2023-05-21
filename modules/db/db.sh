@@ -485,19 +485,31 @@ function editdbaction {
 		elif [[ $1 == movetags ]] || [[ $1 == mt ]]
 		then
 			[[ -z $3 ]] || [[ -z $4 ]] && return 3
-			tags="$tags,$4"
-			local tags_a=()
 			local IFS=$','
-			for j in $tags
+			local tags_a=()
+			for j in $3
 			do
 				local found=0
-				for k in $3
+				for k in $tags
 				do
-					[[ $j == $k ]] && found=1 && break
+					if [[ $j == $k ]]
+					then
+						found=1
+					else
+						tags_a+=("$k")
+					fi
 				done
 
-				[[ $found -eq 0 ]] && tags_a+=("$j")
+				[[ $found -eq 0 ]] && break
 			done
+
+			if [[ $found -eq 1 ]]
+			then
+				for k in $4
+				do
+					tags_a+=("$k")
+				done
+			fi
 
 			local IFS=$'\n\t '
 			local tags_entry="$(editdbsorttags "${tags_a[@]}")"
