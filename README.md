@@ -814,102 +814,45 @@ This text will not be shown
 To show these blocks, the variable edhidden should be set to 0.
 
 ### Variables:
-#### fn:
-Contains the complete path to the file beign edited.
+- diffarg: Contains the diff options.  By default: "--color -c";
+- edblock: Controls if source blocks should be displayed with the syntax highlighting;
+- edcmd: Contains the command that should be used by es.  It should be p, or n;
+- edimg: Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
+- edhidden: Contols if hidden blocks should be shown.  By default, 1.  Should be 1, or 0;
+- edinclude: Controls if files inside [[include:]] shoud be displayed;
+- eslast: Contains the last command executed by es;
+- eslastarg: Contains the last argument received by es;
+- edtmux: Controls if tmux should be used.  By default, 1.  Should be 1, or 0;
+- edtysleep: Contains a real number, that is used as interval between xdotool commands that are sent to terminology windows.  By default, 0.2;
+- edty: Controls if terminology should be used, By default, 0.  Should be 1, or 0;
+- e_uresult: Contains the last selections of a curses menu;
+- fileresult: Contains the search results to be displayed by ef, and es s;
+- fileresult_a: It's an array that have one entry to each result of an ef search;
+- fn: Contains the complete path to the file beign edited;
+- fl: Contains the current line number;
+- fs: Contains the size of the file being edited;
+- pagesize: Size of a page.  Used by es n, es p, and es c;
 
-#### fl:
-Contains the current line number.
+#### Highlight variables:
+- block_syntax: Contains the name of the syntax used in a code block;
+- edsyntax: Set if es should use syntax.  By default, 1.  Should be 1, or 0;
+- hitheme: Contains the theme name used by highlight;
+- syntax: Contains the name of the syntax file used by highlight for the current file;
 
-#### fs:
-Contains the size of the file being edited.
+#### Escape sequence variables:
+- edesc: Controls if escape sequences should be interpreted,  By default, 1.  Should be 1, or 0;
+- edesch:Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, or 1;
+- edecesch: Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1;
 
-#### edcmd:
-Contains the command that should be used by es.  It should be p, or n.
+#### File variables:
+- editdir: Contains the path to the edit directory.  By default: $HOME/.edit;
+- editversiondir: Contains the path to the edit versioning directory.  By default: $editdir/version;
+- hidir: Contains the path to the custom highlight files.  By default: $editdir/hi;
 
-#### pagesize:
-Size of a page.  Used by es n, es p, and es c.
-
-#### eslast:
-Contains the last command executed by es.
-
-#### eslastarg:
-Contains the last argument received by es.
-
-#### fileresult:
-Contains the search results to be displayed by ef, and es s.
-
-#### fileresult_a:
-It's an array that have one entry to each result of an ef search.
-
-#### diffarg:
-Contains the diff options.  By default: "--color -c".
-
-#### edtmux:
-Controls if tmux should be used.  By default, 1.  Should be 1, or 0.
-
-#### edty:
-Controls if terminology should be used, By default, 0.  Should be 1, or 0.
-
-#### edtysleep:
-Contains a real number, that is used as interval between xdotool commands that are sent to terminology windows.  By default, 0.2.
-
-#### edimg:
-Controls if bashed show display images.  By default, 1.  Should be 1, or 0.
-
-#### edhidden:
-Contols if hidden blocks should be shown.  By default, 1.  Should be 1, or 0.
-
-#### edinclude:
-Controls if files inside [[include:]] shoud be displayed.
-
-#### edblock:
-Controls if source blocks should be displayed with the syntax highlighting.
-
-#### e_uresult:
-Contains the last selections of a curses menu.
-
-#### Highlight:
-##### syntax:
-Contains the name of the syntax file used by highlight for the current file.
-
-##### block_syntax:
-Contains the name of the syntax used in a code block.
-
-##### edsyntax:
-Set if es should use syntax.  By default, 1.  Should be 1, or 0.
-
-##### hitheme:
-Contains the theme name used by highlight.
-
-#### Escape sequences:
-##### edesc:
-Controls if escape sequences should be interpreted,  By default, 1.  Should be 1, or 0.
-
-##### edesch:
-Controls if escape sequences shoud be displayed.  By default, 0.  Should be 0, or 1.
-
-##### edecesch:
-Controls if ec should use escape sequences.  By default, 1.  Should be 0, or 1.
-
-#### Files:
-##### editdir:
-Contains the path to the edit directory.  By default: $HOME/.edit
-
-##### editversiondir:
-Contains the path to the edit versioning directory.  By default: $editdir/version.
-
-##### hidir:
-Contains the path to the custom highlight files.  By default: $editdir/hi.
-
-#### Tables:
-##### edtables:
-Controls if tables showd be shown.  By default, 1.  Should be 1, or 0.
-
-##### edtable_ascii:
-Controls if ascii characters should be used to print the table box.  By default, 0.  Should be 1, or 0.
-
-##### edtable_top*, edtable_middle*, edtable_bottom*, edtable_horizontal*, edtable_vertical*:
-These variables is where the characters used to draw the tables are set.
+#### Table variables:
+- edtables: Controls if tables showd be shown.  By default, 1.  Should be 1, or 0;
+- edtable_ascii: Controls if ascii characters should be used to print the table box.  By default, 0.  Should be 1, or 0;
+- edtable_top*, edtable_middle*, edtable_bottom*, edtable_horizontal*, edtable_vertical*.  These variables is where the characters used to draw the tables are set.
 
 ### Using e:
 Commands can be passed directly to ed, using e, like:
@@ -1188,6 +1131,10 @@ By default, babel come with these langs;
 ### How to customized it:
 You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, and customize it.  The definitions are just shell commands inside a variable.  These definitions should be added to babel_exec array like: name:::var, where name will be the lang name, like c, cpp, etc, and the var will be the variable containing the code to be executed.  Just look into the modules/babel/babel.sh and it will become clear.
 
+### Variables:
+- babelblock: path to a file to be used to store a block content;
+- babeldir: path to a directory to be used for babel temporary files;
+
 ## Db:
 This module is a file tagging system.
 
@@ -1402,6 +1349,14 @@ edbfile=/home/user/Documents/db
 
 Now all the editdb* commands will work with this database file.
 
+### Variables:
+- edbfile: path to the database file;
+- edbfiletemp: path to the temporary database file;
+- edbfilescache: path to the file name cache file;
+- edbtagscache: path to the tags cache file;
+- edbopencommand: contains the comamnd name to be used when opening files via curses;
+- edbextensions: contains the file name extensions to store when scanning;
+
 ### Function dictionary:
 - edb, editdbsearch;
 - edba, editdbaction;
@@ -1523,7 +1478,7 @@ The session module override these variables:
 - edtables, with editsessiontables;
 - edtable_ascii, with editsessiontable_ascii;
 
-You can, of couse, change the default value of these variables in your ~/.bashrc.
+You can, of course, change the default value of these variables in your ~/.bashrc.
 
 ### db and sessions:
 You may want to set the edbopencommand to eso, so the curses search will open files using eso, instead of the default eo.
