@@ -1314,6 +1314,23 @@ editdbaction movetags tag1,tag2, tag3,tag4 tag5,tag6
 
 This will move tag3, and tag4 to tag5, and tag6, in every file tagged with tag1, and tag2.
  
+### Scanning:
+It is possible to scan a directory for files, using the editdbscan function, or edbs, for short.  For example:
+
+```
+edbs /home/Doc
+```
+
+It recursively scan the subdirectories as well.  It will insert in the database the files with the extensions configured in the edbextensions array, by default: org, tex, and ms.
+
+It will also look for .bashed files in each directory it finds.  If there is a .bashed file, with a line like this:
+
+````
+#+db:tag1,tag2,...tagn
+````
+
+It will add tag1, tag2, etc, to the directory.
+
 ### Clean:
 To delete files from the database tha don't exist anymore in the filesystem:
 

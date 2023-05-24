@@ -614,27 +614,29 @@ function editdbscan {
 	editdbinsert "$path" "$dirname"
 	if [[ -f $path/.bashed ]]
 	then
-		local dirtags=()
+		local dirtags=""
 		while read -r line
 		do
 			if [[ $line =~ ^\#\+db: ]]
 			then
-				local t="${line/\#\+db:/}"
-				t="${line/\#\+db:\ /}"
+				local t="${line/\#\+db:\ /}"
+				t="${line/\#\+db:/}"
 				local IFS=$','
 				for i in $t
 				do
-					dirtags+=("$i")
+					[[ -z $dirtags ]] \
+						&& dirtags="$i" \
+						|| dirtags="$dirtags,$i"
 				done
 
 				local IFS=
 			fi
 		done < "$path/.bashed"
 
-		[[ ${#dirtags} -gt 0 ]] && edbit "$path" "${dirtags[@]}"
+		[[ ${#dirtags} -gt 0 ]] && edbit "$path" "$dirtags"
 	fi
 
-	for i in $path
+	for i in $path/*
 	do
 		if [[ -f $i ]]
 		then

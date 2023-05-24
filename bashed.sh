@@ -828,7 +828,8 @@ $i"
 		then
 			continue
 		elif [[ $i =~ \.(png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tiff|TIFF\
-			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]]
+			|xpm|XPM|svg|SVG)$ ]] && [[ $edimg -eq 1 ]] \
+			&& ! [[ $i =~ .*:\/\/.* ]]
 		then
 			[[ -n $text ]] && edithi "$text" && text=
 			[[ $i =~ ^[0-9] ]] && editimg "${i/*$'\t'/}" || editimg "$i"
