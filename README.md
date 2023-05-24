@@ -1160,6 +1160,12 @@ To delete a file from the database, use editdbdelete, or edbd, for short:
 editdbdelete /path/to/file
 ````
 
+To delete the file from the database, and also from the disk:
+
+````
+editdbdelete /path/to/file 1
+````
+
 #### Moving:
 To move a file on the database, use editdbmove, or edbm, for short:
 
@@ -1367,12 +1373,12 @@ edbfile=/home/user/Documents/db
 Now all the editdb* commands will work with this database file.
 
 ### Variables:
+- edbextensions: array containing the file name extensions to store when scanning;
 - edbfile: path to the database file;
 - edbfiletemp: path to the temporary database file;
 - edbfilescache: path to the file name cache file;
 - edbtagscache: path to the tags cache file;
 - edbopencommand: contains the comamnd name to be used when opening files via curses;
-- edbextensions: contains the file name extensions to store when scanning;
 
 ### Function dictionary:
 - edb, editdbsearch;
@@ -1387,8 +1393,13 @@ Now all the editdb* commands will work with this database file.
 - edbmt, editdbmovetag;
 - edbr, editdbrename;
 - edbq, editdbquery;
+- edbs, editdbscan;
 - edbqu, editdbquerycurses;
 - edbu, editdbsearchcurses;
+
+And these used internally by others:
+- editdbsorttags;
+- editdbassemblemovetags;
 
 ## Session:
 This module is a more traditional way of handling files.  It will provide a list of files you have opened, mechanism to open, close, switch, save state, etc.

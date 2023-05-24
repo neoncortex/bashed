@@ -69,7 +69,8 @@ function editdbwrite {
 function editdbinsert {
 	! [[ -f $edbfile ]] && touch "$edbfile"
 	[[ -n $1 ]] && filename="$1" || return 1
-	! [[ -f $filename ]] && ! [[ -d $filename ]] && return 3
+	! [[ -f $filename ]] && ! [[ -d $filename ]] && return 2
+	[[ -z $2 ]] && return 3
 	local exist=0
 	local IFS=$'\n'
 	while read -r line
@@ -81,7 +82,7 @@ function editdbinsert {
 			&& break
 	done < "$edbfile"
 
-	[[ $exist -eq 1 ]] && return 2
+	[[ $exist -eq 1 ]] && return 4
 	local filedir="$(dirname "$filename")"
 	while read -r line
 	do
@@ -113,7 +114,7 @@ function editdbinsert {
 
 function editdbdelete {
 	! [[ -f $edbfile ]] && return 1
-	[[ -n $1 ]] && filename="$1" || return 2
+	[[ -n $1 ]] && local filename="$1" || return 2
 	local n=1
 	local found=0
 	local IFS=$'\n'
@@ -128,12 +129,13 @@ function editdbdelete {
 
 	[[ $found -eq 1 ]] \
 		&& $(e "${n}d\nw" "$edbfile") \
-		&& rm "$filename"
+		&& { [[ $2 -eq 1 ]] && rm "$filename"; }
 }
 
 function editdbmove {
 	! [[ -f $edbfile ]] && return 1
-	[[ -n $1 ]] && filename="$1" || return 2
+	[[ -n $1 ]] && local filename="$1" || return 2
+	[[ -n $2 ]] && local dest="$2" || return 3
 	local n=1
 	local found=0
 	local IFS=$'\n'
@@ -151,17 +153,18 @@ function editdbmove {
 	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
 	local entry=
 	local base="$(basename "$filename")"
-	local tags_entry="$(editdbassemblemovetags "$filename" "$2")"
+	local tags_entry="$(editdbassemblemovetags "$filename" "$dest")"
 	[[ -n $tags_entry ]] \
-		&& entry="$2/$base	$tags_entry" \
-		|| entry="$2/$base"
+		&& entry="$dest/$base	$tags_entry" \
+		|| entry="$dest/$base"
 	editdbwrite "$entry"
-	mv "$filename" "$2/$base"
+	mv "$filename" "$dest/$base"
 }
 
 function editdbrename {
 	! [[ -f $edbfile ]] && return 1
-	[[ -n $1 ]] && filename="$1" || return 2
+	[[ -n $1 ]] && local filename="$1" || return 2
+	[[ -n $2 ]] && local dest="$2" || return 3
 	local n=1
 	local found=0
 	local IFS=$'\n'
@@ -178,15 +181,16 @@ function editdbrename {
 	[[ $tags == $filename ]] && tags=
 	[[ $found -eq 1 ]] && $(e "${n}d\nw" "$edbfile")
 	local dirname="$(dirname "$filename")"
-	entry="$dirname/$2	$tags"
+	entry="$dirname/$dest	$tags"
 	editdbwrite "$entry"
-	mv "$filename" "$dirname/$2"
+	mv "$filename" "$dirname/$dest"
 }
 
 function editdbinserttag {
 	! [[ -f $edbfile ]] && return 1
 	[[ -n $1 ]] && filename="$1" || return 2
 	! [[ -f $filename ]] && ! [[ -d $filename ]] && return 3
+	[[ -z $2 ]] && return 4
 	local IFS=$'\n'
 	local n=1
 	local found=0
@@ -236,6 +240,7 @@ function editdbinserttag {
 function editdbdeletetag {
 	! [[ -f $edbfile ]] && return 1
 	[[ -n $1 ]] && filename="$1" || return 2
+	[[ -z $2 ]] && return 3
 	local n=1
 	local IFS=$'\n'
 	while read -r line
@@ -247,7 +252,7 @@ function editdbdeletetag {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ -z $tags ]] && return 3
+	[[ -z $tags ]] && return 4
 	$(e "${n}d\nw" "$edbfile")
 	local tags_r=()
 	local tags_a=()
@@ -284,6 +289,8 @@ function editdbdeletetag {
 function editdbmovetag {
 	! [[ -f $edbfile ]] && return 1
 	[[ -n $1 ]] && filename="$1" || return 2
+	[[ -z $2 ]] && return 3
+	[[ -z $3 ]] && return 4
 	local n=1
 	local IFS=$'\n'
 	while read -r line
@@ -295,7 +302,7 @@ function editdbmovetag {
 		n="$((n + 1))"
 	done < "$edbfile"
 
-	[[ -z $tags ]] && return 3
+	[[ -z $tags ]] && return 5
 	$(e "${n}d\nw" "$edbfile")
 	local tags_r=()
 	local tags_a=()
@@ -335,7 +342,8 @@ function editdbmovetag {
 }
 
 function editdbsearch {
-	[[ -z $1 ]] && return 1
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $1 ]] && return 2
 	local tags_s=()
 	local IFS=$','
 	for i in $1
@@ -363,9 +371,8 @@ function editdbsearch {
 			local found=0
 			local t="${tags_s[$i]}"
 			[[ $t =~ ^- ]] \
-				&& t="$t/-/}" \
+				&& t="${t/-/}" \
 				&& found=1
-			local t="${tags_s[$i]/-/}"
 			for ((j=0; j < ${#tags_a[@]}; ++j))
 			do
 				if [[ ${tags_a[$j]} == $t ]]
@@ -395,7 +402,8 @@ function editdbsearch {
 }
 
 function editdbsearchcurses {
-	[[ -z $1 ]] && return 1
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $1 ]] && return 2
 	local IFS=$'\n'
 	local files=($(editdbsearch "$1"))
 	editcurses 0 "${files[@]}"
@@ -403,10 +411,11 @@ function editdbsearchcurses {
 }
 
 function editdbaction {
-	[[ -z $2 ]] && return 1
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $2 ]] && return 2
 	local IFS=$'\n\t '
 	local files="$(editdbsearch "$2" 1)"
-	[[ -z $files ]] && return 2
+	[[ -z $files ]] && return 3
 	local lines=()
 	local remove=()
 	for i in $files
@@ -426,7 +435,7 @@ function editdbaction {
 			[[ -f $filename ]] && rm "$filename"
 		elif [[ $1 == move ]] || [[ $1 == m ]]
 		then
-			[[ -z $3 ]] && return 3
+			[[ -z $3 ]] && return 4
 			local base="$(basename "$filename")"
 			[[ $last_dirname != $(dirname "$filename") ]] \
 				&& local tags_entry="$(editdbassemblemovetags \
@@ -445,7 +454,7 @@ function editdbaction {
 			fi
 		elif [[ $1 == inserttags ]] || [[ $1 == it ]]
 		then
-			[[ -z $3 ]] && return 3
+			[[ -z $3 ]] && return 5
 			tags="$tags,$3"
 			local tags_a=()
 			local IFS=$','
@@ -461,7 +470,7 @@ function editdbaction {
 				|| lines[$i]="$filename"
 		elif [[ $1 == deletetags ]] || [[ $1 == dt ]]
 		then
-			[[ -z $3 ]] && return 3
+			[[ -z $3 ]] && return 6
 			local tags_a=()
 			local IFS=$','
 			for j in $tags
@@ -484,7 +493,7 @@ function editdbaction {
 				|| lines[$i]="$filename"
 		elif [[ $1 == movetags ]] || [[ $1 == mt ]]
 		then
-			[[ -z $3 ]] || [[ -z $4 ]] && return 3
+			[[ -z $3 ]] || [[ -z $4 ]] && return 7
 			local IFS=$','
 			local tags_a=()
 			for j in $3
@@ -534,8 +543,9 @@ function editdbaction {
 }
 
 function editdbquery {
-	[[ -z $1 ]] && return 1
-	[[ -z $2 ]] && return 2
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $1 ]] && return 2
+	[[ -z $2 ]] && return 3
 	local files_a=()
 	local IFS=$'\n\t '
 	local rex="$2"
@@ -577,8 +587,9 @@ function editdbquery {
 }
 
 function editdbquerycurses {
-	[[ -z $1 ]] && return 1
-	[[ -z $2 ]] && return 2
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $1 ]] && return 2
+	[[ -z $2 ]] && return 3
 	local IFS=$'\n'
 	local files=($(editdbquery "$1" "$2"))
 	editcurses 0 "${files[@]}"
@@ -592,6 +603,7 @@ function editdbquerycurses {
 }
 
 function editdbclean {
+	! [[ -f $edbfile ]] && return 1
 	local n=1
 	local IFS=$'\n\t '
 	while read -r line
@@ -607,8 +619,9 @@ function editdbclean {
 }
 
 function editdbscan {
-	[[ -n $1 ]] && local path="$1" || return 1
-	! [[ -d $path ]] && return 2
+	! [[ -f $edbfile ]] && return 1
+	[[ -n $1 ]] && local path="$1" || return 2
+	! [[ -d $path ]] && return 3
 	local IFS=
 	local dirname="$(basename "$path")"
 	editdbinsert "$path" "$dirname"
@@ -656,6 +669,7 @@ function editdbscan {
 }
 
 function editdbgeneratecache {
+	! [[ -f $edbfile ]] && return 1
 	[[ -f $edbfilescache ]] && rm "$edbfilescache"
 	[[ -f $edbtagscache ]] && rm "$edbtagscache"
 	local IFS=$','
@@ -732,6 +746,9 @@ function _editdbdelete {
 		1)
 			local entries="$(cat "$edbfilescache")"
 			COMPREPLY=($(compgen -o bashdefault -W "$entries" -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o bashdefault -W "1" --$cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -o default -- $cur))
