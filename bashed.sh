@@ -946,6 +946,11 @@ $i"
 	done
 
 	[[ -n $text ]] && edithi "$text"
+	[[ -n $block_syntax ]] && block_syntax=
+	[[ -n $edimg_orig ]] && edimg="$edimg_orig"
+	[[ -n $edtables_orig ]] && edtables="$edtables_orig"
+	[[ -n $edhidden_orig ]] && edhidden="$edhidden_orig"
+	[[ -n $edesc_orig ]] && edesc="$edesc_orig"
 }
 
 function editshow {

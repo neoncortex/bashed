@@ -6,6 +6,7 @@ babelblock="$babeldir/block"
 babel_as="as -o a.o %src% && ld -o a.out a.o && ./a.out"
 babel_c="gcc -Wall %src% && ./a.out"
 babel_cpp="g++ -Wall %src% && .a.out"
+babel_dc="cat %src% | dc"
 babel_python="python3 %src%"
 babel_python_2="python %src%"
 babel_sh="bash %src%"
@@ -41,6 +42,7 @@ babel_exec=(
 	"bash:::babel_sh"
 	"c:::babel_c"
 	"cpp:::babel_cpp"
+	"dc:::babel_dc"
 	"python:::bale_python"
 	"python2:::babel_python"
 	"sh:::babel_sh"
@@ -80,23 +82,28 @@ function babel {
 	local block_header="$(e $((block_line + 1))p "$fn")"
 	local IFS=$' '
 	local index=0
+	local lang=0
+	local syntax=0
+	local dir=0
+	local noweb=0
+	local tangle=0
 	for i in $block_header
 	do
 		case $index in
 		1)
-			local lang="$i"
+			lang="$i"
 			;;
 		2)
-			local syntax="$i"
+			syntax="$i"
 			;;
 		3)
-			local dir="$i"
+			dir="$i"
 			;;
 		4)
-			local noweb="$i"
+			noweb="$i"
 			;;
 		5)
-			local tangle="$i"
+			tangle="$i"
 			;;
 		esac
 
