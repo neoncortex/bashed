@@ -1115,11 +1115,38 @@ echo "hello"
 echo "world"
 ````
 
+### Using the result of a block in another block:
+Results from blocks can be inserted into the body of another block like this:
+
+````
+#+name: block_1
+#+begin_src sh sh 0 0 0
+echo "echo hello"
+#+end_src
+
+#+name: block_2
+#+begin_src sh sh 0 1 0
+<<!block_1>>
+echo "world"
+#+end_src
+````
+
+The resulting code will be:
+
+````
+echo "hello"
+echo "world"
+````
+
 ### Execution langs available:
 By default, babel come with these langs;
 - as;
+- bash;
 - c;
 - cpp;
+- dc;
+- lua;
+- lua53;
 - python;
 - python_2;
 - sh;

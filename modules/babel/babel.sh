@@ -2,14 +2,18 @@
 
 babeldir="$editdir/babel"
 babelblock="$babeldir/block"
+babelblockres="$babeldir/res"
 
-babel_as="as -o a.o %src% && ld -o a.out a.o && ./a.out"
-babel_c="gcc -Wall %src% && ./a.out"
-babel_cpp="g++ -Wall %src% && .a.out"
+babel_as="cp %src% %src%.s && as -o a.o %src%.s && ld -o a.out a.o && ./a.out"
+babel_bash="bash -lic %src%"
+babel_c="cp %src% %src%.c && gcc -Wall %src%.c && ./a.out"
+babel_cpp="cp %src% %src%.cpp && g++ -Wall %src%.cpp && ./a.out"
 babel_dc="cat %src% | dc"
+babel_lua="lua %src"
+babel_lua53="lua5.3 %src%"
 babel_python="python3 %src%"
 babel_python_2="python %src%"
-babel_sh="bash %src%"
+babel_sh="sh %src%"
 babel_tex_png="
 echo -e '\
 \documentclass[12pt]{slides}
@@ -39,10 +43,12 @@ babel_yasm_gcc_no_pie="yasm -g dwarf2 -f elf64 %src% -o asm.o \
 
 babel_exec=(
 	"asm:::babel_as"
-	"bash:::babel_sh"
+	"bash:::babel_bash"
 	"c:::babel_c"
 	"cpp:::babel_cpp"
 	"dc:::babel_dc"
+	"lua:::babel_lua"
+	"lua53:::babel_lua53"
 	"python:::bale_python"
 	"python2:::babel_python"
 	"sh:::babel_sh"
@@ -111,9 +117,15 @@ function babel {
 	done
 
 	[[ -z $3 ]] && [[ -f $babelblock ]] && rm "$babelblock"
+	if [[ $3 -eq 2 ]]
+	then
+		[[ -f $babelblockres ]] && rm "$babelblockres"
+		babelblock="$babelblockres"
+	fi
+
 	local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	local n="$((block_line + 2))"
-	local IFS=$'\n'
+	local IFS=
 	while true
 	do
 		[[ $n -gt $fs ]] && break
@@ -121,7 +133,7 @@ function babel {
 		if [[ $line == "#+end_src" ]]
 		then
 			break
-		elif [[ $line =~ ^\<\<.*\>\>$ ]] && [[ $noweb -eq 1 ]]
+		elif [[ $line =~ ^\<\<\!?.*\>\>$ ]] && [[ $noweb -eq 1 ]]
 		then
 			local b="${line/\<\</}"
 			local b="${b/\>\>/}"
@@ -129,9 +141,23 @@ function babel {
 			then
 				local block_name="${b/*:::/}"
 				local file_name="${b/:::*/}"
-				babel "$block_name" "$file_name" 1
+				if [[ $block_name =~ ^\! ]]
+				then
+					block_name="${block_name/\!/}"
+					local r="$(babel "$block_name" "$file_name" 2)"
+					[[ -n $r ]] && echo "$r" >> "$babelblock"
+				else
+					babel "$block_name" "$file_name" 1
+				fi
 			else
-				babel "$b" "$fn" 1
+				if [[ $b =~ ^\! ]]
+				then
+					b="${b/\!/}"
+					local r="$(babel "$b" "$fn" 2)"
+					[[ -n $r ]] && echo "$r" >> "$babelblock"
+				else
+					babel "$b" "$fn" 1
+				fi
 			fi
 		else
 			echo "$line" >> "$babelblock"
