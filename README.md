@@ -1121,7 +1121,7 @@ Results from blocks can be inserted into the body of another block like this:
 ````
 #+name: block_1
 #+begin_src sh sh 0 0 0
-echo "echo hello"
+echo "echo "hello""
 #+end_src
 
 #+name: block_2
@@ -1136,6 +1136,16 @@ The resulting code will be:
 ````
 echo "hello"
 echo "world"
+````
+
+The block can also be in another file:
+
+````
+#+name: block_2
+#+begin_src sh sh 0 1 0
+<</path/to/file:::!block_1>>
+echo "world"
+#+end_src
 ````
 
 ### Execution langs available:
@@ -1160,6 +1170,7 @@ You can copy the langs definitions, and the babel_exec array to your ~/.bashrc, 
 
 ### Variables:
 - babelblock: path to a file to be used to store a block content;
+- babelblockres: path to a file containing the content of <<!>> blocks;
 - babeldir: path to a directory to be used for babel temporary files;
 
 ## Db:

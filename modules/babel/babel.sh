@@ -5,15 +5,15 @@ babelblock="$babeldir/block"
 babelblockres="$babeldir/res"
 
 babel_as="cp %src% %src%.s && as -o a.o %src%.s && ld -o a.out a.o && ./a.out"
-babel_bash="bash -lic %src%"
+babel_bash="cp %src% %src%.bash && bash -lic %src%.bash"
 babel_c="cp %src% %src%.c && gcc -Wall %src%.c && ./a.out"
 babel_cpp="cp %src% %src%.cpp && g++ -Wall %src%.cpp && ./a.out"
-babel_dc="cat %src% | dc"
-babel_lua="lua %src"
-babel_lua53="lua5.3 %src%"
-babel_python="python3 %src%"
-babel_python_2="python %src%"
-babel_sh="sh %src%"
+babel_dc="cp %src% %src%.dc && cat %src%.lua | dc"
+babel_lua="cp %src% %src.lua && lua %src.lua%"
+babel_lua53="cp %src% %src%.lua && lua5.3 %src%.lua"
+babel_python="cp %src% %src%.py && python3 %src%.py"
+babel_python_2="cp %src% %src%.py && python %src%.py"
+babel_sh="cp %src% %src%.sh && sh %src%.sh"
 babel_tex_png="
 echo -e '\
 \documentclass[12pt]{slides}
@@ -167,6 +167,7 @@ function babel {
 	done
 
 	[[ $3 -eq 1 ]] && return 0
+	[[ $dir != "0" ]] && local olddir="$PWD" && cd "$dir"
 	[[ $tangle != "0" ]] && cp "$babelblock" "$tangle" && return 0
 	for ((i=0; i < ${#babel_exec[@]}; i++))
 	do
@@ -180,6 +181,8 @@ function babel {
 			break
 		fi
 	done
+
+	[[ -n $olddir ]] && cd "$olddir"
 }
 
 function _babelcompletion {
