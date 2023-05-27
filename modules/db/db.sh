@@ -669,11 +669,11 @@ function editdbscan {
 			local ext
 			for j in $edbextensions
 			do
-				[[ $i =~ ${j}$ ]] && ext=1
+				[[ $i =~ \.${j}$ ]] && ext="$j"
 			done
 
 			[[ -z $ext ]] && continue
-			editdbinsert "$i"
+			editdbinsert "$i" "$j"
 		elif [[ -d $i ]]
 		then
 			editdbscan "$i"
