@@ -276,7 +276,7 @@ function editcmd {
 	local tempfile="$editdir/temp"
 	cat "$editreadlines" | $3 > "$tempfile"
 	mv "$tempfile" "$editreadlines"
-	local res="$(edit "${begin},${end}d\nw")"
+	local res="$(edit "${begin},${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
 	editshow ${begin},$end
@@ -679,7 +679,7 @@ function editclose {
 
 function editfind {
 	[[ -z $1 ]] && return 1
-	local result="$(edit "$1")"
+	local result="$(edit "$1" "$fn")"
 	[[ -z $result ]] && return
 	fileresult_a=()
 	fileresultindex=-1
@@ -951,6 +951,7 @@ $i"
 	[[ -n $edtables_orig ]] && edtables="$edtables_orig"
 	[[ -n $edhidden_orig ]] && edhidden="$edhidden_orig"
 	[[ -n $edesc_orig ]] && edesc="$edesc_orig"
+	return 0
 }
 
 function editshow {
@@ -1200,7 +1201,7 @@ function editshow {
 
 function editappend {
 	local data="$1"
-	local res="$(edit "${fl}a\n$data\n.\nw")"
+	local res="$(edit "${fl}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	[[ -n $2 ]] && editshow "+$2" \
 		|| editshow "+$(echo -e "$data" | grep -c "^")"
@@ -1217,8 +1218,8 @@ function editdelete {
 	[[ $to == "$" ]] && to="$fs"
 	[[ $to -gt $fs ]] && return 1
 	local res=
-	[[ -z $to ]] && res="$(edit "${fl}d\nw")" \
-		|| res="$(edit "${fl},${to}d\nw")"
+	[[ -z $to ]] && res="$(edit "${fl}d\nw" "$fn")" \
+		|| res="$(edit "${fl},${to}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fl -gt $fs ]] && fl="$fs"
@@ -1232,8 +1233,8 @@ function editchange {
 	[[ $to == "$" ]] && to="$fs"
 	[[ $to -gt $fs ]] && return 2
 	local res=
-	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw")" \
-		|| res="$(edit "${fl},${to}c\n$data\n.\nw")"
+	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw" "$fn")" \
+		|| res="$(edit "${fl},${to}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	[[ -z $to ]] && editshow l || editshow ${fl},$to
 }
@@ -1255,11 +1256,11 @@ function editsub {
 	local res=
 	if [[ -z $to ]] || [[ $to == " " ]]
 	then
-		res="$(edit "$fl$pattern\nw")"
+		res="$(edit "$fl$pattern\nw" "$fn")"
 	else
 		local lines="${fl},${to}"
 		[[ $3 == "%" ]] && lines="1,${fs}"
-		res="$(edit "$lines$pattern\nw")"
+		res="$(edit "$lines$pattern\nw" "$fn")"
 	fi
 
 	[[ -n $res ]] && echo "$res"
@@ -1273,7 +1274,7 @@ function editjoin {
 	[[ $l == '$' ]] && l="$fs"
 	[[ $l -gt $fs ]] && return 1
 	local res=
-	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw")" && editshow ${fl}
+	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw" "$fn")" && editshow ${fl}
 	[[ -n $res ]] && echo "$res"
 }
 
@@ -1295,8 +1296,8 @@ function editmove {
 	fi
 
 	local res=
-	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw")" \
-		|| res="$(edit "${fl}m$dest\nw")"
+	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw" "$fn")" \
+		|| res="$(edit "${fl}m$dest\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 }
 
@@ -1311,8 +1312,8 @@ function edittransfer {
 	if [[ $line -gt 0 ]]
 	then
 		local res=
-		[[ -n $n ]] && res="$(edit "${fl},${n}t$line\nw")" \
-			|| res="$(edit "${fl}t$line\nw")"
+		[[ -n $n ]] && res="$(edit "${fl},${n}t$line\nw" "$fn")" \
+			|| res="$(edit "${fl}t$line\nw" "$fn")"
 		[[ -n $res ]] && echo "$res"
 		es $n
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
@@ -1458,7 +1459,7 @@ function editfmt {
 	done
 
 	mv "$tempfile" "$editreadlines"
-	local res="$(edit "${begin},${end}d\nw")"
+	local res="$(edit "${begin},${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
 }
@@ -1473,7 +1474,7 @@ function editexternal {
 	local end="${region/*,/}"
 	[[ -z $begin ]] || [[ -z $end ]] && return 2
 	$EDITOR "$editreadlines"
-	local res="$(edit "${begin},${end}d\nw")"
+	local res="$(edit "${begin},${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editread 0 0 "$fn" $(($begin - 1))
 }
