@@ -1273,6 +1273,12 @@ To see what tags a file have, use editdbquery, or edbq, for short:
 editdbquery tags /path/to/file
 ````
 
+Tags can also be listed one tag per line, like:
+
+````
+editdbquery taglist /path/to/file
+````
+ 
 #### Tag operations:
 ##### Adding tags to a file:
 To add a tag to a file that was previously inserted in the database, use editdbinserttag, or edbit, for short:

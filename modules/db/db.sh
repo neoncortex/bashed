@@ -561,7 +561,7 @@ function editdbquery {
 	while read -r line
 	do
 		local f="${line/$'\t'*/}"
-		if [[ $1 == tags ]]
+		if [[ $1 == tags ]] || [[ $1 == taglist ]]
 		then
 			[[ $f == $2 ]] \
 				&& local tags="${line/*$'\t'/}" \
@@ -577,7 +577,20 @@ function editdbquery {
 		fi
 	done < "$edbfile"
 
-	[[ -n $tags ]] && echo "$tags"
+	if [[ -n $tags ]]
+	then
+		if [[ $1 == taglist ]]
+		then
+			local IFS=$','
+			for i in $tags
+			do
+				echo "$i"
+			done
+		else
+			echo "$tags"
+		fi
+	fi
+
 	for i in ${files_a[@]}
 	do
 		[[ -d $i ]] \
@@ -848,7 +861,8 @@ function _editdbquery {
 	local prev=${COMP_WORDS[COMP_CWORD-1]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o bashdefault -W "files tags" -- $cur))
+			COMPREPLY=($(compgen -o bashdefault -W \
+				"files tags taglist" -- $cur))
 			;;
 		2)
 			local entries=
