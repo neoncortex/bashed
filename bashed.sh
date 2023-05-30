@@ -960,6 +960,10 @@ function editshow {
 		local fn="$2"
 		[[ $fn =~ ^% ]] && fn="$(edbq files "$fn")"
 		local syntax=
+		local edimg_orig="$edimg"
+		local edtables_orig="$edtables"
+		local edhidden_orig="$edhidden"
+		local edesc_orig="$edesc"
 		editsyntax "$fn"
 		local fl="$fl"
 		local fs=
@@ -1196,7 +1200,13 @@ function editshow {
 		eslastarg="$arg"
 		eslast="$show"
 		editpresent "$($show)"
+		[[ -n $edimg_orig ]] && edimg="$edimg_orig"
+		[[ -n $edtables_orig ]] && edtables="$edtables_orig"
+		[[ -n $edhidden_orig ]] && edhidden="$edhidden_orig"
+		[[ -n $edesc_orig ]] && edesc="$edesc_orig"
 	fi
+
+	return 0
 }
 
 function editappend {
@@ -1324,6 +1334,7 @@ function edittransfer {
 	fi
 
 	[[ $3 == "x" ]] && [[ -n $yank ]] && echo "$yank" | xclip -r -i
+	[[ $3 == "w" ]] && [[ -n $yank ]] && echo "$yank" | wl-copy
 }
 
 function editlevel {

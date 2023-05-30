@@ -13,14 +13,15 @@ It wraps the ed editor in bash functions, allowing it use directly on command li
 ### Required:
 - ed;
 - highlight;
-- xclip;
 
 ### Optional:
-- tmux;
 - chafa;
 - terminology;
-- xdotool;
+- tmux;
+- wl-clipboard;
 - wmctrl;
+- xclip;
+- xdotool;
 
 ## Configuration:
 Add to your ~/.bashrc:
@@ -49,6 +50,8 @@ edtysleep=0.2
 ````
 
 You can tweak edtysleep to a highter value.  It may be necessary if 0.2 is not enough time for your system to open terminology, and paste the commands using xdotool.  In extreme cases, if you machine are under too much load, it may happen that the terminology opening, focusing, and sending commands goes out of sync.  In that case, you will need to set edty to 0, and manage windows manually.
+
+This trickery only works on X11, and depends on xclip, and xdotool.
 
 ### Directly:
 Add to your ~/.bashrc, after the sourcing:
@@ -267,6 +270,13 @@ Will copy the current line to X11 clipboard, using xclip.  The second argument c
 ````
 ey '' 10 x
 ey '' +5 x
+````
+
+#### Yank to Wayland clipboard:
+````
+ey '' '' w
+ey '' 10 w
+ey '' +5 w
 ````
 
 ### Joining:
@@ -1560,3 +1570,108 @@ You may want to set the edbopencommand to eso, so the curses search will open fi
 - editsessionopen, eso;
 - editsessionclose, esq;
 - editsessionwrite, esw;
+
+## Clip:
+An clipboard manager.  This module add the function editclipboard, or eclip, for short.
+
+### Configuration:
+Add to your ~/.bashrc, after sourcing bashed:
+
+````
+source /path/to/bashed/modules/clip/clip.sh
+````
+
+### Clipboard files:
+The text that's copied is stored in plain text files, in the directory ~/.edit/clip.
+
+### Copy:
+To copy text from the current file:
+````
+eclip c .
+````
+
+It will copy the current line to a clipboard file.  The dot can be substituted by anything that editshow understands.  For example:
+
+````
+eclip c 1,10
+eclip c 1,+2
+````
+
+### List:
+To list the copied text files:
+
+````
+eclip l
+````
+
+### Paste:
+To paste some copied text to the current file:
+
+````
+eclip p n
+````
+
+Where n is a number of one of the copied text files.
+
+#### Cut:
+To cut text from the current file:
+
+````
+eclip x .
+````
+
+The dot can be substituted for anything that editshow can understand.
+
+#### Delete:
+To delete some clipboard text file:
+
+````
+eclip d n
+````
+
+Where n is a number of some clipboard text file.  A curses interface is available, that allows selection of multiple files to be deleted:
+
+````
+eclip du
+````
+
+#### Copy to X clipboard:
+To copy some clipboard file content to the X clipboard:
+
+````
+eclip tx n
+````
+
+Where n is a number of some clipboard text file.
+
+#### Copy to Wayalnd clipboard:
+````
+eclip tw n
+````
+
+Where n is a number of some clipboard text file.
+
+#### Copy from X clipboard:
+
+````
+eclip fx type
+````
+
+Where type is a file type, for example, sh.  The file type is used when displaying the clipboard file contents.  The file type is optional.
+
+#### Copy from Wayland clipboard:
+````
+eclip fw type
+````
+
+Like the X one above, the file type is optional.
+
+#### Variables:
+- edclipdir: the directory to store the files;
+- edclipimg: controls if images should be displayed when listing the files;
+- edclipinclude: controls the contents of included files shoud be displayed when listing files;
+- edclipsyntax: controls if syntax highlighting shoud be used when listing files;
+- edcliptables: controls if tables shoud be assembled when listing files;
+- edclipcmd: set the ed command to used when listing files, p or n;
+- edclipesc: controls if escapes shoud be assembled when listing files;
+- edclipesch: controls if escape sequences shoud be hidden when listing files;
