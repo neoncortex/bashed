@@ -1512,6 +1512,14 @@ Each session will be given a number, this number is used to select a session.  Y
 ese lu
 ````
 
+### Searching a session:
+To search for a session:
+
+````
+editsession search bash
+editsession s bash
+````
+
 ### Selecting a session:
 To select a session, use the editsession command, ese for short, with a number argument:
 
@@ -1587,15 +1595,17 @@ The text that's copied is stored in plain text files, in the directory ~/.edit/c
 ### Copy:
 To copy text from the current file:
 ````
-eclip c .
+eclip c . name
 ````
 
 It will copy the current line to a clipboard file.  The dot can be substituted by anything that editshow understands.  For example:
 
 ````
-eclip c 1,10
-eclip c 1,+2
+eclip c 1,10 file.sh
+eclip c 1,+2 file.c
 ````
+
+The name is the name of the clipboard file.  Naming is useful for organization, also, it is useful when displaying with the list command, because it will pick up the file extension, and display the content accordingly.  The name is optional, and the current date will be used if a name is not given.
 
 ### List:
 To list the copied text files:
@@ -1604,6 +1614,18 @@ To list the copied text files:
 eclip l
 ````
 
+The files will be listed in the format:
+
+````
+---------
+n - name:
+---------
+content
+...
+````
+
+The n will be a number that can be used to identify a clipboard file.  These numbers are not fixed, and can change when files are renamed, or deleted.
+
 ### Paste:
 To paste some copied text to the current file:
 
@@ -1611,13 +1633,18 @@ To paste some copied text to the current file:
 eclip p n
 ````
 
-Where n is a number of one of the copied text files.
+Where n is a number of one of the copied text files, or a name;
+
+````
+eclip p 1
+eclip p shell-function.sh
+````
 
 #### Cut:
 To cut text from the current file:
 
 ````
-eclip x .
+eclip x . name
 ````
 
 The dot can be substituted for anything that editshow can understand.
@@ -1629,10 +1656,22 @@ To delete some clipboard text file:
 eclip d n
 ````
 
-Where n is a number of some clipboard text file.  A curses interface is available, that allows selection of multiple files to be deleted:
+Where n is a number of some clipboard text file, or a name.  A curses interface is available, that allows selection of multiple files to be deleted:
 
 ````
 eclip du
+````
+
+#### Rename:
+````
+eclip r n newname
+````
+
+Where n is a number of some clipboard text file, or a name.  For example:
+
+````
+eclip r 1 url
+eclip r shell-function.sh my-shell-function.sh
 ````
 
 #### Copy to X clipboard:
@@ -1642,29 +1681,29 @@ To copy some clipboard file content to the X clipboard:
 eclip tx n
 ````
 
-Where n is a number of some clipboard text file.
+Where n is a number of some clipboard text file, or a name.
 
 #### Copy to Wayalnd clipboard:
 ````
 eclip tw n
 ````
 
-Where n is a number of some clipboard text file.
+Where n is a number of some clipboard text file, or a name.
 
 #### Copy from X clipboard:
 
 ````
-eclip fx type
+eclip fx name
 ````
-
-Where type is a file type, for example, sh.  The file type is used when displaying the clipboard file contents.  The file type is optional.
 
 #### Copy from Wayland clipboard:
 ````
-eclip fw type
+eclip fw name
 ````
 
-Like the X one above, the file type is optional.
+#### Functions:
+- edclipfile: used internally to find clipboard files;
+- edclipboard, eclip: the clipboard;
 
 #### Variables:
 - edclipdir: the directory to store the files;

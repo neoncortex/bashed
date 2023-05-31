@@ -192,6 +192,23 @@ function editsession {
 
 			e_uresult=
 		fi
+	elif [[ $1 == search ]] || [[ $1 == s ]]
+	then
+		local searchres=()
+		local n=1
+		for i in ${files[@]}
+		do
+			[[ $i =~ $2 ]] && searchres+=("$n - $i")
+			n="$((n + 1))"
+		done
+
+		for i in ${searchres[@]}
+		do
+			local filename="${i//___/\/}"
+			filename="${filename/$editsessiondir/}"
+			filename="${filename//\/\//\/}"
+			echo "$filename"
+		done
 	fi
 }
 
