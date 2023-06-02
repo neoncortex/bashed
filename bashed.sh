@@ -551,6 +551,18 @@ function editarg {
 }
 
 function editsyntax {
+	[[ -n $edimg_syntax_orig ]] \
+		&& edimg="$edimg_syntax_orig" \
+		|| edimg_syntax_orig="$edimg"
+	[[ -n $edtables_syntax_orig ]] \
+		&& edtables="$edtables_syntax_orig" \
+		|| edtables_syntax_orig="$edtables"
+	[[ -n $edhidden_syntax_orig ]] \
+		&& edhidden="$edhidden_syntax_orig" \
+		|| edhidden_syntax_orig="$edhidden"
+	[[ -n $edesc_syntax_orig ]] \
+		&& edesc="$edesc_syntax_orig" \
+		|| edesc_syntax_orig="$edesc"
 	local shebang="$(edit 1p "$1")"
 	[[ $shebang =~ \#\!.*\ ?(bash|sh) ]] && syntax="bash"
 	[[ $shebang =~ \#\!.*\ ?lua ]] && syntax="lua"

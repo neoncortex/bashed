@@ -1520,6 +1520,26 @@ editsession search bash
 editsession s bash
 ````
 
+All the sessions that contains bash in its name will be listed.
+
+### Searching a session content:
+To search a session content:
+
+````
+editsession ssc word
+````
+
+All session files that contains word will be listed.
+
+### Searching file contents:
+To search for the contents in files:
+
+````
+editsession sc word
+````
+
+All files that contains word will be listed.
+
 ### Selecting a session:
 To select a session, use the editsession command, ese for short, with a number argument:
 
@@ -1625,6 +1645,24 @@ content
 ````
 
 The n will be a number that can be used to identify a clipboard file.  These numbers are not fixed, and can change when files are renamed, or deleted.
+
+### Search:
+To search for a clipboard file name:
+
+````
+eclip s word
+````
+
+All clipboard file names that contains word will be listed.
+
+### Search content:
+To search the contents of a clipboard file:
+
+````
+eclip sc word
+````
+
+All clipboard files that contains word will be listed.
 
 ### Paste:
 To paste some copied text to the current file:

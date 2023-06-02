@@ -12,7 +12,7 @@ edclipesc=$edesc
 edclipesch=$edesch
 
 function edclipfile {
-	[[ -z $1 ]] && return 10
+	[[ -z $1 ]] && return 1
 	local name="$1"
 	shift
 	local files=("$@")
@@ -65,7 +65,6 @@ function editclipboard {
 				|| extension=
 			echo "$content" > "$edclipdir/$date$extension"
 		fi
-
 	elif [[ $1 == paste ]] || [[ $1 == p ]]
 	then
 		[[ -z $2 ]] && return 6
@@ -78,6 +77,7 @@ function editclipboard {
 		[[ -z $line ]] && return 7
 		editregion 1 '$' "$edclipdir/$clipfile"
 		editread 0 0 "$filename" "$line"
+		es "$filename"
 	elif [[ $1 == cut ]] || [[ $1 == x ]]
 	then
 		local region="$fl"
@@ -117,6 +117,7 @@ function editclipboard {
 				&& separator="-" \
 				|| separator="${separator}-"
 		done
+
 		for ((i=1; i <= "${#files[@]}"; ++i))
 		do
 			echo "$separator"
@@ -127,12 +128,44 @@ function editclipboard {
 				edesch=$edclipesch edinclude=$edclipinclude \
 				es a "$edclipdir/${files[$i]}")
 		done
+	elif [[ $1 == search ]] || [[ $1 == s ]]
+	then
+		[[ -z $2 ]] && return 1
+		local searchresult=()
+		for ((i=1; i <= ${#files[@]}; ++i))
+		do
+			[[ ${files[$i]} =~ $2 ]] \
+				&& searchresult+=("$i - ${files[$i]}")
+		done
+
+		local IFS=
+		for i in ${searchresult[@]}
+		do
+			echo "$i"
+		done
+	elif [[ $1 == searchcontent ]] || [[ $1 == sc ]]
+	then
+		[[ -z $2 ]] && return 1
+		local searchresult=()
+		for ((i=1; i <= ${#files[@]}; ++i))
+		do
+			local g="$(grep "$2" "$edclipdir/${files[$i]}")"
+			[[ -n $g ]] \
+				&& searchresult+=("$i - ${files[$i]}
+$g
+")
+		done
+
+		local IFS=
+		for i in ${searchresult[@]}
+		do
+			echo "$i"
+		done
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
 		[[ -z $2 ]] && return 6
 		local clipfile="$(edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
-		echo ">>> $edclipdir/$clipfile"
 		[[ -f $edclipdir/$clipfile ]] && rm "$edclipdir/$clipfile"
 	elif [[ $1 == rename ]] || [[ $1 == r ]]
 	then
@@ -172,11 +205,7 @@ function editclipboard {
 			echo "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-			local extension="$(basename "$filename")"
-			[[ $extension =~ (^.)?[^.]+\.[^.]+ ]] \
-				&& extension=".${filename##*.}" \
-				|| extension=
-			echo "$content" > "$edclipdir/$date$extension"
+			echo "$content" > "$edclipdir/$date"
 		fi
 	elif [[ $1 == tw ]]
 	then
@@ -194,11 +223,7 @@ function editclipboard {
 			echo "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-			local extension="$(basename "$filename")"
-			[[ $extension =~ (^.)?[^.]+\.[^.]+ ]] \
-				&& extension=".${filename##*.}" \
-				|| extension=
-			echo "$content" > "$edclipdir/$date$extension"
+			echo "$content" > "$edclipdir/$date"
 		fi
 	fi
 }
@@ -222,7 +247,7 @@ function _editclipboard {
 		1)
 			COMPREPLY=($(compgen -o default -W "copy c paste p \
 				list l delete d deletecurses du cut x tx tw \
-				fx fw rename r" -- $cur))
+				fx fw rename r search s searchcontent sc" -- $cur))
 			;;
 		2)
 			if [[ $prev == delete ]] || [[ $prev == d ]] \
@@ -235,8 +260,8 @@ function _editclipboard {
 			elif [[ $prev == copy ]] || [[ $prev == c ]] \
 				|| [[ $prev == cut ]] || [[ $prev == x ]]
 			then
-				COMPREPLY=($(compgen -W "a b c d e f g G l m n p u v / \
-					 . $ + - {1..$fs}" -- $cur))
+				COMPREPLY=($(compgen -W "a b c d e f g G l m \
+					n p u v / . $ + - {1..$fs}" -- $cur))
 			else
 				COMPREPLY=($(compgen -o default -- $cur))
 			fi

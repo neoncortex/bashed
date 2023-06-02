@@ -125,7 +125,7 @@ function editsession {
 	[[ -z $1 ]] && return 1
 	local files=()
 	shopt -s dotglob
-	local IFS=$'\n'
+	local IFS=
 	for i in $editsessiondir/*
 	do
 		files+=("$i")
@@ -194,17 +194,58 @@ function editsession {
 		fi
 	elif [[ $1 == search ]] || [[ $1 == s ]]
 	then
+		[[ -z $2 ]] && return 4
 		local searchres=()
-		local n=1
-		for i in ${files[@]}
+		for ((i=0; i < ${#files[@]}; ++i))
 		do
-			[[ $i =~ $2 ]] && searchres+=("$n - $i")
-			n="$((n + 1))"
+			[[ ${files[$i]} =~ $2 ]] \
+				&& searchres+=("$((i + 1)) - ${files[$i]}")
 		done
 
 		for i in ${searchres[@]}
 		do
 			local filename="${i//___/\/}"
+			filename="${filename/$editsessiondir/}"
+			filename="${filename//\/\//\/}"
+			echo "$filename"
+		done
+	elif [[ $1 == searchcontent ]] || [[ $1 == sc ]]
+	then
+		[[ -z $2 ]] && return 5
+		local searchres=()
+		for ((i=0; i < ${#files[@]}; ++i))
+		do
+			local filename="${files[$i]}"
+			filename="${filename//___/\/}"
+			filename="${filename/$editsessiondir/}"
+			filename="${filename//\/\//\/}"
+			local g="$(grep "$2" "$filename")"
+			[[ -n $g ]] \
+				&& searchres+=("$((i + 1)) - $filename
+$g
+")
+		done
+
+		for i in ${searchres[@]}
+		do
+			echo "$i"
+		done
+	elif [[ $1 == searchsessioncontent ]] || [[ $1 == ssc ]]
+	then
+		[[ -z $2 ]] && return 6
+		local searchres=()
+		for ((i=0; i < ${#files[@]}; ++i))
+		do
+			local g="$(grep "$2" "${files[$i]}")"
+			[[ -n $g ]] \
+				&& searchres+=("$((i + 1)) - ${files[$i]}
+$g
+")
+		done
+
+		for i in ${searchres[@]}
+		do
+			filename="${i//___/\/}"
 			filename="${filename/$editsessiondir/}"
 			filename="${filename//\/\//\/}"
 			echo "$filename"
@@ -241,7 +282,8 @@ function _editsession {
 		1)
 			COMPREPLY=($(compgen -o bashdefault \
 				-W "delete d list l listcurses lu deletecurses \
-				du $numbers" -- $cur))
+				du search s searchcontent sc searchsessioncontent \
+				ssc $numbers" -- $cur))
 			;;
 		2)
 			COMPREPLY=($(compgen -o bashdefault -W "$numbers" -- $cur))
