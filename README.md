@@ -1248,6 +1248,21 @@ editdbsearch tag1,tag2
 
 editdbsearchcurses, or edbu, for short, can be used to list the results using a curses interface.  The selected file will be opened using $edbopencommand.
 
+##### Searching content:
+To search content in the files, use editdbsearchcontent, or edbsc, for short:
+
+````
+edbsc string
+````
+
+Will list all files that contain string.  A second argument can be passed, restricting the search for files with specific tags, for example:
+
+````
+edbsc string prog,c
+````
+
+Will list all files that contain string, that are tagged with prog, and c.
+
 ###### Tag subtraction:
 Tags can be subtracted from the search.  For example, to search all the files containing the tags t1, and t3, but not t2:
 

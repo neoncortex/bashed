@@ -410,6 +410,30 @@ function editdbsearchcurses {
 	[[ -n $e_uresult ]] && $edbopencommand "${files[$((e_uresult - 1))]}"
 }
 
+function editdbsearchcontent {
+	! [[ -f $edbfile ]] && return 1
+	[[ -z $1 ]] && return 2
+	local files=
+	[[ -n $2 ]] \
+		&& files="$(editdbsearch "$2")" \
+		|| files="$(cat "$edbfile" | cut -f1)"
+	local searchres=()
+	local IFS=$'\n'
+	for i in $files
+	do
+		[[ -f $i ]] && local g="$(grep "$1" "$i")"
+		[[ -n $g ]] && searchres+=("$i
+$g
+")
+	done
+
+	local IFS=
+	for i in ${searchres[@]}
+	do
+		echo "$i"
+	done
+}
+
 function editdbaction {
 	! [[ -f $edbfile ]] && return 1
 	[[ -z $2 ]] && return 2
@@ -715,6 +739,7 @@ function edbmt { editdbmovetag "$@"; }
 function edbq { editdbquery "$@"; }
 function edbqu { editdbquerycurses "$@"; }
 function edbr { editdbrename "$@"; }
+function edbsc { editdbsearchcontent "$@"; }
 function edbs { editdbscan "$@"; }
 
 function _editdbaction {
@@ -845,6 +870,22 @@ function _editdbmovetag {
 
 complete -F _editdbmovetag editdbmovetag
 complete -F _editdbmovetag edbmt
+
+function _editdbsearchcontent {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	local entries="$(cat "$edbtagscache")"
+	case "$COMP_CWORD" in
+		2)
+			COMPREPLY=($(compgen -o bashdefault -W "$entries" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -o default -- $cur))
+			;;
+	esac
+}
+
+complete -F _editdbsearchcontent editdbsearchcontent
+complete -F _editdbsearchcontent edbsc
 
 function _editdbsearch {
 	local cur=${COMP_WORDS[COMP_CWORD]}
