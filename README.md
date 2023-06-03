@@ -1803,6 +1803,7 @@ enet_pattern=(
 	".*:\/\/youtube\.com\/watch:::enet_video"
 	"\.jpg$:::enet_feh"
 )
+````
 
 enet_video, and enet_feh are variables containing commands, like the browser ones.
 
