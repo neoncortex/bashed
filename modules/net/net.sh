@@ -118,6 +118,7 @@ function enet_video_watch {
 	if [[ $? == 0 ]]
 	then
 		local video="$(ls -c "$enet_download_dir" | head -1)"
+		video="${video//\'/\'\"\'\"\'}"
 		local player="${enet_video_player}"
 		player="${player//%arg%/$enet_download_dir/$video}"
 		eval "$player"
