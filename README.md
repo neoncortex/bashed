@@ -1767,3 +1767,156 @@ eclip fw name
 - edclipcmd: set the ed command to used when listing files, p or n;
 - edclipesc: controls if escapes shoud be assembled when listing files;
 - edclipesch: controls if escape sequences shoud be hidden when listing files;
+
+## Net:
+this module allows the user to open urls in pre-configured browser, remote videos, images, audio, assemble video playlists, search the web, etc.  It depends on yt-dlp, and notify-send.  Firejail is optional, since its configurable.
+
+### How it works:
+This module works around four arrays: enet_browser, enet_searchengine, enet_pattern, and enet_bookmark.
+
+#### The enet_browser array:
+This array contain a name for a browser, and a name of a variable that contains the command to call the browser, separated by :::.  For example:
+
+````
+enet_firefox="firefox '%arg%'
+enet_browser=(
+    "firefox:::enet_firefox"
+)
+````
+
+This is done like this for a lot of reasons =D
+
+#### The enet_searchengine array:
+This array contains a name of a search engine, and its url, separated by :::.  For example:
+
+````
+enet_searchengine=(
+	"archwiki:::https://wiki.archlinux.org/index.php?search=%arg%"
+)
+````
+
+#### The enet_pattern array:
+This array contain url patterns, that when matched execute a specific action.  For example:
+
+````
+enet_pattern=(
+	".*:\/\/youtube\.com\/watch:::enet_video"
+	"\.jpg$:::enet_feh"
+)
+
+enet_video, and enet_feh are variables containing commands, like the browser ones.
+
+#### The enet_bookmark array:
+This one contain nicknamea to urls.  For example:
+
+````
+enet_bookmark=(
+	"%slackware%:::http://www.slackware.com/"
+)
+````
+
+#### Yeah, now what?
+These arrays contents can, and should, be customized by the user.  You can declare them in your ~/.bashrc file, together with the variables containing the commands to be executed.
+
+### How to use it:
+#### Opening an url:
+To open an url:
+
+````
+enet u 'url' browser
+````
+
+browser is optional, and if specified, it should be one name contained in the enet_browser array.  For example:
+
+````
+enet u 'http://www.slackware.com/' links
+enet u 'http://www.slackware.com/' firefox
+````
+
+You can use a name from enet_bookmark, for example:
+
+````
+enet u '%slackware%' firefox
+````
+
+Also, if you are editing a text file, and the current line is an url, you can open like the examples below:
+
+````
+enet u . firefox
+enet u .
+enet u '' firefox
+````
+
+##### The patterns:
+If the url you are opening match any of the urls configured in the enet_pattern array, the action configured there will be executed, so for example, youtube videos will be donwloaded, and the downloaded file will be opened in xine, if you are using the defaults, images will be opened in feh, and so on.
+
+#### Searching the web:
+You can search the web like this:
+
+````
+enet s engine keyword browser
+````
+
+Where engine is an engine name configured in the enet_searchengine array, and browser is a browser configured in enet_browser array.  Browser is optional.  Examples:
+
+````
+enet s google linux
+enet s bing linux links
+enet s brave kernel firefox
+````
+
+#### Downloading:
+You can download things by using:
+
+````
+enet d 'url'
+````
+
+It just execute wget -c on the provided link.  It is useful when you have a url to download in your editing text, then you can just type:
+
+````
+enet d
+````
+
+#### Downloading videos:
+You can download videos using:
+
+````
+enet dv 'url'
+````
+
+The videos will be stored in the directory configured in $enet_download_dir, by default: "$HOME/Downloads".
+
+#### Downloading audio:
+You can dowload audio from videos, that is, extract audio, using:
+
+````
+enet da 'url'
+````
+
+The audio files will be stored in the directory configured in $enet_download_dir.
+
+#### Playlists:
+You can assemble playlists, that is, assemble a list in the format:
+
+````
+- title:
+video_url
+
+- title:
+video_url
+````
+
+from a playlist url, using:
+
+````
+enet pl 'url'
+````
+
+The list will be printed on the terminal.  It is useful when you want to store a playlist in your editing file, for example:
+
+````
+ea "$(enet pl 'url')"
+````
+
+It was tested on Youtube, and I don't know if it will work on other sites.
