@@ -1819,6 +1819,9 @@ enet_bookmark=(
 #### Yeah, now what?
 These arrays contents can, and should, be customized by the user.  You can declare them in your ~/.bashrc file, together with the variables containing the commands to be executed.
 
+#### A note on security:
+When customizing the application variables, be sure to quote %arg% in single quotes, like '%arg%'.  This is necessary so there's no risk of executing embedded shell commands in an url.
+
 ### How to use it:
 #### Opening an url:
 To open an url:
@@ -1904,7 +1907,7 @@ You can dowload audio from videos, that is, extract audio, using:
 enet da 'url'
 ````
 
-The audio files will be stored in the directory configured in $enet_download_dir.
+The audio files will be stored in the directory configured in $enet_download_dir.  The audio format is setted in the $enet_audio_format, by default, mp3.
 
 #### Playlists:
 You can assemble playlists, that is, assemble a list in the format:
@@ -1930,6 +1933,19 @@ ea "$(enet pl 'url')"
 ````
 
 It was tested on Youtube, and I don't know if it will work on other sites.
+
+#### Youtube video thumbnails:
+To get the thumbnail of a Youtube video:
+
+````
+enet ythumb 'url'
+````
+
+A second argument can be passed, specifying a output file name:
+
+````
+enet ythumb 'url' '/path/to/file'
+````
 
 ### Variables:
 The variables below define the default commands:
@@ -1964,6 +1980,7 @@ The variables below define some configurations:
 The below ones are used internally:
 - editnet_browser;
 - eurl_encode;
+- enet_get_url;
 - enet_video_assemble_playlist;
 - enet_video_extract_audio;
 - enet_video_download;

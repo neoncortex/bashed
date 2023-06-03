@@ -45,7 +45,6 @@ enet_searchengine=(
 enet_xine_webm="xine -l '%arg%'"
 enet_xine="xine '%arg%'"
 enet_feh="feh --scale-down -B DarkSlateGray '%arg%'"
-enet_mpv="mpv --no-msg-color '%arg%'"
 enet_sxiv_gif="wget '%arg%' -O $enetdir/image.gif; sxiv -a $enetdir/image.gif"
 
 enet_pattern=(
@@ -72,33 +71,48 @@ enet_bookmark=(
 
 enet_videolog="$editdir/net/video.log"
 enet_download_dir="$HOME/Downloads"
+enet_video_quality="18/480p/720p/best"
 enet_video_player="$enet_xine"
 
-function enet_video_download {
+function enet_get_url {
 	local url="$1"
-	[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-	[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+	if [[ $url == . ]] || [[ -z $url ]]
+	then
+		url="$(edcmd=p e "${fl}p" "$fn")"
+	fi
+
+	[[ -z $url ]] && return 1 || echo "$url"
+}
+
+function enet_video_download {
+	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	local title="%(title)s.%(ext)s"
-	local quality="18/480p/720p/best"
-	local video_name="$(yt-dlp -f "$quality" --print "$title" "$url")"
+	local video_name="$(yt-dlp -f "$enet_video_quality" --print "$title" "$url")"
 	date >> "$enet_videolog"
         printf -- "%s\n" "$video_name" >> "$enet_videolog"
         printf -- "%s\n\n" "$url" >> "$enet_videolog"
         notify-send "Downloading video $video_name"
-        yt-dlp -i -o "$enet_download_dir/$video_name" -f "$quality" "$url"
-	if [[ $? == 0 ]]
-	then
-		touch "$enet_download_dir/$video_name"
-	else
-		return 1
-	fi
+        yt-dlp -i -o "$enet_download_dir/$video_name" -f "$enet_video_quality" "$url"
+	[[ $? == 0 ]] \
+		&& touch "$enet_download_dir/$video_name" \
+		|| return 1
+}
+
+function enet_yt_thumbnail {
+	local url="$(enet_get_url "$1")"
+	[[ -z $url ]] && return 2
+	[[ -n $2 ]] && output="$2"
+	local title="%(title)s"
+	local video_name="$(yt-dlp -f "$enet_video_quality" --print "$title" "$url")"
+	local video_id="$(yt-dlp --print "%(id)s" "$url")"
+	[[ -n $output ]] \
+		&& wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg" -O "$output" \
+		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg"
 }
 
 function enet_video_watch {
-	local url="$1"
-	[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-	[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	enet_video_download "$url"
 	if [[ $? == 0 ]]
@@ -114,9 +128,7 @@ enet_video="enet_video_watch '%arg%'"
 enet_audio_format="mp3"
 
 function enet_video_extract_audio {
-	local url="$1"
-	[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-	[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	notify-send "Downloading audio from $url"
 	local title="%(title)s.%(ext)s"
@@ -126,9 +138,7 @@ function enet_video_extract_audio {
 }
 
 function enet_video_assemble_playlist {
-	local url="$1"
-	[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-	[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	local playlist_json="yt-dlp --flat-playlist -j '%arg%'"
 	playlist_json="${playlist_json//%arg%/$url}"
@@ -177,9 +187,7 @@ function editnet {
 	[[ -z $1 ]] && return 1
 	if [[ $1 == url ]] || [[ $1 == u ]]
 	then
-		local url="$2"
-		[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-		[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
 		local browser="$enet_default_browser"
 		[[ -n $3 ]] && browser="$(editnet_browser "$3")"
@@ -233,32 +241,29 @@ function editnet {
 		eval "$browser"
 	elif [[ $1 == download ]] || [[ $1 == d ]]
 	then
-		local url="$2"
-		[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-		[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
 		wget -c "$url"
 	elif [[ $1 == download-video ]] || [[ $1 == dv ]]
 	then
-		local url="$2"
-		[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-		[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
 		enet_video_download "$url"
 	elif [[ $1 == download-audio ]] || [[ $1 == da ]]
 	then
-		local url="$2"
-		[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-		[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
 		enet_video_extract_audio "$url"
 	elif [[ $1 == playlist ]] || [[ $1 == pl ]]
 	then
-		local url="$2"
-		[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
-		[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
+		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
 		enet_video_assemble_playlist "$url"
+	elif [[ $1 == ythumb ]]
+	then
+		local url="$(enet_get_url "$2")"
+		[[ -z $url ]] && return 2
+		enet_yt_thumbnail "$url"
 	fi
 }
 
@@ -281,7 +286,7 @@ function _editnet {
 		1)
 			COMPREPLY=($(compgen -W \
 				"url u search s download d download-video dv \
-				download-audio da playlist pl" \
+				download-audio da playlist pl ythumb" \
 				-- $cur))
 			;;
 		2)
