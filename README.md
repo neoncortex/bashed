@@ -1858,6 +1858,8 @@ enet_mplayer="mplayer '%arg%'"
 enet_video_player="$enet_mplayer"
 ````
 
+The video quality is setted in the variable $enet_video_quality, by default: 18/480p/720p/best.
+
 #### Searching the web:
 You can search the web like this:
 
@@ -1954,6 +1956,7 @@ The variables below define some configurations:
 - enetdir: the enet directory;
 - enet_videolog: the logfile for videos;
 - enet_download_dir: the default download directory for videos;
+- enet_video_quality
 
 ### Functions:
 - editnet, enet;
