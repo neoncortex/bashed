@@ -1851,6 +1851,13 @@ enet u '' firefox
 ##### The patterns:
 If the url you are opening match any of the urls configured in the enet_pattern array, the action configured there will be executed, so for example, youtube videos will be donwloaded, and the downloaded file will be opened in xine, if you are using the defaults, images will be opened in feh, and so on.
 
+The video player is configured in $enet_video_player, by default, $enet_xine.  To use another video player, you should create a variable containing the command, and assign that variable to $enet_video_player.  For example:
+
+````
+enet_mplayer="mplayer '%arg%'"
+enet_video_player="$enet_mplayer"
+````
+
 #### Searching the web:
 You can search the web like this:
 
@@ -1886,7 +1893,7 @@ You can download videos using:
 enet dv 'url'
 ````
 
-The videos will be stored in the directory configured in $enet_download_dir, by default: "$HOME/Downloads".
+The videos will be stored in the directory configured in $enet_download_dir, by default: "$HOME/Downloads".  The downloaded videos will be logged in the $enet_videolog file.
 
 #### Downloading audio:
 You can dowload audio from videos, that is, extract audio, using:
@@ -1921,3 +1928,40 @@ ea "$(enet pl 'url')"
 ````
 
 It was tested on Youtube, and I don't know if it will work on other sites.
+
+### Variables:
+The variables below define the default commands:
+- enet_default_browser;
+- enet_dillo;
+- enet_falkon;
+- enet_falkon_firejail;
+- enet_feh;
+- enet_firefox;
+- enet_firefox_firejail;
+- enet_firefox_firejail_private;
+- enet_lagrange;
+- enet_links;
+- enet_lynx;
+- enet_netsurf;
+- enet_seamonkey;
+- enet_seamonkey_firejail;
+- enet_sxiv_gif;
+- enet_xine_webm;
+- enet_xine;
+- enet_video_player;
+
+The variables below define some configurations:
+- enetdir: the enet directory;
+- enet_videolog: the logfile for videos;
+- enet_download_dir: the default download directory for videos;
+
+### Functions:
+- editnet, enet;
+
+The below ones are used internally:
+- editnet_browser;
+- eurl_encode;
+- enet_video_assemble_playlist;
+- enet_video_extract_audio;
+- enet_video_download;
+- enet_video_watch;

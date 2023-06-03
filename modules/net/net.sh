@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-! [[ -d $editdir/net ]] && mkdir -p "$editdir/net"
+enetdir="$editdir/net"
+! [[ -d $editdir/net ]] && mkdir -p "$enetdir"
 
 enet_dillo="dillo '%arg%'"
 enet_falkon="falkon '%arg%'"
@@ -45,7 +46,7 @@ enet_xine_webm="xine -l '%arg%'"
 enet_xine="xine '%arg%'"
 enet_feh="feh --scale-down -B DarkSlateGray '%arg%'"
 enet_mpv="mpv --no-msg-color '%arg%'"
-enet_sxiv_gif="wget '%arg%' -O /tmp/image.gif; sxiv -a /tmp/image.gif"
+enet_sxiv_gif="wget '%arg%' -O $enetdir/image.gif; sxiv -a $enetdir/image.gif"
 
 enet_pattern=(
 	".*:\/\/invidious\.snopyta\.org\/watch:::enet_video"
@@ -78,15 +79,20 @@ function enet_video_download {
 	[[ $url == . ]] && url="$(edcmd=p e "${fl}p" "$fn")"
 	[[ -z $url ]] && url="$(edcmd=p e "${fl}p" "$fn")"
 	[[ -z $url ]] && return 2
-	local video_name="$(yt-dlp --print filename "$url")"
 	local title="%(title)s.%(ext)s"
 	local quality="18/480p/720p/best"
+	local video_name="$(yt-dlp -f "$quality" --print "$title" "$url")"
 	date >> "$enet_videolog"
         printf -- "%s\n" "$video_name" >> "$enet_videolog"
         printf -- "%s\n\n" "$url" >> "$enet_videolog"
         notify-send "Downloading video $video_name"
-        yt-dlp -i -o "$enet_download_dir/$title" -f "$quality" "$url"
-	return $?
+        yt-dlp -i -o "$enet_download_dir/$video_name" -f "$quality" "$url"
+	if [[ $? == 0 ]]
+	then
+		touch "$enet_download_dir/$video_name"
+	else
+		return 1
+	fi
 }
 
 function enet_video_watch {
