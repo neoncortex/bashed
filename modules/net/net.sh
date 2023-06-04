@@ -117,10 +117,16 @@ function enet_video_watch {
 	enet_video_download "$url"
 	if [[ $? == 0 ]]
 	then
-		local video="$(ls -c "$enet_download_dir" | head -1)"
+		local IFS=
+		local video=
+		for i in $enet_download_dir/*
+		do
+			[[ $i -nt $video ]] && video="$i"
+		done
+
 		video="${video//\'/\'\"\'\"\'}"
 		local player="${enet_video_player}"
-		player="${player//%arg%/$enet_download_dir/$video}"
+		player="${player//%arg%/$video}"
 		eval "$player"
 	fi
 }
