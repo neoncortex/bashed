@@ -3,18 +3,18 @@
 enetdir="$editdir/net"
 ! [[ -d $editdir/net ]] && mkdir -p "$enetdir"
 
-enet_dillo="dillo '%arg%'"
-enet_falkon="falkon '%arg%'"
-enet_falkon_firejail="firejail --private=~/firejail falkon '%arg%'"
-enet_firefox="firefox '%arg%'"
-enet_firefox_firejail="firejail --private=~/firejail firefox '%arg%'"
-enet_firefox_firejail_private="firejail --private=~/firejail firefox --private-window '%arg%'"
-enet_lagrange="lagrange '%arg%'"
-enet_links="links -g -html-g-background-color 0x7eacc8 '%arg%'"
-enet_lynx="lynx -lss=~/.lynx.lss '%arg%'"
-enet_netsurf="netsurf --window_height 700 '%arg%'"
-enet_seamonkey="seamonkey '%arg%'"
-enet_seamonkey_firejail="firejail --private=~/firejail seamonkey '%arg%'"
+enet_dillo="dillo %arg%"
+enet_falkon="falkon %arg%"
+enet_falkon_firejail="firejail --private=~/firejail falkon %arg%"
+enet_firefox="firefox %arg%"
+enet_firefox_firejail="firejail --private=~/firejail firefox %arg%"
+enet_firefox_firejail_private="firejail --private=~/firejail firefox --private-window %arg%"
+enet_lagrange="lagrange %arg%"
+enet_links="links -g -html-g-background-color 0x7eacc8 %arg%"
+enet_lynx="lynx -lss=~/.lynx.lss %arg%"
+enet_netsurf="netsurf --window_height 700 %arg%"
+enet_seamonkey="seamonkey %arg%"
+enet_seamonkey_firejail="firejail --private=~/firejail seamonkey %arg%"
 
 enet_browser=(
 	"dillo:::enet_dillo"
@@ -31,7 +31,7 @@ enet_browser=(
 	"seamonkey-firejail:::enet_seamonkey_firejail"
 )
 
-enet_default_browser="links -g -html-g-background-color 0x7eacc8 '%arg%'"
+enet_default_browser="links -g -html-g-background-color 0x7eacc8 %arg%"
 
 enet_searchengine=(
 	"archwiki:::https://wiki.archlinux.org/index.php?search=%arg%"
@@ -42,10 +42,10 @@ enet_searchengine=(
 	"yandex:::https://yandex.com/search/?text=%arg%"
 )
 
-enet_xine_webm="xine -l '%arg%'"
-enet_xine="xine '%arg%'"
-enet_feh="feh --scale-down -B DarkSlateGray '%arg%'"
-enet_sxiv_gif="wget '%arg%' -O $enetdir/image.gif; sxiv -a $enetdir/image.gif"
+enet_xine_webm="xine -l %arg%"
+enet_xine="xine %arg%"
+enet_feh="feh --scale-down -B DarkSlateGray %arg%"
+enet_sxiv_gif="wget %arg% -O $enetdir/image.gif; sxiv -a $enetdir/image.gif"
 
 enet_pattern=(
 	".*:\/\/invidious\.snopyta\.org\/watch:::enet_video"
@@ -84,6 +84,26 @@ function enet_get_url {
 	[[ -z $url ]] && return 1 || echo "$url"
 }
 
+function enet_exec {
+	[[ -z $1 ]] && return 1
+	[[ -z $2 ]] && return 2
+	local str="$1"
+	shift
+	local IFS=$'\n\t '
+	local cmd=($@)
+	for ((i=0; i < "${#cmd[@]}"; ++i))
+	do
+		if [[ ${cmd[$i]} =~ %arg% ]]
+		then
+			local arg="${cmd[$i]}"
+			arg="${arg//%arg%/$str}"
+			cmd[$i]="$arg"
+		fi
+	done
+	
+	"${cmd[@]}"
+}
+
 function enet_video_download {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
@@ -104,8 +124,12 @@ function enet_yt_thumbnail {
 	[[ -z $url ]] && return 2
 	[[ -n $2 ]] && output="$2"
 	local title="%(title)s"
-	local video_name="$(yt-dlp -f "$enet_video_quality" --print "$title" "$url")"
-	local video_id="$(yt-dlp --print "%(id)s" "$url")"
+	local video_name_cmd=("yt-dlp -f "$enet_video_quality" --print "$title"" \
+		"$url")
+	local video_name="$(${video_name_cmd[@]})"
+	local id="%(id)s"
+	local video_id_cmd=("yt-dlp --print "$id"" "$url")
+	local video_id="$(${video_id_cmd[@]})"
 	[[ -n $output ]] \
 		&& wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg" -O "$output" \
 		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg"
@@ -124,14 +148,11 @@ function enet_video_watch {
 			[[ $i -nt $video ]] && video="$i"
 		done
 
-		video="${video//\'/\'\"\'\"\'}"
-		local player="${enet_video_player}"
-		player="${player//%arg%/$video}"
-		eval "$player"
+		enet_exec "$video" "$enet_video_player"
 	fi
 }
 
-enet_video="enet_video_watch '%arg%'"
+enet_video="enet_video_watch %arg%"
 enet_audio_format="mp3"
 
 function enet_video_extract_audio {
@@ -140,16 +161,14 @@ function enet_video_extract_audio {
 	notify-send "Downloading audio from $url"
 	local title="%(title)s.%(ext)s"
         yt-dlp --extract-audio --audio-format "$enet_audio_format" \
-	                -o "$enet_download_dir/$title" "$url"
+		-o "$enet_download_dir/$title" "$url"
         notify-send "Downloading audio from $url finished"
 }
 
 function enet_video_assemble_playlist {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
-	local playlist_json="yt-dlp --flat-playlist -j '%arg%'"
-	playlist_json="${playlist_json//%arg%/$url}"
-	local result_json="$(eval $playlist_json)"
+	local result_json="$(enet_exec "$url" "yt-dlp --flat-playlist -j %arg%")"
 	local IFS=$'\n'
 	local urls=($(echo "$result_json" | cut -d ',' -f4))
 	local titles=($(echo "$result_json" | cut -d ',' -f5))
@@ -206,8 +225,7 @@ function editnet {
 			if [[ $url =~ $pattern ]]
 			then
 				local command="${!action}"
-				command="${command//%arg%/$url}"
-				eval "$command"
+				enet_exec "$url" "$command"
 				return
 			fi
 		done
@@ -218,14 +236,13 @@ function editnet {
 			local address="${i/*:::/}"
 			if [[ $url =~ $name ]]
 			then
-				browser="${browser//%arg%/$address}"
-				eval "$browser"
+				enet_exec "$address" "$browser"
 				return
 			fi
 		done
 
 		browser="${browser//%arg%/$url}"
-		eval "$browser"
+		enet_exec "$url" "$browser"
 	elif [[ $1 == search ]] || [[ $1 == s ]]
 	then
 		[[ -z $2 ]] && return 3
@@ -244,8 +261,7 @@ function editnet {
 		[[ -z $engine_url ]] && return 5
 		local encoded_text="$(eurl_encode "$text")"
 		engine_url="${engine_url//%arg%/$encoded_text}"
-		browser="${browser//%arg%/$engine_url}"
-		eval "$browser"
+		enet_exec "$engine_url" "$browser"
 	elif [[ $1 == download ]] || [[ $1 == d ]]
 	then
 		local url="$(enet_get_url "$2")"

@@ -1778,7 +1778,7 @@ This module works around four arrays: enet_browser, enet_searchengine, enet_patt
 This array contain a name for a browser, and a name of a variable that contains the command to call the browser, separated by :::.  For example:
 
 ````
-enet_firefox="firefox '%arg%'
+enet_firefox="firefox %arg%"
 enet_browser=(
     "firefox:::enet_firefox"
 )
@@ -1819,9 +1819,6 @@ enet_bookmark=(
 #### Yeah, now what?
 These arrays contents can, and should, be customized by the user.  You can declare them in your ~/.bashrc file, together with the variables containing the commands to be executed.
 
-#### A note on security:
-When customizing the application variables, be sure to quote %arg% in single quotes, like '%arg%'.  This is necessary so there's no risk of executing embedded shell commands in an url.
-
 ### How to use it:
 #### Opening an url:
 To open an url:
@@ -1857,7 +1854,7 @@ If the url you are opening match any of the urls configured in the enet_pattern 
 The video player is configured in $enet_video_player, by default, $enet_xine.  To use another video player, you should create a variable containing the command, and assign that variable to $enet_video_player.  For example:
 
 ````
-enet_mplayer="mplayer '%arg%'"
+enet_mplayer="mplayer %arg%"
 enet_video_player="$enet_mplayer"
 ````
 
@@ -1980,6 +1977,7 @@ The variables below define some configurations:
 The below ones are used internally:
 - editnet_browser;
 - eurl_encode;
+- enet_exec;
 - enet_get_url;
 - enet_video_assemble_playlist;
 - enet_video_extract_audio;
