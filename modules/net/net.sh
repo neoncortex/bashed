@@ -108,12 +108,14 @@ function enet_video_download {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	local title="%(title)s.%(ext)s"
-	local video_name="$(yt-dlp -f "$enet_video_quality" --print "$title" "$url")"
+	local video_name="$(enet_exec "$url" \
+		"yt-dlp -f "$enet_video_quality" --print "$title" %arg%")"
 	date >> "$enet_videolog"
         printf -- "%s\n" "$video_name" >> "$enet_videolog"
         printf -- "%s\n\n" "$url" >> "$enet_videolog"
         notify-send "Downloading video $video_name"
-        yt-dlp -i -o "$enet_download_dir/$video_name" -f "$enet_video_quality" "$url"
+	enet_exec "$url" "yt-dlp -i -o "$enet_download_dir/$title" \
+		-f "$enet_video_quality" %arg%"
 	[[ $? == 0 ]] \
 		&& touch "$enet_download_dir/$video_name" \
 		|| return 1
@@ -123,13 +125,7 @@ function enet_yt_thumbnail {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
 	[[ -n $2 ]] && output="$2"
-	local title="%(title)s"
-	local video_name_cmd=("yt-dlp -f "$enet_video_quality" --print "$title"" \
-		"$url")
-	local video_name="$(${video_name_cmd[@]})"
-	local id="%(id)s"
-	local video_id_cmd=("yt-dlp --print "$id"" "$url")
-	local video_id="$(${video_id_cmd[@]})"
+	local video_id="$(enet_exec "$url" "yt-dlp --print "%\(id\)s" %arg%")"
 	[[ -n $output ]] \
 		&& wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg" -O "$output" \
 		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg"
@@ -158,11 +154,13 @@ enet_audio_format="mp3"
 function enet_video_extract_audio {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
-	notify-send "Downloading audio from $url"
+	local title="%(title)s"
+	local video_name="$(enet_exec "$url" "yt-dlp --print "$title" %arg%")"
+	notify-send "Extracting audio from $video_name"
 	local title="%(title)s.%(ext)s"
-        yt-dlp --extract-audio --audio-format "$enet_audio_format" \
-		-o "$enet_download_dir/$title" "$url"
-        notify-send "Downloading audio from $url finished"
+	enet_exec "$url" "yt-dlp --extract-audio --audio-format \
+		"$enet_audio_format" -o "$enet_download_dir/$title" %arg%"
+	notify-send "Extracting audio from $video_name finished"
 }
 
 function enet_video_assemble_playlist {
