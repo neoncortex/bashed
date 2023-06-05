@@ -1769,7 +1769,15 @@ eclip fw name
 - edclipesch: controls if escape sequences shoud be hidden when listing files;
 
 ## Net:
-this module allows the user to open urls in pre-configured browser, remote videos, images, audio, assemble video playlists, search the web, etc.  It depends on yt-dlp, and notify-send.  Firejail is optional, since its configurable.
+this module allows the user to open urls in pre-configured browser, remote videos, images, audio, assemble video playlists, search the web, etc.
+
+### Dependencies:
+It depends on:
+- yt-dlp;
+- notify-send;
+- jq;
+
+It comes with some browsers configured to use firejail, but this is optional, and configurable.
 
 ### How it works:
 This module works around four arrays: enet_browser, enet_searchengine, enet_pattern, and enet_bookmark.
@@ -1929,7 +1937,26 @@ The list will be printed on the terminal.  It is useful when you want to store a
 ea "$(enet pl 'url')"
 ````
 
-It was tested on Youtube, and I don't know if it will work on other sites.
+You can give a filename to output the playlist, for example:
+
+````
+enet pl 'url' 'playlist.org'
+````
+
+When given a filename, it will create a img dir, and will try to download thumbnails of the videos there.  The thumbnails, if available, will be added to the playlist output file.  The thumbnail filenames will be like video_id.jpg, where video_id is the string that identifies the video in the video site.
+
+#### Video thumbnails:
+To get thumbnails of videos:
+
+````
+enet thumb 'url'
+````
+
+A second argument can be passed, specifying a output file name:
+
+````
+enet thumb 'url' '/path/to/file'
+````
 
 #### Youtube video thumbnails:
 To get the thumbnail of a Youtube video:
@@ -1943,6 +1970,8 @@ A second argument can be passed, specifying a output file name:
 ````
 enet ythumb 'url' '/path/to/file'
 ````
+
+This funciton exist so that you can get the high quality thumbnail from Youtube, which generally does not appear using yt-dlp.
 
 ### Variables:
 The variables below define the default commands:
@@ -1969,7 +1998,7 @@ The variables below define some configurations:
 - enetdir: the enet directory;
 - enet_videolog: the logfile for videos;
 - enet_download_dir: the default download directory for videos;
-- enet_video_quality
+- enet_video_quality: the download video quality;
 
 ### Functions:
 - editnet, enet;
@@ -1979,7 +2008,9 @@ The below ones are used internally:
 - eurl_encode;
 - enet_exec;
 - enet_get_url;
+- ednet_thumbnail;
 - enet_video_assemble_playlist;
 - enet_video_extract_audio;
 - enet_video_download;
 - enet_video_watch;
+- ednet_yt_thumbnail;

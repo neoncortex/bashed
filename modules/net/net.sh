@@ -131,6 +131,22 @@ function enet_yt_thumbnail {
 		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg"
 }
 
+function enet_thumbnail {
+	local url="$(enet_get_url "$1")"
+	[[ -z $url ]] && return 2
+	[[ -n $2 ]] && output="$2"
+	local result_json="$(enet_exec "$url" "yt-dlp --flat-playlist -j %arg%")"
+	local IFS=$'\n'
+	local video_id="$(echo "$result_json" | jq -r '.id')"
+	local thumb="$(echo "$result_json" | jq -r '[.thumbnails[].url][-1]')"
+	if [[ -n $thumb ]]
+	then
+		[[ -n $output ]] \
+			&& enet_exec "$thumb" "wget %arg% -O $video_id.jpg" \
+			|| enet_exec "$thumb" "wget %arg% -O $output.jpg"
+	fi
+}
+
 function enet_video_watch {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
@@ -166,19 +182,48 @@ function enet_video_extract_audio {
 function enet_video_assemble_playlist {
 	local url="$(enet_get_url "$1")"
 	[[ -z $url ]] && return 2
+	[[ -n $2 ]] \
+		&& local filename="$2" \
+		&& { [[ -f $filename ]] && rm "$filename"; }
 	local result_json="$(enet_exec "$url" "yt-dlp --flat-playlist -j %arg%")"
 	local IFS=$'\n'
-	local urls=($(echo "$result_json" | cut -d ',' -f4))
-	local titles=($(echo "$result_json" | cut -d ',' -f5))
+	local keys=($(echo "$result_json" | jq -r '.ie_key'))
+	local ids=($(echo "$result_json" | jq -r '.id'))
+	local urls=($(echo "$result_json" | jq -r '.url'))
+	local titles=($(echo "$result_json" | jq -r '.title'))
+	local thumbs=($(echo "$result_json" | jq -r '[.thumbnails[].url][-1]'))
 	for ((i=0; i < ${#urls[@]}; ++i))
 	do
-		local video="${urls[$i]}"
-		local video_url="${video/\"url\": /}"
-		local video_url="${video_url/ /}"
-		local title="${titles[$i]}"
-		local video_title="${title/\"title\": /}"
-		printf -- '- %s\n%s\n\n' "${video_title//\"/}:" "${video_url//\"/}"
+		local video_url="${urls[$i]}"
+		local video_title="${titles[$i]}"
+		if [[ -z $filename ]]
+		then
+			printf -- '- %s\n%s\n\n' "$video_title:" \
+				"$video_url"
+		else
+			local video_key="${keys[$i]}"
+			local video_id="${ids[$i]}"
+			echo "- $video_title:" >> "$filename"
+			mkdir -p img
+			if [[ $video_key ==  Youtube ]]
+			then
+				enet_yt_thumbnail "$video_url" \
+					"img/${video_id}.jpg"
+				echo "$PWD/img/${video_id}.jpg" >> "$filename"
+			else
+				local thumb="${thumbs[$i]}"
+				[[ -n $thumb ]] \
+					&& enet_exec "$thumb" "wget %arg% \
+						-O img/$video_id.jpg"
+				echo "$PWD/img/$video_id.jpg" >> "$filename"
+			fi
+
+			echo "$video_url" >> "$filename"
+			echo >> "$filename"
+		fi
 	done
+
+	[[ -f $filename ]] && (es a "$filename")
 }
 
 function eurl_encode {
@@ -279,7 +324,12 @@ function editnet {
 	then
 		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
-		enet_video_assemble_playlist "$url"
+		enet_video_assemble_playlist "$url" "$3"
+	elif [[ $1 == thumb ]]
+	then
+		local url="$(enet_get_url "$2")"
+		[[ -z $url ]] && return 2
+		enet_thumbnail "$url"
 	elif [[ $1 == ythumb ]]
 	then
 		local url="$(enet_get_url "$2")"
@@ -307,7 +357,7 @@ function _editnet {
 		1)
 			COMPREPLY=($(compgen -W \
 				"url u search s download d download-video dv \
-				download-audio da playlist pl ythumb" \
+				download-audio da playlist pl thumb ythumb" \
 				-- $cur))
 			;;
 		2)
