@@ -128,7 +128,7 @@ function enet_yt_thumbnail {
 	local video_id="$(enet_exec "$url" "yt-dlp --print "%\(id\)s" %arg%")"
 	[[ -n $output ]] \
 		&& wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg" -O "$output" \
-		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg"
+		|| wget "https://i.ytimg.com/vi/$video_id/sddefault.jpg" -O "$video_id.jpg"
 }
 
 function enet_thumbnail {
@@ -142,8 +142,8 @@ function enet_thumbnail {
 	if [[ -n $thumb ]]
 	then
 		[[ -n $output ]] \
-			&& enet_exec "$thumb" "wget %arg% -O $video_id.jpg" \
-			|| enet_exec "$thumb" "wget %arg% -O $output.jpg"
+			&& enet_exec "$thumb" "wget %arg% -O $output.jpg" \
+			|| enet_exec "$thumb" "wget %arg% -O $video_id.jpg"
 	fi
 }
 
@@ -329,12 +329,12 @@ function editnet {
 	then
 		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
-		enet_thumbnail "$url"
+		enet_thumbnail "$url" "$3"
 	elif [[ $1 == ythumb ]]
 	then
 		local url="$(enet_get_url "$2")"
 		[[ -z $url ]] && return 2
-		enet_yt_thumbnail "$url"
+		enet_yt_thumbnail "$url" "$3"
 	fi
 }
 

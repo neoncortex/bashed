@@ -215,17 +215,12 @@ function editread {
 	then
 		[[ -n $3 ]] && local fn="$3"
 		[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-		local lines=
-		if [[ $edecesch -eq 0 ]]
-		then
-			lines="$(e "${1},${2}p" "$fn")"
-		else
-			lines="$(edesch=$edecesch edsyntax=0 edcmd=p \
-				es "${1},${2}" "$fn")"
-		fi
-
 		mkdir -p "$editdir"
-		echo "$lines" > "$editreadlines"
+		local lines=
+		[[ $edecesch -eq 0 ]] \
+			&& e "${1},${2}p" "$fn" > "$editreadlines" \
+			|| edsyntax=0 edimg=0 dcmd=p \
+				es "${1},${2}" "$fn" > "$editreadlines"
 	fi
 
 	if [[ -n $4 ]] && [[ -f $editreadlines ]]
@@ -551,18 +546,6 @@ function editarg {
 }
 
 function editsyntax {
-	[[ -n $edimg_syntax_orig ]] \
-		&& edimg="$edimg_syntax_orig" \
-		|| edimg_syntax_orig="$edimg"
-	[[ -n $edtables_syntax_orig ]] \
-		&& edtables="$edtables_syntax_orig" \
-		|| edtables_syntax_orig="$edtables"
-	[[ -n $edhidden_syntax_orig ]] \
-		&& edhidden="$edhidden_syntax_orig" \
-		|| edhidden_syntax_orig="$edhidden"
-	[[ -n $edesc_syntax_orig ]] \
-		&& edesc="$edesc_syntax_orig" \
-		|| edesc_syntax_orig="$edesc"
 	local shebang="$(edit 1p "$1")"
 	[[ $shebang =~ \#\!.*\ ?(bash|sh) ]] && syntax="bash"
 	[[ $shebang =~ \#\!.*\ ?lua ]] && syntax="lua"
