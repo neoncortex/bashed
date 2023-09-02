@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
 
+edclipcolor=31
 edclipdir="$editdir/clip"
 ! [[ -f $edclipdir ]] && mkdir -p "$edclipdir"
-
-edclipimg=$edimg
-edclipinclude=$edinclude
-edclipsyntax=$edsyntax
-edcliptables=$edtables
-edclipcmd=$edcmd
-edclipesc=$edesc
-edclipesch=$edesch
 
 function edclipfile {
 	[[ -z $1 ]] && return 1
@@ -17,7 +10,7 @@ function edclipfile {
 	shift
 	local files=("$@")
 	local clipfile=
-	if [[ $name =~ [0-9]+ ]]
+	if [[ $name =~ ^[0-9]+$ ]]
 	then
 		clipfile="${files[$((name - 1))]}"
 	else
@@ -51,9 +44,24 @@ function editclipboard {
 		[[ -n $3 ]] && resname="$3"
 		[[ -n $4 ]] && filename="$4"
 		[[ -z $filename ]] && return 4
-		content="$(edsyntax=0 edcmd=p edimg=0 edtables=0 edesc=0 \
-			edesch=0 edinclude=0 es $region "$filename")"
+		content="$(es $region "$filename")"
 		[[ -z $content ]] && return 5
+		if [[ -n $resname ]]
+		then
+			echo "$content" > "$edclipdir/$resname"
+		else
+			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
+			local extension="$(basename "$filename")"
+			[[ $extension =~ (^.)?[^.]+\.[^.]+ ]] \
+				&& extension=".${filename##*.}" \
+				|| extension=
+			echo "$content" > "$edclipdir/$date$extension"
+		fi
+	elif [[ $1 == add ]] || [[ $1 == a ]]
+	then
+		[[ -z $2 ]] && return 5
+		[[ -n $3 ]] && resname="$3"
+		local content="$2"
 		if [[ -n $resname ]]
 		then
 			echo "$content" > "$edclipdir/$resname"
@@ -75,9 +83,8 @@ function editclipboard {
 		[[ -n $4 ]] && filename="$4"
 		[[ -z $filename ]] && return 4
 		[[ -z $line ]] && return 7
-		editregion 1 '$' "$edclipdir/$clipfile"
-		editread 0 0 "$filename" "$line"
-		es "$filename"
+		_editregion 1 '$' "$edclipdir/$clipfile"
+		_editread 0 0 "$filename" "$line"
 	elif [[ $1 == cut ]] || [[ $1 == x ]]
 	then
 		local region="$fl"
@@ -86,8 +93,7 @@ function editclipboard {
 		[[ -n $3 ]] && resname="$3"
 		[[ -n $4 ]] && filename="$4"
 		[[ -z $filename ]] && return 4
-		content="$(edsyntax=0 edcmd=p edimg=0 edtables=0 edesc=0 \
-			edesch=0 edinclude=0 es $region "$filename")"
+		content="$(es $region "$filename")"
 		[[ -z $content ]] && return 5
 		if [[ $region =~ , ]]
 		then
@@ -120,13 +126,10 @@ function editclipboard {
 
 		for ((i=1; i <= "${#files[@]}"; ++i))
 		do
-			echo "$separator"
+			printf -- '\033[%sm%s\n' "$edclipcolor" "$separator"
 			echo "$i - ${files[$i]}"
-			echo "$separator"
-			(edimg=$edclipimg edsyntax=$edclipsyntax edcmd=$edclipcmd \
-				edtables=$edcliptables edesc=$edclipesc \
-				edesch=$edclipesch edinclude=$edclipinclude \
-				es a "$edclipdir/${files[$i]}")
+			printf -- '%s\033[0m\n' "$separator"
+			(es a "$edclipdir/${files[$i]}")
 		done
 	elif [[ $1 == search ]] || [[ $1 == s ]]
 	then
@@ -149,9 +152,9 @@ function editclipboard {
 		local searchresult=()
 		for ((i=1; i <= ${#files[@]}; ++i))
 		do
-			local g="$(grep "$2" "$edclipdir/${files[$i]}")"
+			local g="$(grep --color=always "$2" "$edclipdir/${files[$i]}")"
 			[[ -n $g ]] \
-				&& searchresult+=("$i - ${files[$i]}
+				&& searchresult+=("\033[${edclipcolor}m$i - ${files[$i]}\033[0m
 $g
 ")
 		done
@@ -159,8 +162,15 @@ $g
 		local IFS=
 		for i in ${searchresult[@]}
 		do
-			echo "$i"
+			printf -- '%b\n' "$i"
 		done
+	elif [[ $1 == show ]] || [[ $1 == sh ]]
+	then
+		[[ -z $2 ]] && return 6
+		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		[[ -z $clipfile ]] && return 8
+		content="$(cat "$edclipdir/$clipfile")"
+		printf -- '%s' "$content"
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
 		[[ -z $2 ]] && return 6
@@ -177,7 +187,7 @@ $g
 			"$edclipdir/$newname"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		editcurses 1 "${files[@]}"
+		_editcurses 1 "${files[@]}"
 		if [[ ${#e_uresult[@]} -gt 0 ]]
 		then
 			local IFS=
@@ -245,9 +255,10 @@ function _editclipboard {
 	local prev=${COMP_WORDS[COMP_CWORD-1]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o default -W "copy c paste p \
+			COMPREPLY=($(compgen -o default -W "a addcopy c paste p \
 				list l delete d deletecurses du cut x tx tw \
-				fx fw rename r search s searchcontent sc" -- $cur))
+				fx fw rename r search s searchcontent sc sh show" \
+				-- $cur))
 			;;
 		2)
 			if [[ $prev == delete ]] || [[ $prev == d ]] \
@@ -267,10 +278,10 @@ function _editclipboard {
 			fi
 			;;
 		*)
-			COMPREPLY=($(compgen -o default -- $cur))
+			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
 }
 
-complete -F _editclipboard editclipboard
-complete -F _editclipboard eclip
+complete -o nospace -o filenames -F _editclipboard editclipboard
+complete -o nospace -o filenames -F _editclipboard eclip
