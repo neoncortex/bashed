@@ -810,6 +810,14 @@ content
 
 The n will be a number that can be used to identify a clipboard file.  These numbers are not fixed, and can change when files are renamed, or deleted.  The color that these are displayed can be changed in the variable $edclipcolor, by default, 31.
 
+### Show:
+To show the contents of a clip entry, that is, to print it, you use:
+````
+eclip sh n
+````
+
+Where n is a number of one of the copied text files, or a name.
+
 ### Search:
 To search for a clipboard file name:
 
