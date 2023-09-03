@@ -123,7 +123,7 @@ function editcopy {
 	_editregion $s $e "$f"
 	[[ $3 == 'x' ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == 'w' ]] && cat "$editreadlines" | wl-copy
-	[[ $4 == 'cut' ]] && editdelete $s $e "$f"
+	[[ $4 == 'cut' ]] && editdelete $e "$f"
 	[[ $f == $fn ]] && es l || es l $f
 }
 
@@ -676,6 +676,11 @@ function editexternal {
 	_editread 0 0 "$fn" $(($begin - 1))
 }
 
+function etermbin {
+	[[ -n $2 ]] && local fn="$2"
+	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function ec { editcmd "$@"; }
@@ -699,7 +704,7 @@ function e { edit "$@"; }
 
 function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	COMPREPLY=($(compgen -o default -- $cur))
+	COMPREPLY=($(compgen -f -- $cur))
 }
 
 complete -o nospace -o filenames -F _editappend editappend
@@ -864,6 +869,7 @@ function _editshow {
 
 complete -o nospace -o filenames -F _editshow editshow
 complete -o nospace -o filenames -F _editshow es
+complete -o nospace -o filenames -F _editshow etermbin
 
 function _editpaste {
 	local cur=${COMP_WORDS[COMP_CWORD]}

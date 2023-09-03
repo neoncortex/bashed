@@ -193,6 +193,18 @@ to copy the current line to Wayland clipboard, using wl-copy:
 ````
 ecopy . . w
 ````
+#### cut:
+You can cut the lines by using:
+````
+ecopy . . 0 cut
+````
+
+Or to copy to X11 clipboard:
+````
+ecopy . . x cut
+````
+
+and so on.
 
 ### epaste:
 epaste works the same as ecopy.  For example, to paste in the current line:
@@ -528,6 +540,9 @@ To disable line numbering for the next command:
 edcmd=p command
 ````
 
+## Changing the text color:
+You can edit the variable edcolor, to change the text color.  It does ANSI escape codes, so you can set edcolor to 31 to have red, 32 for green, and so on.
+
 ## Editing text in the $EDITOR:
 You can edit a region of the text usin $EDITOR.  For example, to edit the current line:
 
@@ -536,6 +551,15 @@ ee . .
 ````
 
 Yo can use $, or (+|-)n, and so on.
+
+## Termbin:
+You can paste a region of the text in termbin by using the function etermbin.  For example, to paste the line 10:
+
+````
+etermbin 10
+````
+
+The arguments are the same of the es function.
 
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
@@ -631,6 +655,7 @@ The functions are:
 - editspaces, els: count space indentation;
 - editstore, et: store a version of file;
 - editsub, esu; substitution;
+- etermbin, paste in termbin;
 - edittransfer, ey: copy lines;
 - editundo, eu: show, diff, restore, delete stored version files;
 
