@@ -121,9 +121,9 @@ function editcopy {
 	[[ $s -lt 1 ]] && s=1
 	[[ $e -gt $fs ]] && e=$fs
 	_editregion $s $e "$f"
-	[[ $3 == 'x' ]] && cat "$editreadlines" | xclip -r -i
-	[[ $3 == 'w' ]] && cat "$editreadlines" | wl-copy
-	[[ $4 == 'cut' ]] && editdelete $e "$f"
+	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
+	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
+	[[ $4 == cut ]] && editdelete $e "$f"
 	[[ $f == $fn ]] && es l || es l $f
 }
 
@@ -138,9 +138,9 @@ function editpaste {
 	[[ $s =~ ^\- ]] && e="${e/-/}" && e="$((fl - e))"
 	[[ $s -lt 1 ]] && s=1
 	[[ $s -gt $fs ]] && s=$fs
-	[[ $2 == 'x' ]] && xclip -r -o > "$editreadlines"
-	[[ $2 == 'w' ]] && wl-paste > "$editreadlines"
-	_editread 0 0 0 $s "$f"
+	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
+	[[ $2 == w ]] && wl-paste > "$editreadlines"
+	[[ $2 != x ]] && [[ $2 != w ]] && _editread 0 0 0 $s "$f"
 	[[ $f == $fn ]] && es "$((s+1))" || es l $f
 }
 
