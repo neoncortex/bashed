@@ -42,7 +42,8 @@ function editclipboard {
 		[[ -n $2 ]] && region="$2"
 		[[ -z $region ]] && return 3
 		[[ -n $3 ]] && resname="$3"
-		[[ -n $4 ]] && filename="$4"
+		[[ -n $4 ]] && filename="$4" \
+			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] && return 4
 		content="$(es $region "$filename")"
 		[[ -z $content ]] && return 5
@@ -80,7 +81,8 @@ function editclipboard {
 		[[ -z $clipfile ]] && return 8
 		local line="$fl"
 		[[ -n $3 ]] && line="$3"
-		[[ -n $4 ]] && filename="$4"
+		[[ -n $4 ]] && filename="$4" \
+			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] && return 4
 		[[ -z $line ]] && return 7
 		_editregion 1 '$' "$edclipdir/$clipfile"
@@ -91,7 +93,8 @@ function editclipboard {
 		[[ -n $2 ]] && region="$2"
 		[[ -z $region ]] && return 3
 		[[ -n $3 ]] && resname="$3"
-		[[ -n $4 ]] && filename="$4"
+		[[ -n $4 ]] && filename="$4" \
+			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] && return 4
 		content="$(es $region "$filename")"
 		[[ -z $content ]] && return 5

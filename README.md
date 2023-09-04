@@ -926,7 +926,6 @@ Syntax highlight can be used via the highlight module.
 Add to your ~/.bashrc, after sourcing bashed:
 
 ````
-source /path/to/bashed/modules/curses/curses.sh
 source /path/to/bashed/modules/syntax/highlight/highlight.sh
 ````
 
@@ -941,8 +940,15 @@ ess a sh
 
 will tell ess that the current file should be highlighted as a shell script.  This will be memorized, and future interactions with that file will use the sh highlight, so you will not need to pass sh anymore.
 
+If you decide to change the theme, like setting ehitheme to vampire, for example, or some other theme, the theme will be loaded after the next file modification.  You can force a reloading by passing a 4th argument 'rewrite', like this:
+
+````
+ess a '' '' rewrite
+````
+
 ### Variables:
-- ehidir: "$editdir/syntax/hi"
-- ehidefs: "/usr/share/highlight/langDefs"
-- ehioutformat: "xterm256"
+- ehidir: "$editdir/syntax/hi";
+- ehidefs: "/usr/share/highlight/langDefs";
+- ehioutformat: "xterm256";
+- ehitheme: camo;
 

@@ -4,7 +4,7 @@ editversiondir="$editdir/version"
 diffarg="--color -c"
 
 function editstore {
-	[[ -n $1  ]] && local fn="$1"
+	[[ -n $1  ]] && local fn="$1" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
@@ -15,7 +15,7 @@ function editstore {
 }
 
 function editundo {
-	[[ -n $4  ]] && local fn="$4"
+	[[ -n $4  ]] && local fn="$4" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local dir="$editversiondir/$(dirname "$fn")"

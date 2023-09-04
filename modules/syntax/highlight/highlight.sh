@@ -3,24 +3,31 @@
 ehidir="$editdir/syntax/hi"
 ehidefs="/usr/share/highlight/langDefs"
 ehioutformat="xterm256"
+ehitheme=camo
 mkdir -p "$ehidir"
 
 function editshowhi {
 	[[ -z $1 ]] && return 1
 	local file="${2:-$fn}"
+	file="$(readlink -f "$file")"
 	[[ -z $file ]] && return 2
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
 	mkdir -p "$dir"
 	[[ -n $3 ]] && ehisyntax="$3"
 	local rewrite=0
-	if [[ -f $dir/$name ]]
+	if [[ $4 -eq rewrite ]]
 	then
-		local modorig="$(stat -c %Y "$file")"
-		local modsynt="$(stat -c %Y "$dir/$name")"
-		[[ $modorig > $modsynt ]] && rewrite=1
-	else
 		rewrite=1
+	else
+		if [[ -f $dir/$name ]]
+		then
+			local modorig="$(stat -c %Y "$file")"
+			local modsynt="$(stat -c %Y "$dir/$name")"
+			[[ $modorig > $modsynt ]] && rewrite=1
+		else
+			rewrite=1
+		fi
 	fi
 
 	local syntfile="$dir/${name}__syntax"
@@ -30,9 +37,9 @@ function editshowhi {
 		[[ -f $syntfile ]] \
 			&& local syntax="$(cat "$syntfile")"
 		[[ -n $syntax ]] \
-			&& highlight --syntax "$syntax" \
+			&& highlight --syntax "$syntax" -s $ehitheme \
 			--out-format=$ehioutformat "$file" > "$dir/$name" \
-			|| highlight --out-format=$ehioutformat \
+			|| highlight -s $ehitheme --out-format=$ehioutformat \
 			"$file" > "$dir/$name"
 	fi
 
@@ -60,6 +67,9 @@ function _editshowhi {
 			done
 
 			COMPREPLY=($(compgen -W "$(echo ${defs[@]})" -- $cur))
+			;;
+		4)
+			COMPREPLY=($(compgen -W "rewrite" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))

@@ -10,6 +10,8 @@ edcmd="n"
 # color
 edcolor=0
 
+mkdir -p "$editdir"
+
 function _editwindow {
 	local IFS=$' \t\n'
 	local window=
@@ -50,7 +52,7 @@ function _editwindow {
 }
 
 function edit {
-	[[ -n $2 ]] && local fn="$2"
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
 	[[ -z $1 ]] && return 2
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
@@ -62,9 +64,8 @@ function edit {
 function _editread {
 	if [[ $1 != 0 ]] && [[ $2 != 0 ]] && [[ $3 != 0 ]]
 	then
-		[[ -n $3 ]] && local fn="$3"
+		[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 		[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-		mkdir -p "$editdir"
 		local lines=
 		edit "${1},${2}p" "$fn" > "$editreadlines"
 	fi
@@ -74,7 +75,7 @@ function _editread {
 		local res=
 		if [[ -n $5 ]]
 		then
-			local f="$5"
+			local f="$5" && f="$(readlink -f "$n")"
 			[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 			res="$(edit "${4}r $editreadlines\nw" "$f")"
 		else
@@ -88,6 +89,7 @@ function _editread {
 function _editregion {
 	[[ -n $3 ]] \
 		&& local fn="$3" \
+		&& fn="$(readlink -f "$fn")" \
 		&& local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
@@ -110,6 +112,7 @@ function editcopy {
 	local s=${1:-$fl}
 	local e=${2:-$fl}
 	local f="${5:-$fn}"
+	f="$(readlink -f "$fn")"
 	[[ $s == "." ]] && s="$fl"
 	[[ $s == "$" ]] && s="$fs"
 	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
@@ -130,6 +133,7 @@ function editcopy {
 function editpaste {
 	local s=${1:-$fl}
 	local f="${3:-$fn}"
+	f="$(readlink -f "$fn")"
 	[[ $s == "." ]] && s="$fl"
 	[[ $s == "$" ]] && s="$fs"
 	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
@@ -145,7 +149,7 @@ function editpaste {
 }
 
 function editcmd {
-	[[ -n $4 ]] && local fn="$4"
+	[[ -n $4 ]] && local fn="$4" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
 	[[ -z $3 ]] && return 1
 	local region="$(_editregion "$1" "$2" "$fn")"
@@ -188,6 +192,7 @@ function editopen {
 	[[ -z $f ]] && return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 	! [[ -f $f ]] && return 2
+	f="$(readlink -f "$f")"
 	_editwindow "$f" "$argument"
 	[[ $? -eq 1 ]] && return 3
 	[[ $? -eq 2 ]] && return 4
@@ -239,13 +244,15 @@ function editfind {
 	fileresult=
 	local IFS=$'\n'
 	local counter=0
+	local color=1
 	for i in $result
 	do
 		fileresult_a+=("${i/$'\t'*/}")
+		local data="$counter:${i/$'\t'/ }"
 		[[ -z $fileresult ]] \
-			&& fileresult="$counter:${i/$'\t'/ }" \
+			&& fileresult="$counter:$data" \
 			|| fileresult="$fileresult
-$counter:${i/$'\t'/ }"
+$data"
 		counter=$((counter+1))
 	done
 
@@ -268,6 +275,7 @@ function editshow {
 	if [[ -n $2 ]]
 	then
 		local fn="$2"
+		fn="$(readlink -f "$fn")"
 		local fl="$fl"
 		local fs=
 	fi
@@ -330,7 +338,7 @@ function editshow {
 			return
 		elif [[ $arg == "s" ]]
 		then
-			[[ -n "$fileresult" ]] && editshow "$fileresult"
+			[[ -n "$fileresult" ]] && echo "$fileresult"
 			return
 		elif [[ $arg == "m" ]]
 		then
@@ -663,7 +671,7 @@ function editspaces {
 }
 
 function editexternal {
-	[[ -n $3 ]] && local fn="$3"
+	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
 	local region="$(_editregion "$1" "$2" "$fn")"
 	[[ $? -ne 0 ]] && return $?
@@ -677,7 +685,8 @@ function editexternal {
 }
 
 function etermbin {
-	[[ -n $2 ]] && local fn="$2"
+	[[ -z $1 ]] && return 1
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
 }
 
@@ -714,18 +723,15 @@ complete -o nospace -o filenames -F _editappend ei
 
 function _editchange {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	case "$COMP_CWORD" in
-		2)
-			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
-			;;
-		*)
-			COMPREPLY=($(compgen -f -- $cur))
-			;;
-	esac
+	local words=($(edcolor=0 edcmd=n es l))
+	local word="${words[COMP_CWORD]}"
+	[[ -n $word ]] \
+		&& COMPREPLY=($(compgen -W "$word" -- $cur)) \
+		|| COMPREPLY=($(compgen -f -- $cur))
 }
 
-complete -o nospace -o filenames -F _editchange editchange
-complete -o nospace -o filenames -F _editchange ech
+complete -o nospace -o filenames -o nosort -F _editchange editchange
+complete -o nospace -o filenames -o nosort -F _editchange ech
 
 function _edcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
