@@ -517,16 +517,15 @@ function editshow {
 }
 
 function editappend {
-	local data="$1"
+	local data="$@"
 	local res="$(edit "${fl}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
-	[[ -n $2 ]] && editshow "+$2" \
-		|| editshow "+$(echo -e "$data" | grep -c "^")"
+	editshow "+$(echo -e "$data" | grep -c "^")"
 }
 
 function editinsert {
 	fl="$((fl - 1))"
-	editappend "$1" "$2"
+	editappend "$@"
 }
 
 function editdelete {
@@ -723,7 +722,7 @@ function e { edit "$@"; }
 
 function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	COMPREPLY=($(compgen -f -- $cur))
+	COMPREPLY=($(compgen -f -c -- $cur))
 }
 
 complete -o nospace -o filenames -F _editappend editappend

@@ -83,14 +83,15 @@ eq
 ## Adding line:
 ### Append:
 ````
-ea "line of text."
+ea line of text.
+ea 'another line of text.'
 ````
 
 The text will be appended after the current focused line.  Without arguments, a blank line will be added.
 
 ### Insert:
 ````
-ei "line of text."
+ei line of text.
 ````
 
 The text will be inserted in the current line - 1.
