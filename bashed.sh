@@ -75,7 +75,7 @@ function _editread {
 		local res=
 		if [[ -n $5 ]]
 		then
-			local f="$5" && f="$(readlink -f "$n")"
+			local f="$5" && f="$(readlink -f "$f")"
 			[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 			res="$(edit "${4}r $editreadlines\nw" "$f")"
 		else
@@ -112,7 +112,7 @@ function editcopy {
 	local s=${1:-$fl}
 	local e=${2:-$fl}
 	local f="${5:-$fn}"
-	f="$(readlink -f "$fn")"
+	f="$(readlink -f "$f")"
 	[[ $s == "." ]] && s="$fl"
 	[[ $s == "$" ]] && s="$fs"
 	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
@@ -133,7 +133,8 @@ function editcopy {
 function editpaste {
 	local s=${1:-$fl}
 	local f="${3:-$fn}"
-	f="$(readlink -f "$fn")"
+	f="$(readlink -f "$f")"
+	echo "$f"
 	[[ $s == "." ]] && s="$fl"
 	[[ $s == "$" ]] && s="$fs"
 	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
