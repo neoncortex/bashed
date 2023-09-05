@@ -128,6 +128,12 @@ ech "new text."
 
 Will change the current line to "new text.".
 
+You can also use echl, that will change only the current line, but it will autocomplete the current line contents.
+
+````
+echl new\ content.
+````
+
 ### Changing range:
 ````
 ech "new text." n

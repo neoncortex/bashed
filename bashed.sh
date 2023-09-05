@@ -556,6 +556,15 @@ function editchange {
 	[[ -z $to ]] && editshow l || editshow ${fl},$to
 }
 
+function editchangeline {
+	[[ -z $1 ]] && return 1
+	[[ -z $fn ]] && return 2
+	local data="$@"
+	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
+	[[ -n $res ]] && echo "$res"
+	editshow l
+}
+
 function editsub {
 	[[ -z $1 ]] && return 1
 	[[ -n $3 ]] && local to="$3"
@@ -692,6 +701,7 @@ function etermbin {
 
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
+function echl { editchangeline "$@"; }
 function ec { editcmd "$@"; }
 function ecopy { editcopy "$@"; }
 function edel { editdelete "$@"; }
@@ -721,7 +731,7 @@ complete -o nospace -o filenames -F _editappend ea
 complete -o nospace -o filenames -F _editappend editinsert
 complete -o nospace -o filenames -F _editappend ei
 
-function _editchange {
+function _editchangeline {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	local words=($(edcolor=0 edcmd=n es l))
 	local word="${words[COMP_CWORD]}"
@@ -730,8 +740,8 @@ function _editchange {
 		|| COMPREPLY=($(compgen -f -- $cur))
 }
 
-complete -o nospace -o filenames -o nosort -F _editchange editchange
-complete -o nospace -o filenames -o nosort -F _editchange ech
+complete -o nospace -o filenames -o nosort -F _editchangeline editchangeline
+complete -o nospace -o filenames -o nosort -F _editchangeline echl
 
 function _edcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
