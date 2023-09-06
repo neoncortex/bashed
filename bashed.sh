@@ -86,6 +86,28 @@ function _editread {
 	fi
 }
 
+function _editline {
+	local l="${1:-$fl}"
+	[[ -z $l ]] && return 1
+	if [[ -n $fl ]]
+	then
+		[[ $l == "." ]] && l="$fl"
+		[[ $l =~ ^\+ ]] && l="${l/+/}" && l="$((fl + l))"
+		[[ $l =~ ^\- ]] && l="${l/-/}" && l="$((fl - l))"
+		[[ $l =~ ^\-[0-9]+ ]] && l="${l/-/}" && l="$((fl - l))"
+		[[ $l =~ ^\+[0-9]+ ]] && l="${l/+/}" && l="$((fl + l))"
+	fi
+
+	if [[ -n $fs ]]
+	then
+		[[ $l == "$" ]] && l="$fs"
+		[[ $l -gt $fs ]] && l=$fs
+	fi
+
+	[[ $l -lt 1 ]] && l=1
+	echo "$l"
+}
+
 function _editregion {
 	[[ -n $3 ]] \
 		&& local fn="$3" \
@@ -95,16 +117,8 @@ function _editregion {
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	[[ -z $1 ]] && return 2
 	[[ -z $2 ]] && return 3
- 	local begin="$1"
-	local end="$2"
-	[[ $begin == "." ]] && begin="$fl"
-	[[ $end == "." ]] && end="$fl"
-	[[ $begin == "$" ]] && begin="$fs"
-	[[ $end == "$" ]] && end="$fs"
-	[[ $begin =~ ^\+ ]] && begin="${begin/+/}" && begin="$((fl + begin))"
-	[[ $end =~ ^\+ ]] && end="${end/+/}" && end="$((fl + end))"
-	[[ $begin =~ ^\- ]] && begin="${begin/-/}" && begin="$((fl - begin))"
-	[[ $end =~ ^\- ]] && end="${end/-/}" && end="$((fl - end))"
+	local begin="$(_editline "$1")"
+	local end="$(_editline "$2")"
 	_editread $begin $end "$fn"
 }
 
@@ -113,16 +127,8 @@ function editcopy {
 	local e=${2:-$fl}
 	local f="${5:-$fn}"
 	f="$(readlink -f "$f")"
-	[[ $s == "." ]] && s="$fl"
-	[[ $s == "$" ]] && s="$fs"
-	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
-	[[ $s =~ ^\- ]] && s="${s/-/}" && s="$((fl - s))"
-	[[ $e == "." ]] && e="$fl"
-	[[ $e == "$" ]] && e="$fs"
-	[[ $s =~ ^\+ ]] && e="${e/+/}" && e="$((fl + e))"
-	[[ $s =~ ^\- ]] && e="${e/-/}" && e="$((fl - e))"
-	[[ $s -lt 1 ]] && s=1
-	[[ $e -gt $fs ]] && e=$fs
+	s="$(_editline "$s")"
+	e="$(_editline "$e")"
 	_editregion $s $e "$f"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
@@ -134,15 +140,7 @@ function editpaste {
 	local s=${1:-$fl}
 	local f="${3:-$fn}"
 	f="$(readlink -f "$f")"
-	echo "$f"
-	[[ $s == "." ]] && s="$fl"
-	[[ $s == "$" ]] && s="$fs"
-	[[ $s =~ ^\+ ]] && s="${s/+/}" && s="$((fl + s))"
-	[[ $s =~ ^\- ]] && s="${s/-/}" && s="$((fl - s))"
-	[[ $s =~ ^\+ ]] && e="${e/+/}" && e="$((fl + e))"
-	[[ $s =~ ^\- ]] && e="${e/-/}" && e="$((fl - e))"
-	[[ $s -lt 1 ]] && s=1
-	[[ $s -gt $fs ]] && s=$fs
+	s="$(_editline "$s")"
 	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
 	[[ $2 == w ]] && wl-paste > "$editreadlines"
 	[[ $2 != x ]] && [[ $2 != w ]] && _editread 0 0 0 $s "$f"
@@ -385,25 +383,12 @@ function editshow {
 		then
 			local head="${arg/,*/}"
 			local tail="${arg/*,/}"
-			[[ $head == "." ]] && head="$fl"
-			[[ $head =~ ^\-[0-9]+ ]] && head="${head/-/}" \
-				&& head="$((fl - head))"
-			[[ $head =~ ^\+[0-9]+ ]] && head="${head/+/}" \
-				&& head="$((fl + head))"
-			[[ $head -lt 1 ]] && head="1"
-			[[ $tail == "$" ]] && tail="$fs"
-			[[ $tail =~ ^\+[0-9]+ ]] && tail="${tail/+/}" \
-				&& tail="$((fl + tail))"
-			[[ $tail -gt $fs ]] && tail="$fs"
+			head="$(_editline "$head")"
+			tail="$(_editline "$tail")"
 			show="edit ${head},${tail}$edcmd"
 			fl="$tail"
 		else
-			[[ $arg =~ ^\+[0-9]+ ]] && arg="${arg/+/}" \
-				&& arg="$((fl + arg))"
-			[[ $arg =~ ^\-[0-9]+ ]] && arg="${arg/-/}" \
-				&& arg="$((fl - arg))"
-			[[ $arg -lt 1 ]] && arg="1"
-			[[ $arg -gt $fs ]] && arg="$fs"
+			arg="$(_editline "$arg")"
 			show="edit ${arg}$edcmd"
 			fl="$arg"
 		fi
@@ -530,10 +515,7 @@ function editinsert {
 }
 
 function editdelete {
-	[[ -n $1 ]] && local to="$1"
-	[[ $1 =~ ^\+[0-9]+ ]] && to="${1/\+/}" && to="$((fl + to))"
-	[[ $to == "$" ]] && to="$fs"
-	[[ $to -gt $fs ]] && return 1
+	[[ -n $1 ]] && local to="$(_editline "$1")"
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}d\nw" "$fn")" \
 		|| res="$(edit "${fl},${to}d\nw" "$fn")"
@@ -545,10 +527,7 @@ function editdelete {
 function editchange {
 	[[ -z $1 ]] && return 1
 	local data="$1"
-	[[ -n $2 ]] && local to="$2"
-	[[ $to =~ ^\+[0-9]+ ]] && to="${2/\+/}" && to="$((fl + to))"
-	[[ $to == "$" ]] && to="$fs"
-	[[ $to -gt $fs ]] && return 2
+	[[ -n $2 ]] && local to="$(_editline "$2")"
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw" "$fn")" \
 		|| res="$(edit "${fl},${to}c\n$data\n.\nw" "$fn")"
@@ -567,10 +546,7 @@ function editchangeline {
 
 function editsub {
 	[[ -z $1 ]] && return 1
-	[[ -n $3 ]] && local to="$3"
-	[[ $to =~ ^\+[0-9]+ ]] && to="${to/\+/}" && to="$((fl + to))"
-	[[ $to == '%' ]] && to="$fs"
-	[[ $to -gt $fs ]] && return 2
+	[[ -n $3 ]] && local to="$(_editline "$3")"
 	local in="$1"
 	local out="$2"
 	in="${in//\\\\/\\\\\\\\}"
@@ -596,9 +572,7 @@ function editsub {
 function editjoin {
 	local l=
 	[[ -z $1 ]] && l="$((fl + 1))"
-	[[ $1 =~ ^\+[0-9]+ ]] && l="${1/\+/}" && l="$((fl + l))"
-	[[ $l == '$' ]] && l="$fs"
-	[[ $l -gt $fs ]] && return 1
+	l="$(_editline "$1")"
 	local res=
 	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw" "$fn")" && editshow ${fl}
 	[[ -n $res ]] && echo "$res"
@@ -607,20 +581,10 @@ function editjoin {
 function editmove {
 	local dest="$1"
 	[[ -z $1 ]] && dest="$((fl + 1))"
-	[[ $dest =~ ^\+[0-9]+ ]] && dest="${1/\+/}" && dest="$((fl + dest))"
-	[[ $dest =~ ^\-[0-9]+ ]] && dest="${1/\-/}" && dest="$((fl - dest))"
-	[[ $dest == "$" ]] && dest="$fs"
+	dest="$(_editline "$1")"
 	[[ $dest -gt $fs ]] && return 1
 	[[ $dest -lt 1 ]] && return 2
-	if [[ -n $2 ]]
-	then
-		local to="$2"
-		[[ $to =~ ^\+[0-9]+ ]] && to="${dest/\+/}" && to="$((fl + to))"
-		[[ $to == "$" ]] && to="$fs"
-		[[ $to -gt $fs ]] && return 3
-		[[ $to -lt 1 ]] && return 4
-	fi
-
+	[[ -n $2 ]] && local to="$(_editline "$2")"
 	local res=
 	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw" "$fn")" \
 		|| res="$(edit "${fl}m$dest\nw" "$fn")"
@@ -629,12 +593,9 @@ function editmove {
 
 function edittransfer {
 	yank=
-	local line="$1"
-	[[ $1 == "." ]] && line="$fl"
-	[[ $1 == '$' ]] && line="$fs"
+	local line="$(_editline "$1")"
 	local n=
-	[[ -n $2 ]] && n="$2"
-	[[ $n =~ ^\+ ]] && n="${n/\+/}" && n="$((fl + n))"
+	[[ -n $2 ]] && n="$(_editline "$2")"
 	if [[ $line -gt 0 ]]
 	then
 		local res=

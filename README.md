@@ -9,6 +9,7 @@ It is a collection of functions that wraps the ed functionalities, and manage th
 - tmux;
 
 ## Optional:
+- dialog;
 - highlight;
 - wl-clipboard;
 - xclip;
