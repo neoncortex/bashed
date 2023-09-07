@@ -2,9 +2,10 @@
 
 edclipcolor=31
 edclipdir="$editdir/clip"
+edclipkey="b"
 ! [[ -f $edclipdir ]] && mkdir -p "$edclipdir"
 
-function edclipfile {
+function _edclipfile {
 	[[ -z $1 ]] && return 1
 	local name="$1"
 	shift
@@ -23,11 +24,27 @@ function edclipfile {
 	echo "$clipfile"
 }
 
-function editclipboard {
+function _editclippopup {
+	echo "haha"
+	echo "$@"
 	[[ -z $1 ]] && return 1
-	local filename="$fn"
-	local files=()
+	local words=($*)
+	_editcurses 0 "${words[@]}"
+	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
+}
+
+function _editclipword {
+	tmux display-popup -w 80% -h 80% -E "bash -lic '_editclippopup \"$*\"'"
+	[[ -f $editwordfile ]] \
+		&& local word="$(cat "$editwordfile")" \
+		&& local content="$(cat "$edclipdir/$word")" \
+		&& tmux send-keys -l "$content" \
+		&& rm "$editwordfile"
+}
+
+function _editclipstart {
 	local IFS=$' \n\t'
+	local files=()
 	local n=1
 	for i in $edclipdir/*
 	do
@@ -35,6 +52,18 @@ function editclipboard {
 		n="$((n + 1))"
 	done
 
+	local res="$(echo ${files[@]})"
+	tmux bind-key $edclipkey run -b "bash -ic \"_editclipword $res\""
+	echo "${files[@]}"
+}
+
+_editclipstart > /dev/null
+
+function editclipboard {
+	[[ -z $1 ]] && return 1
+	local filename="$fn"
+	local IFS=$' \n\t'
+	local files=($(_editclipstart))
 	[[ ${#files[@]} -eq 0 ]] && return 2
 	if [[ $1 == copy ]] || [[ $1 == c ]]
 	then
@@ -77,7 +106,7 @@ function editclipboard {
 	elif [[ $1 == paste ]] || [[ $1 == p ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		local line="$fl"
 		[[ -n $3 ]] && line="$3"
@@ -170,20 +199,20 @@ $g
 	elif [[ $1 == show ]] || [[ $1 == sh ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		content="$(cat "$edclipdir/$clipfile")"
 		printf -- '%s' "$content"
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		[[ -f $edclipdir/$clipfile ]] && rm "$edclipdir/$clipfile"
 	elif [[ $1 == rename ]] || [[ $1 == r ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		[[ -n $3 ]] && local newname="$3" || return 9
 		[[ -f $edclipdir/$clipfile ]] && mv "$edclipdir/$clipfile" \
@@ -205,7 +234,7 @@ $g
 	elif [[ $1 == tx ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		cat "$edclipdir/$clipfile" | xclip -r -i
 	elif [[ $1 == fx ]]
@@ -223,7 +252,7 @@ $g
 	elif [[ $1 == tw ]]
 	then
 		[[ -z $2 ]] && return 6
-		local clipfile="$(edclipfile "$2" "${files[@]}")"
+		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
 		cat "$edclipdir/$clipfile" | wl-copy
 	elif [[ $1 == fw ]]
@@ -238,6 +267,9 @@ $g
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 			echo "$content" > "$edclipdir/$date"
 		fi
+	elif [[ $1 == type ]]
+	then
+		_editclipword "${files[@]}"
 	fi
 }
 
@@ -260,7 +292,8 @@ function _editclipboard {
 		1)
 			COMPREPLY=($(compgen -o default -W "a addcopy c paste p \
 				list l delete d deletecurses du cut x tx tw \
-				fx fw rename r search s searchcontent sc sh show" \
+				fx fw rename r search s searchcontent sc sh show \
+				type" \
 				-- $cur))
 			;;
 		2)

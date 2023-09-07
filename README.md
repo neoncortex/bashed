@@ -679,13 +679,16 @@ The functions are:
 - etermbin, paste in termbin;
 - edittransfer, ey: copy lines;
 - editundo, eu: show, diff, restore, delete stored version files;
+- editwordsrc, ews: set the current file as a source of words;
+- editword, ew: show a list of words from a file and type the selction;
 
 There are other functions that are used internally by the ones above:
 - \_editarg: parse the arguments of a file;
-- editcurses: used to generate curses menus;
+- \_editline: calculate line numbers;
 - \_editread, er: read a region of file, and store in ~/.edit/readlines
 - \_editregion: used internally to separate regions of the text;
 - \_editwindow: open/find windows;
+- \_editwordspopup: show a tmux popup containing a dialog with the words from a file;
 
 Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.
 
@@ -932,13 +935,22 @@ eclip fx name
 eclip fw name
 ````
 
+#### Type:
+The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing a dialog with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
+
 #### Functions:
-- edclipfile: used internally to find clipboard files;
 - edclipboard, eclip: the clipboard;
+
+and the ones used internally:
+- _edclipfile: used internally to find clipboard files;
+- _editclippopup: display a tmux popup with a dialog containing the clipboard file names;
+- _editclipword: function binded to C-b b, calls _editclippopup;
+- _editclipstart: clipboard startup;
 
 #### Variables:
 - edclipdir: the directory to store the files;
 - edclipcolor: the color of the clip headers;
+- edclipkey: key to be binded on tmux;
 
 ## highlight:
 Syntax highlight can be used via the highlight module.
