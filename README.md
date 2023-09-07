@@ -864,7 +864,7 @@ eclip p 1
 eclip p shell-function.sh
 ````
 
-#### Cut:
+### Cut:
 To cut text from the current file:
 
 ````
