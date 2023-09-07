@@ -6,10 +6,10 @@ It is a collection of functions that wraps the ed functionalities, and manage th
 
 # Dependencies:
 - ed;
+- dialog;
 - tmux;
 
 ## Optional:
-- dialog;
 - highlight;
 - wl-clipboard;
 - xclip;
@@ -574,12 +574,6 @@ the function editword gives a dialog interface inside a tmux display-popup windo
 
 The dialog is invoked by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
 
-The function editword requires the dialog module.  It should be added on your ~/.bashrc:
-
-````
-source /path/to/bashed/modules/curses/curses.sh
-````
-
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call the editword dialog;
@@ -684,6 +678,7 @@ The functions are:
 
 There are other functions that are used internally by the ones above:
 - \_editarg: parse the arguments of a file;
+- \_editcurses: display dialog interfaces;
 - \_editline: calculate line numbers;
 - \_editread, er: read a region of file, and store in ~/.edit/readlines
 - \_editregion: used internally to separate regions of the text;
@@ -693,9 +688,6 @@ There are other functions that are used internally by the ones above:
 Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.
 
 # Modules:
-## curses:
-This module includes a function, \_editcurses, that can be used by other modules.
-
 ## Version:
 The simplest undo mechanism I can think of is to store versions of the files, and have mechanisms to display, restore, and compare these versions.
 
@@ -703,7 +695,6 @@ The simplest undo mechanism I can think of is to store versions of the files, an
 Add to your ~/.bashrc:
 
 ````
-source /path/to/bashed/modules/curses/curses.sh
 source /path/to/bashed/modules/version/version.sh
 ````
 
@@ -783,8 +774,8 @@ eu delete n
 You can use deletecurses, or du, to select the version files to delete using a curses interface.
 
 ### Variables:
-- editversiondir: "$editdir/version"
-- diffarg: "--color -c"
+- editversiondir: directory to store the file versions
+- diffarg: diff arguments, by default, "--color -c"
 
 ## Clip:
 An clipboard manager.  This module add the function editclipboard, or eclip, for short.
@@ -793,7 +784,6 @@ An clipboard manager.  This module add the function editclipboard, or eclip, for
 Add to your ~/.bashrc, after sourcing bashed:
 
 ````
-source /path/to/bashed/modules/curses/curses.sh
 source /path/to/bashed/modules/clip/clip.sh
 ````
 
@@ -980,7 +970,7 @@ ess a '' '' rewrite
 ````
 
 ### Variables:
-- ehidir: "$editdir/syntax/hi";
-- ehidefs: "/usr/share/highlight/langDefs";
-- ehioutformat: "xterm256";
-- ehitheme: camo;
+- ehidir: directory to store the temporary highlighted files;
+- ehidefs: highlight langDefs, by default, /usr/share/highlight/langDefs;
+- ehioutformat: highlight output format, by default, xterm256;
+- ehitheme: highlight theme, by default, camo;
