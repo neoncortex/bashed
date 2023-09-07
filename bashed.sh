@@ -3,6 +3,8 @@
 # files and directories
 editdir="$HOME/.edit"
 editreadlines="$editdir/readlines"
+editwordfile="$editdir/word"
+editwordkey="o"
 
 # edit
 edcmd="n"
@@ -190,9 +192,10 @@ function editopen {
 
 	[[ -z $f ]] && return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-	! [[ -f $f ]] && return 2
 	f="$(readlink -f "$f")"
+	! [[ -f $f ]] && return 2
 	_editwindow "$f" "$argument"
+	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
 	[[ $? -eq 1 ]] && return 3
 	[[ $? -eq 2 ]] && return 4
 	[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
@@ -282,6 +285,7 @@ function editshow {
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	[[ -d $fn ]] && return 1
+	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$fn\"; editwords\""
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fs ]] && return 2
 	[[ -z $pagesize ]] && pagesize=20
@@ -660,6 +664,33 @@ function etermbin {
 	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
 }
 
+function _editwordspopup {
+	local f="${1:-$fn}"
+	[[ -z $f ]] && return 1
+	local words=($(edcolor=0 editcmd=p es a "$f"))
+	_editcurses 0 "${words[@]}"
+	if [[ -n $e_uresult ]]
+	then
+		echo "${words[$((e_uresult - 1))]}" > "$editwordfile"
+	fi
+}
+
+function editwords {
+	local f="${1:-$fn}"
+	[[ -z $f ]] && return 1
+	tmux display-popup -E "bash -lic '_editwordspopup \"$f\"'"
+	[[ -f $editwordfile ]] \
+		&& word="$(cat "$editwordfile")" \
+		&& tmux send-keys -l "$word" \
+		&& rm "$editwordfile"
+}
+
+function editwordsrc {
+	local f="${1:-$fn}"
+	[[ -z $f ]] && return 1
+	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\"; editwords\""
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function echl { editchangeline "$@"; }
@@ -679,6 +710,8 @@ function epaste { editpaste "$@"; }
 function eq { editclose "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
+function ew { editwords "$@"; }
+function ews { editwordsrc "$@"; }
 function ey { edittransfer "$@"; }
 function e { edit "$@"; }
 

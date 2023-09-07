@@ -569,8 +569,21 @@ etermbin 10
 
 The arguments are the same of the es function.
 
+## Auto typing words:
+the function editword gives a dialog interface inside a tmux display-popup window, containing all the words of the current file.  When one of these words are selected, it will be typed on the command line.  The source of the words, that is, the file that the words will be extracted, are setted when you open a file using eo, or when you display something using es, without a file argument.  You can manually set a file using: editwordsrc filename.
+
+The dialog is invoked by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
+
+The function editword requires the dialog module.  It should be added on your ~/.bashrc:
+
+````
+source /path/to/bashed/modules/curses/curses.sh
+````
+
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
+- editwordkey: the key to be used with bind-key ro call the editword dialog;
+- editwordfile: the file used to store the selected word from the editword dialog;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
 - e_uresult: Contains the last selections of a curses menu;
@@ -959,4 +972,3 @@ ess a '' '' rewrite
 - ehidefs: "/usr/share/highlight/langDefs";
 - ehioutformat: "xterm256";
 - ehitheme: camo;
-
