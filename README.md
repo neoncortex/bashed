@@ -873,7 +873,7 @@ eclip x . name
 
 The dot can be substituted for anything that editshow can understand.
 
-#### Delete:
+### Delete:
 To delete some clipboard text file:
 
 ````
@@ -886,7 +886,7 @@ Where n is a number of some clipboard text file, or a name.  A curses interface 
 eclip du
 ````
 
-#### Rename:
+### Rename:
 ````
 eclip r n newname
 ````
@@ -898,7 +898,7 @@ eclip r 1 url
 eclip r shell-function.sh my-shell-function.sh
 ````
 
-#### Copy to X clipboard:
+### Copy to X clipboard:
 To copy some clipboard file content to the X clipboard:
 
 ````
@@ -907,28 +907,28 @@ eclip tx n
 
 Where n is a number of some clipboard text file, or a name.
 
-#### Copy to Wayalnd clipboard:
+### Copy to Wayalnd clipboard:
 ````
 eclip tw n
 ````
 
 Where n is a number of some clipboard text file, or a name.
 
-#### Copy from X clipboard:
+### Copy from X clipboard:
 
 ````
 eclip fx name
 ````
 
-#### Copy from Wayland clipboard:
+### Copy from Wayland clipboard:
 ````
 eclip fw name
 ````
 
-#### Type:
+### Type:
 The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing a dialog with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
 
-#### Functions:
+### Functions:
 - edclipboard, eclip: the clipboard;
 
 and the ones used internally:
@@ -937,7 +937,7 @@ and the ones used internally:
 - _editclipword: function binded to C-b b, calls _editclippopup;
 - _editclipstart: clipboard startup;
 
-#### Variables:
+### Variables:
 - edclipdir: the directory to store the files;
 - edclipcolor: the color of the clip headers;
 - edclipkey: key to be binded on tmux;
