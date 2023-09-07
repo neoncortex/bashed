@@ -16,9 +16,9 @@ function _editcurses {
 	local cols=
 	local IFS=$'\n\t '
 	read -r rows cols < <(stty size)
-	local dialog="dialog --colors --menu 'Select:' "
+	local dialog="dialog --colors --menu Select: "
 	[[ $multiple -eq 1 ]] \
-		&& dialog="dialog --colors --checklist 'Select:' "
+		&& dialog="dialog --colors --checklist Select: "
 	local items=()
 	local n=1
 	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
@@ -26,7 +26,7 @@ function _editcurses {
 	do
 		[[ $multiple -eq 1 ]] \
 			&& items+=("$n" "$i" "off") \
-			|| items+=("$n" "$i")
+			|| items+=("$i" ' ')
 		n="$((n + 1))"
 	done
 

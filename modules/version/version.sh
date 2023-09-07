@@ -58,8 +58,7 @@ function editundo {
 		[[ ${#files[@]} -gt 0 ]] && _editcurses 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
-			local filename="${files[$e_uresult]}"
-			eo "$filename"
+			eo "$e_uresult"
 			e_uresult=
 		fi
 	elif [[ $1 == delete ]] || [[ $1 == rm ]]
@@ -107,8 +106,7 @@ function editundo {
 			[[ ${#files[@]} -gt 0 ]] && _editcurses 0 "${files[@]}"
 			if [[ -n $e_uresult ]]
 			then
-				local filename="${files[$e_uresult]}"
-				[[ -f $filename ]] && diff $diffarg "$2" "$filename"
+				diff $diffarg "$2" "$e_uresult"
 				e_uresult=
 			fi
 		else
@@ -130,8 +128,7 @@ function editundo {
 		[[ ${#files[@]} -gt 0 ]] && _editcurses 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
-			local filename="${files[$e_uresult]}"
-			[[ -f $filename ]] && editshow a "$filename"
+			editshow a "$e_uresult"
 			e_uresult=
 		fi
 	elif [[ $1 == p ]] || [[ $1 == print ]]
@@ -144,9 +141,7 @@ function editundo {
 		[[ ${#files[@]} -gt 0 ]] && _editcurses 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
-			local filename="${files[$e_uresult]}"
-			[[ -f $filename ]] \
-				&& editshow a "$filename"
+			editshow a "$e_uresult"
 			e_uresult=
 		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
@@ -168,8 +163,7 @@ function editundo {
 		[[ ${#files[@]} -gt 0 ]] && _editcurses 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
-			local filename="${files[$e_uresult]}"
-			[[ -f $filename ]] && cp "$filename" "$2"
+			cp "$e_uresult" "$2"
 			e_uresult=
 		fi
 	elif [[ $1 =~ [0-9]+ ]]

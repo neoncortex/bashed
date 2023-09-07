@@ -4,13 +4,15 @@
 editdir="$HOME/.edit"
 editreadlines="$editdir/readlines"
 editwordfile="$editdir/word"
-editwordkey="o"
 
 # edit
 edcmd="n"
 
 # color
 edcolor=0
+
+# bind key for editwords
+editwordkey="o"
 
 mkdir -p "$editdir"
 
@@ -195,9 +197,9 @@ function editopen {
 	f="$(readlink -f "$f")"
 	! [[ -f $f ]] && return 2
 	_editwindow "$f" "$argument"
-	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
 	[[ $? -eq 1 ]] && return 3
 	[[ $? -eq 2 ]] && return 4
+	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
 	[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
 	[[ $2 == 'd' ]] && tmux splitw -c "$f"
 	[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
@@ -667,18 +669,16 @@ function etermbin {
 function _editwordspopup {
 	local f="${1:-$fn}"
 	[[ -z $f ]] && return 1
-	local words=($(edcolor=0 editcmd=p es a "$f"))
+	local words=($(edcolor=0 edcmd=p es a "$f" | sed 's/\ /\n/g' \
+		| sort | uniq))
 	_editcurses 0 "${words[@]}"
-	if [[ -n $e_uresult ]]
-	then
-		echo "${words[$((e_uresult - 1))]}" > "$editwordfile"
-	fi
+	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
 }
 
 function editwords {
 	local f="${1:-$fn}"
 	[[ -z $f ]] && return 1
-	tmux display-popup -E "bash -lic '_editwordspopup \"$f\"'"
+	tmux display-popup -w 80% -h 80% -E "bash -lic '_editwordspopup \"$f\"'"
 	[[ -f $editwordfile ]] \
 		&& word="$(cat "$editwordfile")" \
 		&& tmux send-keys -l "$word" \
