@@ -69,6 +69,7 @@ function _editread {
 	if [[ $1 != 0 ]] && [[ $2 != 0 ]] && [[ $3 != 0 ]]
 	then
 		[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
+		[[ -z $fn ]] && return 1
 		[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 		local lines=
 		edit "${1},${2}p" "$fn" > "$editreadlines"
@@ -80,6 +81,7 @@ function _editread {
 		if [[ -n $5 ]]
 		then
 			local f="$5" && f="$(readlink -f "$f")"
+			[[ -z $f ]] && return 1
 			[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 			res="$(edit "${4}r $editreadlines\nw" "$f")"
 		else
@@ -112,28 +114,18 @@ function _editline {
 	echo "$l"
 }
 
-function _editregion {
-	[[ -n $3 ]] \
-		&& local fn="$3" \
-		&& fn="$(readlink -f "$fn")" \
-		&& local fs="$(wc -l "$fn" | cut -d ' ' -f1)"
-	[[ -z $fn ]] && return 1
-	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	[[ -z $1 ]] && return 2
-	[[ -z $2 ]] && return 3
-	local begin="$(_editline "$1")"
-	local end="$(_editline "$2")"
-	_editread $begin $end "$fn"
-}
-
 function editcopy {
 	local s=${1:-$fl}
 	local e=${2:-$fl}
 	local f="${5:-$fn}"
+	[[ -z $s ]] && return 2
+	[[ -z $e ]] && return 3
 	f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	s="$(_editline "$s")"
 	e="$(_editline "$e")"
-	_editregion $s $e "$f"
+	_editread $s $e "$fn"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
 	[[ $4 == cut ]] && editdelete $e "$f"
@@ -142,8 +134,10 @@ function editcopy {
 
 function editpaste {
 	local s=${1:-$fl}
+	[[ -z $s ]] && return 2
 	local f="${3:-$fn}"
 	f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
 	s="$(_editline "$s")"
 	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
 	[[ $2 == w ]] && wl-paste > "$editreadlines"
@@ -154,19 +148,20 @@ function editpaste {
 function editcmd {
 	[[ -n $4 ]] && local fn="$4" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
-	[[ -z $3 ]] && return 1
-	local region="$(_editregion "$1" "$2" "$fn")"
+	[[ -z $3 ]] && return 2
+	[[ -z $1 ]] && return 3
+	[[ -z $2 ]] && return 4
+	local begin="$(_editline "$1")"
+	local end="$(_editline "$2")"
+	local region="$(editcopy $begin $end "$fn")"
 	[[ $? -ne 0 ]] && return $?
-	local begin="${region/,*/}"
-	local end="${region/*,/}"
-	[[ -z $begin ]] || [[ -z $end ]] && return 2
 	local tempfile="$editdir/temp"
 	cat "$editreadlines" | $3 > "$tempfile"
 	mv "$tempfile" "$editreadlines"
-	local res="$(edit "${begin},${end}d\nw" "$fn")"
+	local res="$(edit "$begin,${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
-	_editread 0 0 "$fn" $(($begin - 1))
-	editshow ${begin},$end
+	editpaste $(($begin - 1)) "$fn"
+	editshow $begin,$end
 }
 
 function _editarg {
@@ -198,8 +193,13 @@ function editopen {
 	! [[ -f $f ]] && return 2
 	_editwindow "$f" "$argument"
 	[[ $? -eq 1 ]] && return 3
-	[[ $? -eq 2 ]] && return 4
-	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
+	if tmux run 2>/dev/null
+	then
+		tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
+	else
+		return 4
+	fi
+
 	[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
 	[[ $2 == 'd' ]] && tmux splitw -c "$f"
 	[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
@@ -241,6 +241,7 @@ function editclose {
 
 function editfind {
 	[[ -z $1 ]] && return 1
+	[[ -z $fn ]] && return 2
 	local result="$(edit "$1" "$fn")"
 	[[ -z $result ]] && return
 	fileresult_a=()
@@ -265,6 +266,7 @@ $data"
 
 function editlocate {
 	[[ -z $1 ]] && return 1
+	[[ -z $fn ]] && return 2
 	[[ -n $2 ]] && local fl="$2"
 	local pattern="$1"
 	[[ $1 =~ ^\/ ]] && pattern="${pattern/\//}"
@@ -286,8 +288,15 @@ function editshow {
 
 	[[ -z $fn ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	[[ -d $fn ]] && return 1
-	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$fn\"; editwords\""
+	[[ -d $fn ]] && return 2
+	if tmux run 2>/dev/null
+	then
+		tmux bind-key $editwordkey run -b \
+			"bash -ic \"fn=\"$fn\"; editwords\""
+	else
+		return 3
+	fi
+
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fs ]] && return 2
 	[[ -z $pagesize ]] && pagesize=20
@@ -509,6 +518,7 @@ function editshow {
 }
 
 function editappend {
+	[[ -z $fn ]] && return 1
 	local data="$@"
 	local res="$(edit "${fl}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
@@ -521,6 +531,7 @@ function editinsert {
 }
 
 function editdelete {
+	[[ -z $fn ]] && return 1
 	[[ -n $1 ]] && local to="$(_editline "$1")"
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}d\nw" "$fn")" \
@@ -532,6 +543,7 @@ function editdelete {
 
 function editchange {
 	[[ -z $1 ]] && return 1
+	[[ -z $fn ]] && return 2
 	local data="$1"
 	[[ -n $2 ]] && local to="$(_editline "$2")"
 	local res=
@@ -552,6 +564,7 @@ function editchangeline {
 
 function editsub {
 	[[ -z $1 ]] && return 1
+	[[ -z $fn ]] && return 2
 	[[ -n $3 ]] && local to="$(_editline "$3")"
 	local in="$1"
 	local out="$2"
@@ -576,6 +589,7 @@ function editsub {
 }
 
 function editjoin {
+	[[ -z $fn ]] && return 1
 	local l=
 	[[ -z $1 ]] && l="$((fl + 1))"
 	l="$(_editline "$1")"
@@ -585,6 +599,7 @@ function editjoin {
 }
 
 function editmove {
+	[[ -z $fn ]] && return 1
 	local dest="$1"
 	[[ -z $1 ]] && dest="$((fl + 1))"
 	dest="$(_editline "$1")"
@@ -598,6 +613,7 @@ function editmove {
 }
 
 function edittransfer {
+	[[ -z $fn ]] && return 1
 	yank=
 	local line="$(_editline "$1")"
 	local n=
@@ -649,10 +665,9 @@ function editspaces {
 function editexternal {
 	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
-	local region="$(_editregion "$1" "$2" "$fn")"
-	[[ $? -ne 0 ]] && return $?
-	local begin="${region/,*/}"
-	local end="${region/*,/}"
+	local begin="$(_editline "$1")"
+	local end="$(_editline "$2")"
+	local region="$(editcopy $begin $end "$fn")"
 	[[ -z $begin ]] || [[ -z $end ]] && return 2
 	$EDITOR "$editreadlines"
 	local res="$(edit "${begin},${end}d\nw" "$fn")"
@@ -663,6 +678,7 @@ function editexternal {
 function etermbin {
 	[[ -z $1 ]] && return 1
 	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 2
 	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
 }
 
@@ -671,6 +687,7 @@ function _editcurses {
 	local multiple="$1"
 	shift
 	local files="$*"
+	[[ -z $files ]] && return 1
 	local files_a=()
 	for i in $files
 	do

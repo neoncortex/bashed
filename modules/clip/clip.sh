@@ -15,7 +15,7 @@ function _edclipfile {
 	then
 		clipfile="${files[$((name - 1))]}"
 	else
-		for ((i=0; i <= ${#files[@]}; ++i))
+		for ((i=0; i < ${#files[@]}; ++i))
 		do
 			[[ ${files[$i]} == $name ]] && clipfile="${files[$i]}"
 		done
@@ -25,10 +25,9 @@ function _edclipfile {
 }
 
 function _editclippopup {
-	echo "haha"
-	echo "$@"
 	[[ -z $1 ]] && return 1
 	local words=($*)
+	[[ -z $words ]] && return 2
 	_editcurses 0 "${words[@]}"
 	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
 }
@@ -48,12 +47,15 @@ function _editclipstart {
 	local n=1
 	for i in $edclipdir/*
 	do
-		files[$n]="$(basename "$i")"
-		n="$((n + 1))"
+		files+=("$(basename "$i")")
 	done
 
 	local res="$(echo ${files[@]})"
-	tmux bind-key $edclipkey run -b "bash -ic \"_editclipword $res\""
+	if tmux run 2>/dev/null
+	then
+		tmux bind-key $edclipkey run -b "bash -ic \"_editclipword $res\""
+	fi
+
 	echo "${files[@]}"
 }
 
@@ -114,8 +116,8 @@ function editclipboard {
 			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] && return 4
 		[[ -z $line ]] && return 7
-		_editregion 1 '$' "$edclipdir/$clipfile"
-		_editread 0 0 "$filename" "$line"
+		editcopy 1 '$' "$edclipdir/$clipfile"
+		editpaste "$line" "$filename"
 	elif [[ $1 == cut ]] || [[ $1 == x ]]
 	then
 		local region="$fl"
@@ -156,7 +158,7 @@ function editclipboard {
 				|| separator="${separator}-"
 		done
 
-		for ((i=1; i <= "${#files[@]}"; ++i))
+		for ((i=0; i < "${#files[@]}"; ++i))
 		do
 			printf -- '\033[%sm%s\n' "$edclipcolor" "$separator"
 			echo "$i - ${files[$i]}"
@@ -167,7 +169,7 @@ function editclipboard {
 	then
 		[[ -z $2 ]] && return 1
 		local searchresult=()
-		for ((i=1; i <= ${#files[@]}; ++i))
+		for ((i=0; i < ${#files[@]}; ++i))
 		do
 			[[ ${files[$i]} =~ $2 ]] \
 				&& searchresult+=("$i - ${files[$i]}")
@@ -182,7 +184,7 @@ function editclipboard {
 	then
 		[[ -z $2 ]] && return 1
 		local searchresult=()
-		for ((i=1; i <= ${#files[@]}; ++i))
+		for ((i=0; i < ${#files[@]}; ++i))
 		do
 			local g="$(grep --color=always "$2" "$edclipdir/${files[$i]}")"
 			[[ -n $g ]] \

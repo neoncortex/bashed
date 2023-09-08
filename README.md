@@ -681,7 +681,6 @@ There are other functions that are used internally by the ones above:
 - \_editcurses: display dialog interfaces;
 - \_editline: calculate line numbers;
 - \_editread, er: read a region of file, and store in ~/.edit/readlines
-- \_editregion: used internally to separate regions of the text;
 - \_editwindow: open/find windows;
 - \_editwordspopup: show a tmux popup containing a dialog with the words from a file;
 
