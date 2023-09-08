@@ -784,13 +784,15 @@ function e { edit "$@"; }
 
 function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	COMPREPLY=($(compgen -f -c -- $cur))
+	local words=($(edcolor=0 edcmd=p es l))
+	local res="$(echo "${words[@]}")"
+	COMPREPLY=($(compgen -W "$res" -- $cur))
 }
 
-complete -o nospace -o filenames -F _editappend editappend
-complete -o nospace -o filenames -F _editappend ea
-complete -o nospace -o filenames -F _editappend editinsert
-complete -o nospace -o filenames -F _editappend ei
+complete -o nospace -o filenames -o nosort -F _editappend editappend
+complete -o nospace -o filenames -o nosort -F _editappend ea
+complete -o nospace -o filenames -o nosort -F _editappend editinsert
+complete -o nospace -o filenames -o nosort -F _editappend ei
 
 function _editchangeline {
 	local cur=${COMP_WORDS[COMP_CWORD]}
