@@ -784,9 +784,7 @@ function e { edit "$@"; }
 
 function _editappend {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	local words=($(edcolor=0 edcmd=p es l))
-	local res="$(echo "${words[@]}")"
-	COMPREPLY=($(compgen -W "$res" -- $cur))
+	COMPREPLY=($(compgen -f -c -- $cur))
 }
 
 complete -o nospace -o filenames -o nosort -F _editappend editappend
