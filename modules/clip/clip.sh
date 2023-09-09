@@ -234,8 +234,7 @@ $g
 			local IFS=
 			for i in "${e_uresult[@]}"
 			do
-				[[ -f $edclipdir/${files[$i]} ]] && \
-					rm "$edclipdir/${files[$i]}"
+				[[ -f $edclipdir/$i ]] && rm "$edclipdir/$i"
 			done
 
 			e_uresult=

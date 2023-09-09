@@ -737,10 +737,10 @@ function _editfzf {
 	local multiple="$1"
 	shift
 	[[ $multiple -eq 1 ]] \
-		&& e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			fzf --layout=reverse-list --cycle)" \
-		|| e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			fzf --layout=reverse-list --cycle))
+		&& e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
+			fzf --layout=reverse-list --cycle -m)) \
+		|| e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
+			fzf --layout=reverse-list --cycle)"
 }
 
 function _editwordspopup {

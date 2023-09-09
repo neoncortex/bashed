@@ -76,12 +76,12 @@ function editundo {
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
 		[[ ${#files[@]} -gt 0 ]] && _editfzf 1 "${files[@]}"
-		if [[ $e_uresult -gt 0 ]]
+		if [[ ${#e_uresult[@]} -gt 0 ]]
 		then
 			local IFS=$'\n'
 			for i in "${e_uresult[@]}"
 			do
-				echo "${files[$i]}"
+				[[ -f $i ]] && rm "$i"
 			done
 
 			e_uresult=
@@ -111,10 +111,10 @@ function editundo {
 			fi
 		else
 			[[ ${#files[@]} -gt 0 ]] && _editfzf 1 "${files[@]}"
-			if [[ $e_uresult -gt 0 ]]
+			if [[ ${#e_uresult[@]} -gt 0 ]]
 			then
-				local f1="${files[${e_uresult[0]}]}"
-				local f2="${files[${e_uresult[1]}]}"
+				local f1="${e_uresult[0]}"
+				local f2="${e_uresult[1]}"
 				diff $diffarg "$f1" "$f2"
 				e_uresult=
 			fi
