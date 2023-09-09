@@ -24,28 +24,17 @@ function _edclipfile {
 	echo "$clipfile"
 }
 
-function _editclippopup {
-	[[ -z $1 ]] && return 1
-	local words=($*)
-	[[ -z $words ]] && return 2
-	_editfzf 0 "${words[@]}"
-	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
-}
-
 function _editclipword {
 	if tmux run 2>/dev/null
 	then
-		tmux display-popup -w 80% -h 80% -E \
-			"bash -lic '_editclippopup \"$*\"'"
+		_editfzf 0 "$@"
 	else
 		return 1
 	fi
 
-	[[ -f $editwordfile ]] \
-		&& local word="$(cat "$editwordfile")" \
-		&& local content="$(cat "$edclipdir/$word")" \
-		&& tmux send-keys -l "$content" \
-		&& rm "$editwordfile"
+	[[ -n $e_uresult ]] \
+		&& local content="$(cat "$edclipdir/$e_uresult")" \
+		&& tmux send-keys -l "$content"
 }
 
 function _editclipstart {

@@ -3,7 +3,6 @@
 # files and directories
 editdir="$HOME/.edit"
 editreadlines="$editdir/readlines"
-editwordfile="$editdir/word"
 
 # edit
 edcmd="n"
@@ -13,6 +12,9 @@ edcolor=0
 
 # bind key for editwords
 editwordkey="o"
+
+#fzf
+edfzfsize=80
 
 mkdir -p "$editdir"
 
@@ -683,72 +685,15 @@ function etermbin {
 	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
 }
 
-function _editcurses {
-	local IFS=$'\n'
-	local multiple="$1"
-	shift
-	local files_a=()
-	for i in $@
-	do
-		files_a+=("$i")
-	done
-
-	[[ ${#files_a[@]} -eq 0 ]] && return
-	echo "${#files_a[@]}" && return
-	local rows=
-	local cols=
-	local IFS=$'\n\t '
-	read -r rows cols < <(stty size)
-	local dialog="dialog --colors --menu Select: "
-	[[ $multiple -eq 1 ]] && dialog="dialog --colors --checklist Select: "
-	local items=()
-	local n=1
-	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
-	for i in "${files_a[@]}"
-	do
-		[[ $i == '--' ]] && continue
-		[[ $multiple -eq 1 ]] \
-			&& items+=("$n" "$i" "off") \
-			|| items+=("$i" ' ')
-		n="$((n + 1))"
-	done
-
-	[[ ${#items[@]} -eq 0 ]] && return
-	exec 3>&1
-	local res="$($dialog "${items[@]}" 2>&1 1>&3)"
-	exec 3>&-
-	clear
-	if [[ $multiple -eq 1 ]]
-	then
-		e_uresult=()
-		if [[ -n $res ]]
-		then
-			for i in $res
-			do
-				e_uresult+=("$i")
-			done
-		fi
-	else
-		[[ -n $res ]] && e_uresult="$res"
-	fi
-}
-
 function _editfzf {
 	local multiple="$1"
 	shift
+	local fzf="fzf-tmux -p ${edfzfsize}%,${edfzfsize}%"
 	[[ $multiple -eq 1 ]] \
 		&& e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			fzf --layout=reverse-list --cycle -m)) \
+			$fzf --layout=reverse-list --cycle -m)) \
 		|| e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			fzf --layout=reverse-list --cycle)"
-}
-
-function _editwordspopup {
-	local f="${1:-$fn}"
-	[[ -z $f ]] && return 1
-	local words=($(edcolor=0 edcmd=p es a "$f"))
-	_editfzf 0 "${words[@]}"
-	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
+			$fzf --layout=reverse-list --cycle)"
 }
 
 function editwords {
@@ -756,16 +701,13 @@ function editwords {
 	[[ -z $f ]] && return 1
 	if tmux run 2>/dev/null
 	then
-		tmux display-popup -w 80% -h 80% -E \
-			"bash -lic '_editwordspopup \"$f\"'"
+		local words=($(edcolor=0 edcmd=p es a "$f"))
+		_editfzf 0 "${words[@]}"
 	else
 		return 2
 	fi
 
-	[[ -f $editwordfile ]] \
-		&& word="$(cat "$editwordfile")" \
-		&& tmux send-keys -l "$word" \
-		&& rm "$editwordfile"
+	[[ -n $e_uresult ]] && tmux send-keys -l "$e_uresult"
 }
 
 function editwordsrc {

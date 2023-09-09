@@ -7,10 +7,9 @@ It is a collection of functions that wraps the ed functionalities, and manage th
 # Dependencies:
 - ed;
 - fzf;
-- tmux;
+- tmux 3.2, or above;
 
 ## Optional:
-- dialog;
 - highlight;
 - wl-clipboard;
 - xclip;
@@ -571,17 +570,16 @@ etermbin 10
 The arguments are the same of the es function.
 
 ## Auto typing words:
-the function editwords gives a fzf interface inside a tmux display-popup window, containing all the words of the current file.  When one of these words are selected, it will be typed on the command line.  The source of the words, that is, the file that the words will be extracted, are setted when you open a file using eo, or when you display something using es, without a file argument.  You can manually set a file using: editwordsrc filename.
+the function editwords gives a fzf inside a tmux display-popup window, containing all the words of the current file.  When one of these words are selected, it will be typed on the command line.  The source of the words, that is, the file that the words will be extracted, are setted when you open a file using eo, or when you display something using es, without a file argument.  You can manually set a file using: editwordsrc filename.
 
 Its called by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
 
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call editwords;
-- editwordfile: the file used to store the selected word from the editwords;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
-- e_uresult: Contains the last selections of a curses menu or fzf finder;
+- e_uresult: Contains the last selections of fzf;
 - fileresult: Contains the search results to be displayed by ef, and es s;
 - fileresult_a: It's an array that have one entry to each result of an ef search;
 - fn: Contains the complete path to the file beign edited;
@@ -675,16 +673,14 @@ The functions are:
 - edittransfer, ey: copy lines;
 - editundo, eu: show, diff, restore, delete stored version files;
 - editwordsrc, ews: set the current file as a source of words;
-- editword, ew: show a list of words from a file and type the selction;
+- editwords, ew: show a list of words from a file and type the selction;
 
 There are other functions that are used internally by the ones above:
 - \_editarg: parse the arguments of a file;
-- \_editcurses: display dialog interfaces;
 - \_editfzf: display fzf selection interfaces;
 - \_editline: calculate line numbers;
 - \_editread, er: read a region of file, and store in ~/.edit/readlines
 - \_editwindow: open/find windows;
-- \_editwordspopup: show a tmux popup containing a fzf finder  with the words from a file;
 
 Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.
 
@@ -712,7 +708,7 @@ eu l
 eu list
 ````
 
-Will show a list of the copies of the current file previously stored using et.  listcurses, or lu, can be used instead of l, or list, to list files using a curses interface.  The selected file version will substitute your current file.
+Will show a list of the copies of the current file previously stored using et.  listcurses, or lu, can be used instead of l, or list, to list files using fzf.  The selected file version will substitute your current file.
 
 ### Showing:
 #### With line numbering:
@@ -721,14 +717,14 @@ eu show n
 eu es n
 ````
 
-showcurses, or esu, can be used instead of show, or es, to select the file to show using a curses interface.
+showcurses, or esu, can be used instead of show, or es, to select the file to show using fzf.
 
 #### Plain:
 ````
 eu print n
 eu p n
 ````
-printcurses, or pu, can be used instead of print, or p, to select the file to print using a curses interface.
+printcurses, or pu, can be used instead of print, or p, to select the file to print using fzf.
 
 ### Diff:
 ````
@@ -741,7 +737,7 @@ Will present a diff from the file f1, and file f2.  f1, and f2, can be either a 
 eu diff 2 $fn
 ````
 
-The diff arguments can be set be changing the diffarg variable.  By default, ther arguments are: --color -c.  diffcurses can be used instead of diff, to select the files to diff using a curses interface.  You should select two files from the curses interface, or one, if you pass a filename.  For example:
+The diff arguments can be set be changing the diffarg variable.  By default, ther arguments are: --color -c.  diffcurses can be used instead of diff, to select the files to diff using fzf.  You should select two files from fzf, or one, if you pass a filename.  For example:
 
 ### Selecting:
 ````
@@ -757,7 +753,7 @@ You can copy a stored file version somewhere else.  For example:
 eu cp 1 /path/to/file
 ````
 
-Will copy the stored file version 1 of the current opened file to /path/to/file.  copycurses, or cpu, can be used instead of copy, or cp, to select the file to copy using the curses interface:
+Will copy the stored file version 1 of the current opened file to /path/to/file.  copycurses, or cpu, can be used instead of copy, or cp, to select the file to copy using fzf:
 
 ````
 eu copycurses /path/to/file
@@ -772,7 +768,7 @@ You can delete file versions using delete, or rm:
 eu delete n
 ````
 
-You can use deletecurses, or du, to select the version files to delete using a curses interface.
+You can use deletecurses, or du, to select the version files to delete using fzf.
 
 ### Variables:
 - editversiondir: directory to store the file versions
@@ -881,7 +877,7 @@ To delete some clipboard text file:
 eclip d n
 ````
 
-Where n is a number of some clipboard text file, or a name.  A curses interface is available, that allows selection of multiple files to be deleted:
+Where n is a number of some clipboard text file, or a name.  A fzf interface is available, that allows selection of multiple files to be deleted:
 
 ````
 eclip du
@@ -927,15 +923,14 @@ eclip fw name
 ````
 
 ### Type:
-The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing fzf finder with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
+The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing fzf with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
 
 ### Functions:
 - edclipboard, eclip: the clipboard;
 
 and the ones used internally:
 - \_edclipfile: used internally to find clipboard files;
-- \_editclippopup: display a tmux popup with a fzf finder containing the clipboard file names;
-- \_editclipword: function binded to C-b b, calls _editclippopup;
+- \_editclipword: display a tmux popup with a fzf containing the clipboard file names;
 - \_editclipstart: clipboard startup;
 
 ### Variables:
