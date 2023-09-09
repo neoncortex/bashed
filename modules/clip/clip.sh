@@ -28,12 +28,19 @@ function _editclippopup {
 	[[ -z $1 ]] && return 1
 	local words=($*)
 	[[ -z $words ]] && return 2
-	_editcurses 0 "${words[@]}"
+	_editfzf 0 "${words[@]}"
 	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
 }
 
 function _editclipword {
-	tmux display-popup -w 80% -h 80% -E "bash -lic '_editclippopup \"$*\"'"
+	if tmux run 2>/dev/null
+	then
+		tmux display-popup -w 80% -h 80% -E \
+			"bash -lic '_editclippopup \"$*\"'"
+	else
+		return 1
+	fi
+
 	[[ -f $editwordfile ]] \
 		&& local word="$(cat "$editwordfile")" \
 		&& local content="$(cat "$edclipdir/$word")" \
@@ -221,7 +228,7 @@ $g
 			"$edclipdir/$newname"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		_editcurses 1 "${files[@]}"
+		_editfzf 1 "${files[@]}"
 		if [[ ${#e_uresult[@]} -gt 0 ]]
 		then
 			local IFS=

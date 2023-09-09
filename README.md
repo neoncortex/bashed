@@ -6,10 +6,11 @@ It is a collection of functions that wraps the ed functionalities, and manage th
 
 # Dependencies:
 - ed;
-- dialog;
+- fzf;
 - tmux;
 
 ## Optional:
+- dialog;
 - highlight;
 - wl-clipboard;
 - xclip;
@@ -570,17 +571,17 @@ etermbin 10
 The arguments are the same of the es function.
 
 ## Auto typing words:
-the function editword gives a dialog interface inside a tmux display-popup window, containing all the words of the current file.  When one of these words are selected, it will be typed on the command line.  The source of the words, that is, the file that the words will be extracted, are setted when you open a file using eo, or when you display something using es, without a file argument.  You can manually set a file using: editwordsrc filename.
+the function editwords gives a fzf interface inside a tmux display-popup window, containing all the words of the current file.  When one of these words are selected, it will be typed on the command line.  The source of the words, that is, the file that the words will be extracted, are setted when you open a file using eo, or when you display something using es, without a file argument.  You can manually set a file using: editwordsrc filename.
 
-The dialog is invoked by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
+Its called by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
 
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
-- editwordkey: the key to be used with bind-key ro call the editword dialog;
-- editwordfile: the file used to store the selected word from the editword dialog;
+- editwordkey: the key to be used with bind-key ro call editwords;
+- editwordfile: the file used to store the selected word from the editwords;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
-- e_uresult: Contains the last selections of a curses menu;
+- e_uresult: Contains the last selections of a curses menu or fzf finder;
 - fileresult: Contains the search results to be displayed by ef, and es s;
 - fileresult_a: It's an array that have one entry to each result of an ef search;
 - fn: Contains the complete path to the file beign edited;
@@ -679,10 +680,11 @@ The functions are:
 There are other functions that are used internally by the ones above:
 - \_editarg: parse the arguments of a file;
 - \_editcurses: display dialog interfaces;
+- \_editfzf: display fzf selection interfaces;
 - \_editline: calculate line numbers;
 - \_editread, er: read a region of file, and store in ~/.edit/readlines
 - \_editwindow: open/find windows;
-- \_editwordspopup: show a tmux popup containing a dialog with the words from a file;
+- \_editwordspopup: show a tmux popup containing a fzf finder  with the words from a file;
 
 Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.
 
@@ -925,16 +927,16 @@ eclip fw name
 ````
 
 ### Type:
-The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing a dialog with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
+The contents of a clipboard file can be typed into the command line by using type.  This is binded on tmux to C-b b.  It will display a tmux display-popup containing fzf finder with a list of the clipboard files, and the selected one will have its contents typed on the command line.  The variable $edclipkey contains the key that will be binded on tmux, b, and shoud be customized if necessary.
 
 ### Functions:
 - edclipboard, eclip: the clipboard;
 
 and the ones used internally:
-- _edclipfile: used internally to find clipboard files;
-- _editclippopup: display a tmux popup with a dialog containing the clipboard file names;
-- _editclipword: function binded to C-b b, calls _editclippopup;
-- _editclipstart: clipboard startup;
+- \_edclipfile: used internally to find clipboard files;
+- \_editclippopup: display a tmux popup with a fzf finder containing the clipboard file names;
+- \_editclipword: function binded to C-b b, calls _editclippopup;
+- \_editclipstart: clipboard startup;
 
 ### Variables:
 - edclipdir: the directory to store the files;

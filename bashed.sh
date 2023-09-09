@@ -195,7 +195,8 @@ function editopen {
 	[[ $? -eq 1 ]] && return 3
 	if tmux run 2>/dev/null
 	then
-		tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\" editwords\""
+		tmux bind-key $editwordkey run -b \
+			"bash -ic \"fn=\"$f\" editwords\""
 	else
 		return 4
 	fi
@@ -686,27 +687,26 @@ function _editcurses {
 	local IFS=$'\n'
 	local multiple="$1"
 	shift
-	local files="$*"
-	[[ -z $files ]] && return 1
 	local files_a=()
-	for i in $files
+	for i in $@
 	do
 		files_a+=("$i")
 	done
 
 	[[ ${#files_a[@]} -eq 0 ]] && return
+	echo "${#files_a[@]}" && return
 	local rows=
 	local cols=
 	local IFS=$'\n\t '
 	read -r rows cols < <(stty size)
 	local dialog="dialog --colors --menu Select: "
-	[[ $multiple -eq 1 ]] \
-		&& dialog="dialog --colors --checklist Select: "
+	[[ $multiple -eq 1 ]] && dialog="dialog --colors --checklist Select: "
 	local items=()
 	local n=1
 	dialog="$dialog $((rows - 1)) $((cols - 4)) $cols "
 	for i in "${files_a[@]}"
 	do
+		[[ $i == '--' ]] && continue
 		[[ $multiple -eq 1 ]] \
 			&& items+=("$n" "$i" "off") \
 			|| items+=("$i" ' ')
@@ -733,19 +733,35 @@ function _editcurses {
 	fi
 }
 
+function _editfzf {
+	local multiple="$1"
+	shift
+	[[ $multiple -eq 1 ]] \
+		&& e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
+			fzf --layout=reverse-list --cycle)" \
+		|| e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
+			fzf --layout=reverse-list --cycle))
+}
+
 function _editwordspopup {
 	local f="${1:-$fn}"
 	[[ -z $f ]] && return 1
-	local words=($(edcolor=0 edcmd=p es a "$f" | sed 's/\ /\n/g' \
-		| sort | uniq))
-	_editcurses 0 "${words[@]}"
+	local words=($(edcolor=0 edcmd=p es a "$f"))
+	_editfzf 0 "${words[@]}"
 	[[ -n $e_uresult ]] && echo "$e_uresult" > "$editwordfile"
 }
 
 function editwords {
 	local f="${1:-$fn}"
 	[[ -z $f ]] && return 1
-	tmux display-popup -w 80% -h 80% -E "bash -lic '_editwordspopup \"$f\"'"
+	if tmux run 2>/dev/null
+	then
+		tmux display-popup -w 80% -h 80% -E \
+			"bash -lic '_editwordspopup \"$f\"'"
+	else
+		return 2
+	fi
+
 	[[ -f $editwordfile ]] \
 		&& word="$(cat "$editwordfile")" \
 		&& tmux send-keys -l "$word" \
@@ -755,7 +771,13 @@ function editwords {
 function editwordsrc {
 	local f="${1:-$fn}"
 	[[ -z $f ]] && return 1
-	tmux bind-key $editwordkey run -b "bash -ic \"fn=\"$f\"; editwords\""
+	if tmux run 2>/dev/null
+	then
+		tmux bind-key $editwordkey run -b \
+			"bash -ic \"fn=\"$f\"; editwords\""
+	else
+		return 2
+	fi
 }
 
 function ea { editappend "$@"; }
