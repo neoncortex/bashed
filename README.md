@@ -547,6 +547,13 @@ es m
 es s
 ````
 
+## eprint:
+The function eprint receives and does the seame as the editshow, but without color and line numbering, it is a shortcut to:
+
+````
+edcmd=p edcolor=0 es ...
+````
+
 ## Disable line numbering:
 To disable line numbering for the next command:
 
@@ -555,7 +562,7 @@ edcmd=p command
 ````
 
 ## Changing the text color:
-You can edit the variable edcolor, to change the text color.  It does ANSI escape codes, so you can set edcolor to 31 to have red, 32 for green, and so on.
+You can edit the variable edcolor, to change the text color.  It does ANSI escape codes, so you can set edcolor to 31 to have red, 32 for green, and so on.  0 will disable it.
 
 ## Editing text in the $EDITOR:
 You can edit a region of the text usin $EDITOR.  For example, to edit the current line:

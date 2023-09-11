@@ -550,6 +550,10 @@ function editshow {
 	return 0
 }
 
+function editprint {
+	edcmd=p edcolor=0 editshow "$@"
+}
+
 function editappend {
 	[[ -z $fn ]] && return 1
 	[[ -z $fl ]] && return 2
@@ -677,9 +681,9 @@ function edittransfer {
 		es $n
 	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
 	then
-		yank="$(edcmd=p editshow ${fl},$n)"
+		yank="$(editprint ${fl},$n)"
 	else
-		yank="$(edcmd=p editshow l)"
+		yank="$(editprint l)"
 	fi
 }
 
@@ -737,7 +741,7 @@ function etermbin {
 	[[ -z $1 ]] && return 1
 	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 2
-	edcmd=p edcolor=0 es $1 | nc termbin.com 9999
+	editprint $1 | nc termbin.com 9999
 }
 
 function _editfzf {
@@ -757,7 +761,7 @@ function editwords {
 	[[ -z $f ]] && return 1
 	if tmux run 2>/dev/null
 	then
-		local words=($(edcolor=0 edcmd=p es a "$f"))
+		local words=($(editprint a "$f"))
 		local extension="${f/*l/}"
 		local dict_words="$editdir/dict/words"
 		local ext_words="$editdir/dict/$extension"
@@ -808,6 +812,7 @@ function el { editlevel "$@"; }
 function em { editmove "$@"; }
 function eo { editopen "$@"; }
 function epaste { editpaste "$@"; }
+function ep { editprint "$@"; }
 function eq { editclose "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
@@ -828,7 +833,7 @@ complete -o nospace -o filenames -o nosort -F _editappend ei
 
 function _editchangeline {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	local words=($(edcolor=0 edcmd=n es l))
+	local words=($(editprint l))
 	local word="${words[COMP_CWORD]}"
 	[[ -n $word ]] \
 		&& COMPREPLY=($(compgen -W "$word" -- $cur)) \
@@ -842,10 +847,10 @@ function _edcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + - ." -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + - ." -- $cur))
 			;;
 		3)
 			COMPREPLY=($(compgen -c))
@@ -863,10 +868,10 @@ function _editcopy {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
 		3)
 			COMPREPLY=($(compgen -W "w x" -- $cur))
@@ -887,7 +892,7 @@ function _editdelete {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
@@ -902,10 +907,10 @@ function _editexternal {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
@@ -935,7 +940,7 @@ function _editjoin {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
@@ -950,10 +955,10 @@ function _editmove {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + -" -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{$fl..$fs} $ +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
@@ -984,8 +989,8 @@ function _editshow {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -W "a b c d e f g G l m n p u v / \
-				. $ + - {1..$fs} fz" -- $cur))
+			COMPREPLY=($(compgen -W "a b c d e f fz g G l m n p u \
+				v / . $ + -" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
@@ -996,15 +1001,17 @@ function _editshow {
 complete -o nospace -o filenames -F _editshow editshow
 complete -o nospace -o filenames -F _editshow es
 complete -o nospace -o filenames -F _editshow etermbin
+complete -o nospace -o filenames -F _editshow editprint
+complete -o nospace -o filenames -F _editshow ep
 
 function _editpaste {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} $ + ." -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
 		3)
 			COMPREPLY=($(compgen -W "w x" -- $cur))
@@ -1040,10 +1047,10 @@ function _edittransfer {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} . $" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W ". $" -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "{1..$fs} +" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "+" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
