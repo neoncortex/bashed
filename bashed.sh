@@ -555,7 +555,8 @@ function editappend {
 	[[ -z $fl ]] && return 2
 	local data="$@"
 	local line=$fl
-	[[ $fs -eq 0 ]] && line=$((line - 1))
+	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
 	local res="$(edit "${line}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editshow "+$(echo -e "$data" | grep -c "^")"
@@ -770,7 +771,7 @@ function editwords {
 		[[ -f $local_words ]] \
 			&& local dict="$(cat "$local_words" | sed 's/\n/ /g')" \
 			&& words=(${words[@]} $dict)
-		_editfzf 0 0 "${words[@]}"
+		_editfzf 0 "${words[@]}"
 	else
 		return 2
 	fi
