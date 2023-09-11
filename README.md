@@ -319,10 +319,12 @@ That will execute the substitution on the entire file.
 The most common searching mechanism would be:
 
 ````
-ef 'g/re/p'
+ef 'g/re/n'
 ````
 
 This will return a list with all occurences of "re".  More details on how to navigate this list in the Natigation section.
+
+If a second argument fz is passed, the results will be presented in fzf, and if one of them is selected, the line of the selection will be used as new current line.
 
 ## Commands:
 Shell commands can be applied to a region using ec:
@@ -522,7 +524,11 @@ es d
 es fn
 ````
 
-Where n should be a number of an item of the search list.
+Where n should be a number of an item of the search list.  You can also go to a item of the search list by using fzf:
+
+````
+es fz
+````
 
 #### Showing the content in the middle:
 ````
@@ -574,9 +580,16 @@ the function editwords gives a fzf inside a tmux display-popup window, containin
 
 Its called by pressing C-b o.  The key, o, can be changed by setting the desired new key in the variable $editwordkey.  C-b is the default prefix key on tmux, if you have changed it, use your setted prefix instead.
 
+In $editdir (by default, ~/.edit), a directory called dict can be created.  Inside, a file called words can be created, and inside the file, words can be placed, one per line, that will be presented for every file (that is, they will be presented in conjunction with the words of the word source file).
+
+Also, a file named with a file extension can be created, for example, sh, and words can be placed there, and they will be appear when the opened file match the extension.
+
+Also, you can have a file called .bashed-words in a directory.  The words inside it will be presented when the opened file are from that directory.
+
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call editwords;
+- edfzfsize: size of the fzf tmux popup, by default, 80;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
 - e_uresult: Contains the last selections of fzf;

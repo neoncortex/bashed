@@ -88,7 +88,7 @@ function editundo {
 		fi
 	elif [[ $1 == diff ]]
 	then
-		[[ -z $2 ]] && [[ -z $3 ]] && return 3
+		[[ -z $2 ]] && [[ -z $3 ]] && return 4
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -121,7 +121,7 @@ function editundo {
 		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
-		[[ -z $2 ]] && return 3
+		[[ -z $2 ]] && return 5
 		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
 	then
@@ -133,7 +133,7 @@ function editundo {
 		fi
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
-		[[ -z $2 ]] && return 3
+		[[ -z $2 ]] && return 6
 		[[ -f ${files[$2]} ]] \
 			&& editshow a "${files[$2]}"
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
@@ -146,7 +146,7 @@ function editundo {
 		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
-		[[ -z $2 ]] && [[ -z $3 ]] && return 3
+		[[ -z $2 ]] && [[ -z $3 ]] && return 7
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -159,7 +159,7 @@ function editundo {
 		fi
 	elif [[ $1 == copycurses ]] || [[ $1 == cpu ]]
 	then
-		[[ -z $2 ]] && return 3
+		[[ -z $2 ]] && return 8
 		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
@@ -175,7 +175,7 @@ function editundo {
 		es 1
 	else
 		echo "?"
-		return 4
+		return 9
 	fi
 }
 

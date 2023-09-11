@@ -163,7 +163,6 @@ function editcmd {
 	local res="$(edit "$begin,${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editpaste $(($begin - 1)) "$fn"
-	editshow $begin,$end
 }
 
 function _editarg {
@@ -264,12 +263,28 @@ $data"
 		counter=$((counter+1))
 	done
 
-	[[ -n "$fileresult" ]] && echo "$fileresult"
+	if [[ -n "$fileresult" ]]
+	then
+		if [[ $2 == fz ]]
+		then
+			local zres="$(echo "$fileresult" | fzf)"
+			if [[ $zres ]]
+			then
+				fileresultindex="${zres/:*/}"
+				fl="${fileresult_a[$fileresultindex]}"
+				printf -- '%s' "$fileresultindex:"
+				editshow ${fl}
+			fi
+		else
+			echo "$fileresult"
+		fi
+	fi
 }
 
 function editlocate {
-	[[ -z $1 ]] && return 1
-	[[ -z $fn ]] && return 2
+	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	[[ -n $2 ]] && local fl="$2"
 	local pattern="$1"
 	[[ $1 =~ ^\/ ]] && pattern="${pattern/\//}"
@@ -301,7 +316,7 @@ function editshow {
 	fi
 
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
-	[[ -z $fs ]] && return 2
+	[[ -z $fs ]] && return 3
 	[[ -z $pagesize ]] && pagesize=20
 	[[ -z $fl ]] && fl=1
 	! [[ $fl =~ [0-9]+ ]] && fl="$fs"
@@ -325,7 +340,7 @@ function editshow {
 			fi
 
 			return
-		elif [[ $arg == "u" ]]
+		elif [[ $arg == u ]]
 		then
 			if [[ $fileresultindex -eq 0 ]] || [[ $fileresultindex -eq -1 ]]
 			then
@@ -339,7 +354,7 @@ function editshow {
 			printf "$fileresultindex:"
 			editshow $fl
 			return
-		elif [[ $arg == "d" ]]
+		elif [[ $arg == d ]]
 		then
 			if [[ $fileresultindex -eq $((${#fileresult_a[@]} - 1)) ]]
 			then
@@ -353,11 +368,11 @@ function editshow {
 			printf "$fileresultindex:"
 			editshow $fl
 			return
-		elif [[ $arg == "s" ]]
+		elif [[ $arg == s ]]
 		then
 			[[ -n "$fileresult" ]] && echo "$fileresult"
 			return
-		elif [[ $arg == "m" ]]
+		elif [[ $arg == m ]]
 		then
 			local asize=${#fileresult_a[@]}
 			if [[ $fileresultindex -lt $((asize - 1)) ]]
@@ -371,10 +386,23 @@ function editshow {
 			fi
 
 			return
+		elif [[ $arg == fz ]]
+		then
+			[[ -n "$fileresult" ]] \
+				&& local zres="$(echo "$fileresult" | fzf)"
+			if [[ -n $zres ]]
+			then
+				fileresultindex="${zres/:*/}"
+				fl="${fileresult_a[$fileresultindex]}"
+				printf -- '%s' "$fileresultindex:"
+				editshow ${fl}
+			fi
+
+			return
 		fi
 	fi
 
-	if [[ $arg == "r" ]]
+	if [[ $arg == r ]]
 	then
 		if [[ -n $eslast ]] && [[ ${eslast:0-1} != $edcmd ]]
 		then
@@ -384,19 +412,19 @@ function editshow {
 		fi
 
 		show="$eslast"
-	elif [[ $arg == "$" ]] || [[ $arg == "G" ]]
+	elif [[ $arg == $ ]] || [[ $arg == "G" ]]
 	then
 		fl="$fs"
 		show="edit ${fl}$edcmd"
-	elif [[ $arg == "g" ]]
+	elif [[ $arg == g ]]
 	then
 		fl="1"
 		show="edit ${fl}$edcmd"
 	elif [[ $arg =~ ^([.+-]?([0-9]+)?)(,[$+]?([0-9]+)?)?$ ]] \
-		&& [[ $arg != "." ]]
+		&& [[ $arg != . ]]
 	then
-		[[ $arg == "+" ]] && arg="$((fl + 1))"
-		[[ $arg == "-" ]] && arg="$((fl - 1))"
+		[[ $arg == + ]] && arg="$((fl + 1))"
+		[[ $arg == - ]] && arg="$((fl - 1))"
 		if [[ $arg =~ , ]]
 		then
 			local head="${arg/,*/}"
@@ -430,13 +458,13 @@ function editshow {
 			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$edcmd" \
 				&& fl="$line"
 		fi
-	elif [[ $arg == "l" ]] || [[ $arg == "." ]]
+	elif [[ $arg == l ]] || [[ $arg == . ]]
 	then
 		show="edit ${fl}$edcmd"
 	elif [[ $pagesize -ge $fs ]]
 	then
 		show="edit "1,${fs}$edcmd""
-	elif [[ $arg == "n" ]]
+	elif [[ $arg == n ]]
 	then
 		[[ $eslastarg == "p" ]] \
 			&& fl="$((fl + pagesize + 2))"
@@ -448,7 +476,7 @@ function editshow {
 			show="edit "${fl},$((fl + pagesize))$edcmd""
 			fl="$((fl + pagesize + 1))"
 		fi
-	elif [[ $arg == "p" ]]
+	elif [[ $arg == p ]]
 	then
 		[[ $eslastarg == "n" ]] \
 			&& [[ $fl -ne $fs ]] \
@@ -464,18 +492,18 @@ function editshow {
 			show="edit "$((fl - pagesize)),${fl}$edcmd""
 			fl="$((fl - pagesize - 1))"
 		fi
-	elif [[ $arg == "b" ]]
+	elif [[ $arg == b ]]
 	then
 		show="edit "1,${pagesize}$edcmd""
 		fl="$((pagesize + 1))"
-	elif [[ $arg == "e" ]]
+	elif [[ $arg == e ]]
 	then
 		show="edit "$((fs - pagesize)),${fs}$edcmd""
 		fl="$((fs - pagesize - 1))"
-	elif [[ $arg == "a" ]]
+	elif [[ $arg == a ]]
 	then
 		show="edit ,$edcmd"
-	elif [[ $arg == "c" ]]
+	elif [[ $arg == c ]]
 	then
 		local head="$((fl - (pagesize / 2)))"
 		local tail="$((fl + (pagesize / 2)))"
@@ -483,7 +511,7 @@ function editshow {
 			&& tail="$((tail + (pagesize / 2)))"
 		[[ $tail -gt $fs ]] && tail="$fs"
 		show="edit ${head},${tail}$edcmd"
-	elif [[ $arg == "v" ]]
+	elif [[ $arg == v ]]
 	then
 		local rows=
 		local cols=
@@ -522,6 +550,7 @@ function editshow {
 
 function editappend {
 	[[ -z $fn ]] && return 1
+	[[ -z $fl ]] && return 2
 	local data="$@"
 	local res="$(edit "${fl}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
@@ -529,12 +558,15 @@ function editappend {
 }
 
 function editinsert {
+	[[ -z $fl ]] && return 1
 	fl="$((fl - 1))"
 	editappend "$@"
 }
 
 function editdelete {
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
+	[[ -z $fl ]] && return 2
 	[[ -n $1 ]] && local to="$(_editline "$1")"
 	local res=
 	[[ -z $to ]] && res="$(edit "${fl}d\nw" "$fn")" \
@@ -545,8 +577,10 @@ function editdelete {
 }
 
 function editchange {
-	[[ -z $1 ]] && return 1
-	[[ -z $fn ]] && return 2
+	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
+	[[ -z $fl ]] && return 3
 	local data="$1"
 	[[ -n $2 ]] && local to="$(_editline "$2")"
 	local res=
@@ -557,8 +591,9 @@ function editchange {
 }
 
 function editchangeline {
-	[[ -z $1 ]] && return 1
-	[[ -z $fn ]] && return 2
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
+	[[ -z $fl ]] && return 3
 	local data="$@"
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
@@ -566,8 +601,9 @@ function editchangeline {
 }
 
 function editsub {
-	[[ -z $1 ]] && return 1
-	[[ -z $fn ]] && return 2
+	[[ -n $5 ]] && local fn="$4" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	[[ -n $3 ]] && local to="$(_editline "$3")"
 	local in="$1"
 	local out="$2"
@@ -592,22 +628,26 @@ function editsub {
 }
 
 function editjoin {
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
+	[[ -z $fl ]] && return 2
 	local l=
 	[[ -z $1 ]] && l="$((fl + 1))"
-	l="$(_editline "$1")"
+	l="$(_editline "$l")"
 	local res=
 	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw" "$fn")" && editshow ${fl}
 	[[ -n $res ]] && echo "$res"
 }
 
 function editmove {
+	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
+	[[ -z $fl ]] && return 2
 	local dest="$1"
 	[[ -z $1 ]] && dest="$((fl + 1))"
-	dest="$(_editline "$1")"
-	[[ $dest -gt $fs ]] && return 1
-	[[ $dest -lt 1 ]] && return 2
+	dest="$(_editline "$dest")"
+	[[ $dest -gt $fs ]] && return 3
+	[[ $dest -lt 1 ]] && return 4
 	[[ -n $2 ]] && local to="$(_editline "$2")"
 	local res=
 	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw" "$fn")" \
@@ -616,7 +656,9 @@ function editmove {
 }
 
 function edittransfer {
+	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	yank=
 	local line="$(_editline "$1")"
 	local n=
@@ -637,6 +679,9 @@ function edittransfer {
 }
 
 function editlevel {
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	local line=
 	[[ -n $1 ]] \
 		&& line="$(es $1)" \
@@ -645,12 +690,15 @@ function editlevel {
 }
 
 function editspaces {
+	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
+	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
 	local n=0
 	local line=
 	[[ -n $1 ]] \
 		&& line="$(es $1)" \
 		|| line="$(es l)"
-	[[ -z $line ]] && return 1
+	[[ -z $line ]] && return 3
 	while true
 	do
 		if [[ $line =~ ^\  ]]
@@ -668,6 +716,8 @@ function editspaces {
 function editexternal {
 	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] && return 1
+	[[ -z $1 ]] && return 2
+	[[ -z $2 ]] && return 3
 	local begin="$(_editline "$1")"
 	local end="$(_editline "$2")"
 	local region="$(editcopy $begin $end "$fn")"
@@ -694,6 +744,7 @@ function _editfzf {
 			$fzf --layout=reverse-list --cycle -m)) \
 		|| e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
 			$fzf --layout=reverse-list --cycle)"
+	return 0
 }
 
 function editwords {
@@ -702,12 +753,26 @@ function editwords {
 	if tmux run 2>/dev/null
 	then
 		local words=($(edcolor=0 edcmd=p es a "$f"))
-		_editfzf 0 "${words[@]}"
+		local extension="${f/*l/}"
+		local dict_words="$editdir/dict/words"
+		local ext_words="$editdir/dict/$extension"
+		local local_words="$(dirname $f)/.bashed-words"
+		[[ -f $dict_words ]] \
+			&& local dict="$(cat "$dict_words" | sed 's/\n/ /g')" \
+			&& words=(${words[@]} $dict)
+		[[ -f $ext_words ]] \
+			&& local dict="$(cat "$ext_words" | sed 's/\n/ /g')" \
+			&& words=(${words[@]} $dict)
+		[[ -f $local_words ]] \
+			&& local dict="$(cat "$local_words" | sed 's/\n/ /g')" \
+			&& words=(${words[@]} $dict)
+		_editfzf 0 0 "${words[@]}"
 	else
 		return 2
 	fi
 
 	[[ -n $e_uresult ]] && tmux send-keys -l "$e_uresult"
+	return 0
 }
 
 function editwordsrc {
@@ -846,6 +911,21 @@ function _editexternal {
 complete -o nospace -o filenames -F _editexternal editexternal
 complete -o nospace -o filenames -F _editexternal ee
 
+function _editfind {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		2)
+			COMPREPLY=($(compgen -o nosort -W "fz" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -f -- $cur))
+			;;
+	esac
+}
+
+complete -o nospace -o filenames -F _editfind editfind
+complete -o nospace -o filenames -F _editfind ef
+
 function _editjoin {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
@@ -900,7 +980,7 @@ function _editshow {
 	case "$COMP_CWORD" in
 		1)
 			COMPREPLY=($(compgen -W "a b c d e f g G l m n p u v / \
-				. $ + - {1..$fs}" -- $cur))
+				. $ + - {1..$fs} fz" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
