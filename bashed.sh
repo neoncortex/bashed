@@ -14,7 +14,7 @@ edcolor=0
 editwordkey="o"
 
 #fzf
-edfzfsize=80
+edfzfsize="80%"
 
 mkdir -p "$editdir"
 
@@ -267,7 +267,8 @@ $data"
 	then
 		if [[ $2 == fz ]]
 		then
-			local zres="$(echo "$fileresult" | fzf)"
+			local zres="$(echo "$fileresult" \
+				| fzf-tmux -p $edfzfsize,$edfzfsize)"
 			if [[ $zres ]]
 			then
 				fileresultindex="${zres/:*/}"
@@ -389,7 +390,8 @@ function editshow {
 		elif [[ $arg == fz ]]
 		then
 			[[ -n "$fileresult" ]] \
-				&& local zres="$(echo "$fileresult" | fzf)"
+				&& local zres="$(echo "$fileresult" \
+					| fzf-tmux -p $edfzfsize,$edfzfsize)"
 			if [[ -n $zres ]]
 			then
 				fileresultindex="${zres/:*/}"
@@ -552,7 +554,9 @@ function editappend {
 	[[ -z $fn ]] && return 1
 	[[ -z $fl ]] && return 2
 	local data="$@"
-	local res="$(edit "${fl}a\n$data\n.\nw" "$fn")"
+	local line=$fl
+	[[ $fs -eq 0 ]] && line=$((line - 1))
+	local res="$(edit "${line}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editshow "+$(echo -e "$data" | grep -c "^")"
 }
@@ -738,7 +742,7 @@ function etermbin {
 function _editfzf {
 	local multiple="$1"
 	shift
-	local fzf="fzf-tmux -p ${edfzfsize}%,${edfzfsize}%"
+	local fzf="fzf-tmux -p ${edfzfsize},${edfzfsize}"
 	[[ $multiple -eq 1 ]] \
 		&& e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
 			$fzf --layout=reverse-list --cycle -m)) \

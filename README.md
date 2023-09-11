@@ -589,7 +589,7 @@ Also, you can have a file called .bashed-words in a directory.  The words inside
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call editwords;
-- edfzfsize: size of the fzf tmux popup, by default, 80;
+- edfzfsize: size of the fzf tmux popup, by default, 80%;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
 - e_uresult: Contains the last selections of fzf;
