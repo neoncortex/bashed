@@ -94,6 +94,18 @@ It will search in the files on current directory for content using grep, and pre
 eff content r
 ````
 
+A third argument can be passed, specifying where the file should be opened.  This argument is the same as the second eo argument, it specifies the pane that file will be opened.  For example, to open it in a new left pane:
+
+On the current directory only:
+````
+eff content 0 l
+````
+
+Or recursively:
+````
+eff content r l
+````
+
 ## Adding line:
 ### Append:
 ````

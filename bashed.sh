@@ -289,7 +289,7 @@ function editfilefind {
 	local name="${res/:*/}"
 	local line="${res#*:}"
 	line="${line/:*/}"
-	[[ -n $name ]] && [[ -n $line ]] && editopen "$name:$line"
+	[[ -n $name ]] && [[ -n $line ]] && editopen "$name:$line" $3
 }
 
 function editlocate {
@@ -958,6 +958,10 @@ function _editfilefind {
 	case "$COMP_CWORD" in
 		2)
 			COMPREPLY=($(compgen -o nosort -W "r" -- $cur))
+			;;
+		3)
+			COMPREPLY=($(compgen -W "u d l r ul ur dl dr ru rd \
+				lu ld" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
