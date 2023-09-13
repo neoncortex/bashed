@@ -528,7 +528,6 @@ You can visualize a different file.  Examples:
 ````
 es c file
 es n file
-emore . file
 ````
 
 This will not change the current opened file, just display the desired portion of another file.
