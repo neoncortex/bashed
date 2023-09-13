@@ -775,6 +775,12 @@ function editwords {
 		[[ -f $local_words ]] \
 			&& local dict="$(cat "$local_words" | sed 's/\n/ /g')" \
 			&& words=(${words[@]} $dict)
+		if [[ $(type -t _edithiextract) == function ]]
+		then
+			local hiwords="$(_edithiextract "$f")"
+			[[ -n $hiwords ]] && words=(${words[@]} $hiwords)
+		fi
+
 		_editfzf 0 "${words[@]}"
 	else
 		return 2

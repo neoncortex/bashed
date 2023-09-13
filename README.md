@@ -593,6 +593,8 @@ Also, a file named with a file extension can be created, for example, sh, and wo
 
 Also, you can have a file called .bashed-words in a directory.  The words inside it will be presented when the opened file are from that directory.
 
+If the highlight module is available, it will also try to extract keywords from the langDefs highlight files, using the \_edithiextract function.  It will try to extract based on the extension, or it will use the type setted by the user using the ess function of the highligth module.
+
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call editwords;
@@ -990,3 +992,8 @@ ess a '' '' rewrite
 - ehidefs: highlight langDefs, by default, /usr/share/highlight/langDefs;
 - ehioutformat: highlight output format, by default, xterm256;
 - ehitheme: highlight theme, by default, camo;
+
+### Functions:
+- editshowhi, ess: show the file contents, and optionally set the type of the file;
+- \_edithiextract: extract keywords from the highlight langDefs file;
+

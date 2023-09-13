@@ -48,6 +48,55 @@ function editshowhi {
 	[[ $fn == $2 ]] && editshow $1 > /dev/null
 }
 
+function _edithiextract {
+	local file="${1:-$fn}"
+	file="$(readlink -f "$file")"
+	local dir="$ehidir/$(dirname "$file")"
+	local name="$(basename "$file")"
+	[[ -n $2 ]] && ehisyntax="$2"
+	local syntfile="$dir/${name}__syntax"
+	[[ -n $ehisyntax ]] && local hi_file="$ehidefs/${ehisyntax}.lang"
+	! [[ -f $hi_file ]] && hi_file=
+	if [[ -f $syntfile ]] && [[ -z $hi_file ]]
+	then
+		syntax="$(cat "$syntfile")"
+		local hi_file="$ehidefs/${syntax}.lang"
+	fi
+
+	if [[ -z $hi_file ]] && [[ -n $file ]]
+	then
+		local extension="${file/*.}"
+		[[ -n $extension ]] && hi_file="$ehidefs/${extension}.lang"
+		! [[ -f $hi_file ]] && hi_file=
+	fi
+
+	if [[ -f $hi_file ]]
+	then
+		local inside=0
+		local words=()
+		while read line
+		do
+			if [[ $line =~ List\ ?=\ ?\{ ]] || [[ $inside -eq 1 ]]
+			then
+				inside=1
+				[[ $line == } ]] && inside=0 && continue
+				local word="${line/List\=\{/}"
+				word="${word/List\ =\{/}"
+				word="${word/List\ =\ \{/}"
+				word="${word/List\=\ \{/}"
+				word="${word/List\=\{/}"
+				word="${word//\"/}"
+				word="${word//,/}"
+				word="${word//\}/}"
+				words+=($word)
+				[[ $line =~ },?$ ]] && inside=0
+			fi
+		done < "$hi_file"
+
+		echo "${words[@]}"
+	fi
+}
+
 function ess { editshowhi "$@"; }
 
 function _editshowhi {
