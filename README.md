@@ -81,6 +81,19 @@ In the first command, file will be opened, and the line 10 will be setted as the
 eq
 ````
 
+## Finding files:
+It is possible to search for file contents using editfilefind, or eff, for short:
+
+````
+eff content
+````
+
+It will search in the files on current directory for content using grep, and present the results in fzf.  To search recursively:
+
+````
+eff content r
+````
+
 ## Adding line:
 ### Append:
 ````

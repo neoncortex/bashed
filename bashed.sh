@@ -168,16 +168,12 @@ function editcmd {
 function _editarg {
 	[[ -z $1 ]] && return 1
 	argument="$1"
-	local session="$(tmux display-message -p '#S')" \
+	local session="$(tmux display-message -p '#S')"
 	local pane="$2"
-	pane="$session"
-	if [[ $argument =~ ^[0-9]+$ ]]
-	then
-		tmux send-keys -t "$pane" "es $argument" Enter
-	else
-		tmux send-keys -t "$pane" \
+	[[ $argument =~ ^[0-9]+$ ]] \
+		&& tmux send-keys -t "$pane" "es $argument" Enter \
+		|| tmux send-keys -t "$pane" \
 			"es \$(e \"/${argument}/n\" | cut -f1)" Enter
-	fi
 }
 
 function editopen {
@@ -280,6 +276,20 @@ $data"
 			echo "$fileresult"
 		fi
 	fi
+}
+
+function editfilefind {
+	[[ -z $1 ]] && return 1
+	local re="$2"
+	[[ $re == r ]] \
+		&& local files="$(grep -HinRIs "$1" ".")" \
+		|| local files="$(grep -HinIs "$1" ./*)"
+	[[ -z $files ]] && return 2
+	local res="$(echo "$files" | fzf-tmux -p $edfzfsize,$edfzfsize)"
+	local name="${res/:*/}"
+	local line="${res#*:}"
+	line="${line/:*/}"
+	[[ -n $name ]] && [[ -n $line ]] && editopen "$name:$line"
 }
 
 function editlocate {
@@ -811,6 +821,7 @@ function edel { editdelete "$@"; }
 function ee { editexternal "$@"; }
 function efl { editlocate "$@"; }
 function ef { editfind "$@"; }
+function eff { editfilefind "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
 function els { editspaces "$@"; }
@@ -941,6 +952,21 @@ function _editfind {
 
 complete -o nospace -o filenames -F _editfind editfind
 complete -o nospace -o filenames -F _editfind ef
+
+function _editfilefind {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		2)
+			COMPREPLY=($(compgen -o nosort -W "r" -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -f -- $cur))
+			;;
+	esac
+}
+
+complete -o nospace -o filenames -F _editfilefind editfilefind
+complete -o nospace -o filenames -F _editfilefind eff
 
 function _editjoin {
 	local cur=${COMP_WORDS[COMP_CWORD]}
