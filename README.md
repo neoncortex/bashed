@@ -122,12 +122,22 @@ ea 'another line of text.'
 
 The text will be appended after the current focused line.  Without arguments, a blank line will be added.
 
+It also accepts piped text:
+````
+echo some text | ea
+````
+
 ### Insert:
 ````
 ei line of text.
 ````
 
 The text will be inserted in the current line - 1.
+
+It also accepts piped text:
+````
+echo some text | ei
+````
 
 ## Deleting:
 ### Deleting line:
@@ -158,6 +168,12 @@ You can also use echl, that will change only the current line of the current fil
 
 ````
 echl new content.
+````
+
+Both accepts piped text:
+````
+echo some text | ech
+echo some text | echl
 ````
 
 ## Copying:

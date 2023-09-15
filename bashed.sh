@@ -541,6 +541,8 @@ function editappend {
 	[[ -z $fn ]] && return 1
 	[[ -z $fl ]] && return 2
 	local data="$@"
+	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ -z $data ]] && return 3
 	local line=$fl
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
@@ -584,6 +586,8 @@ function editchange {
 	[[ -z $from ]] && return 2
 	from="$(_editline "$from" "$f")"
 	local data="$3"
+	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ -z $data ]] && return 3
 	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}c\n$data\n.\nw" "$f")" \
@@ -602,6 +606,8 @@ function editchangeline {
 	[[ -z $1 ]] && return 2
 	[[ -z $fl ]] && return 3
 	local data="$@"
+	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ -z $data ]] && return 4
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editshow l
@@ -662,7 +668,8 @@ function editmove {
 	[[ -z $1 ]] && from="$((from + 1))"
 	from="$(_editline "$from" "$f")"
 	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
-	local dest="$(_editline "$3" "$f")"
+	local dest="$3"
+	[[ $dest -ne 0 ]] && dest="$(_editline "$3" "$f")"
 	[[ -z $dest ]] && return 3
 	[[ -n $to ]] \
 		&& local res="$(edit "$from,${to}m$dest\nw" "$f")" \
@@ -682,8 +689,9 @@ function edittransfer {
 	from="$(_editline "$from" "$f")"
 	[[ -z $from ]] && return 2
 	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
-	[[ -n $3 ]] && local dest="$(_editline "$3" "$f")"
-	if [[ $dest -gt 0 ]]
+	local dest="$3"
+	[[ $dest -ne 0 ]] && dest="$(_editline "$3" "$f")"
+	if [[ $dest -ge 0 ]]
 	then
 		[[ -n $to ]] \
 			&& local res="$(edcmd=p edit "$from,${to}t$dest\nw" "$f")" \
@@ -692,7 +700,7 @@ function edittransfer {
 		[[ $f == $fn ]] \
 			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
 			&& [[ $fl -gt $fs ]] && fl="$fs"
-	elif [[ $dest -eq 0 ]] && [[ -n $to ]]
+	elif [[ -z $dest ]] && [[ -n $to ]]
 	then
 		yank="$(editprint $from,$to "$f")"
 	else
