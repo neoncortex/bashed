@@ -295,7 +295,7 @@ ec start-line end-line "fmt -w 80"
 ````
 
 ## Checking indentation:
-You can check how many tabs there is at the beginning of a line using:
+You can check how many tabs and spaces there is at the beginning of a line using:
 
 ````
 el
@@ -304,17 +304,6 @@ el
 Optionally, a line and a file can be specified:
 ````
 el line? file?
-````
-
-And how many spaces using:
-
-````
-els
-````
-
-And the optional line and file:
-````
-els line? file?
 ````
 
 ## Navigation:

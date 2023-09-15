@@ -710,7 +710,7 @@ function edittransfer {
 	return 0
 }
 
-function _editindent {
+function editlevel {
 	[[ -z $3 ]] && return 3
 	local f="${2:-$fn}"
 	[[ -n $2 ]] && f="$(readlink -f "$f")"
@@ -721,22 +721,31 @@ function _editindent {
 	local line="$(ep $from "$f")"
 	if [[ -n $line ]]
 	then
-		[[ $3 -eq 1 ]] \
-			&& printf -- '%s' "$line" | awk -F '[ ]' '{ print NF-1 }' \
-			|| printf -- '%s' "$line" | awk -F '\t' '{ print NF-1 }'
+		local spaces=0
+		local tabs=0
+		local res
+		while true
+		do
+			[[ ${line:0:1} == $' ' ]] \
+				&& spaces=$((spaces + 1)) \
+				&& res="$res[space]" \
+				&& line="${line/ /}"
+			[[ ${line:0:1} == $'\t' ]] \
+				&& tabs=$((tabs + 1)) \
+				&& res="$res[tab]" \
+				&& line="${line/$'\t'/}"
+			[[ ${line:0:1} != $' ' ]] \
+				&& [[ ${line:0:1} != $'\t' ]] \
+				&& break
+		done
+
+		echo "spaces: $spaces, tabs: $tabs"
+		[[ -n $res ]] && echo "$res"
 	else
 		return 4
 	fi
 
 	return 0
-}
-
-function editlevel {
-	_editindent "${1:-$fl}" "${2:-$fn}" 0
-}
-
-function editspaces {
-	_editindent "${1:-$fl}" "${2:-$fn}" 1
 }
 
 function editexternal {
