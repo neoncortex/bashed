@@ -617,13 +617,12 @@ The functions are:
 - editfind, ef: find text;
 - editinsert, ei: insert line;
 - editjoin, ej: join lines;
-- editlevel, el: count tab indentation;
+- editlevel, el: count tab and space indentation;
 - editlocate, efl: find line;
 - editmove, em: move lines;
 - editopen, eo: open file;
 - editpaste, epaste: paste text from the temporary location, or clipboard;
 - editshow, es: show file text in various ways;
-- editspaces, els: count space indentation;
 - editstore, et: store a version of file;
 - editsub, esu; substitution;
 - etermbin, paste in termbin;
