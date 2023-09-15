@@ -107,14 +107,13 @@ function editclipboard {
 		[[ -z $2 ]] && return 7
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] && return 8
-		local line="$fl"
-		[[ -n $3 ]] && line="$3"
+		local line="${3:-$fl}"
 		[[ -n $4 ]] && filename="$4" \
 			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] && return 9
 		[[ -z $line ]] && return 10
-		editcopy 1 '$' "$edclipdir/$clipfile"
-		editpaste "$line" "$filename"
+		editcopy 1 '$' '' '' "$edclipdir/$clipfile"
+		editpaste "$line" '' "$filename"
 	elif [[ $1 == cut ]] || [[ $1 == x ]]
 	then
 		local region="$fl"

@@ -66,7 +66,7 @@ eo file u
 
 Also, you can subdivide an existing pane.  Lets say you window have two panes, and you want to subdivide the unfocused pane, then: ul, for subdivide the upper pane, and open in the left, ur, for subdividing the upper pane, and open on the right, lu, for subdivide the left pane, and open on the top, ld, for subdivide the left pane, and open on the bottom, rl and rd does the same as lu and ld, but for the right pane, and dl and dr does the same as ul and ur, but for the bottom pane.
 
-### Arguments:
+### File arguments:
 Files can be opened with arguments. These arguments can specify a line, or a string.  Examples:
 
 ````
@@ -106,6 +106,13 @@ Or recursively:
 eff content r l
 ````
 
+## Specifying lines to edit:
+Lines can be referenced like the following:
+- a . is the current line of a opened file;
+- +n is the current line + n lines, for example, +2;
+- -n is the current line - n lines, for example, -2;
+- $ is the last line;
+
 ## Adding line:
 ### Append:
 ````
@@ -128,77 +135,44 @@ The text will be inserted in the current line - 1.
 edel
 ````
 
+Without any arguments, edel will delete the current line of the current file.
+
 ### Deleting range:
 ````
-edel n
+edel start-line end-line file?
 ````
 
-Where n is the end line.  The lines from the current line to n will be deleted.  n can also be specified in the format +n, like:
+ The lines from the start-line to end-line will be deleted.
 
-````
-edel +n
-````
-
-That will delete the text from current line, to the text +n line.  Examples:
-
-````
-edel 2
-edel 5,10
-edel 10,+2
-````
+file is optional, if given, the text in that file will be deleted. 
 
 ## Changing:
 ### Changing line:
 ````
-ech "new text."
+ech start-line end-line "new text." file?
 ````
 
-Will change the current line to "new text.".
+Will change the the lines to "new text.".  file is optional, if given, the text in that file will be changed.
 
-You can also use echl, that will change only the current line, but it will autocomplete the current line contents.
+You can also use echl, that will change only the current line of the current file, but it will autocomplete the current line contents.
 
 ````
 echl new content.
 ````
 
-### Changing range:
-````
-ech "new text." n
-````
-
-Will change the text from the current line, to the n line, to "new text.".  For example:
-
-````
-ech "new text." 5
-ech "changed." +2
-````
-
 ## Copying:
 ### Copy line:
 ````
-ey n
+ey start-line end-line dest-line file?
 ````
 
-The current line will be copied to line n.
-
-### Copy range:
-````
-ey a b
-````
-
-The current line, to b, will be copied to line n.  For example:
-
-````
-ey 1 5
-````
-
-The current line, to line 5, will be copied to the line 1.  The second argument (5, in last case), can be set using +, like +5.
+The lines from start-line to end-line will be copied to the dest-line.
 
 ### Yank:
 Lines can be "yanked" like follows:
 
 ````
-ey ''
+ey start-line end-line
 ````
 
 This will copy the current line to the variable $yank.
@@ -209,7 +183,7 @@ ecopy and epaste are two functinos that allows to copy and paste a portion of a 
 ### ecopy:
 ecopy works that way:
 ````
-ecopy start end x|y
+ecopy start-line end-line [x|w]? cut? file?
 ````
 
 For example, to copy the current line:
@@ -261,84 +235,25 @@ ej
 Will join the current line with the next.
 
 ### Joining range:
-ej can receiva an argument, n, or +n
-
 ````
-ej 2
-ej +2
+ej start-line end-line file?
 ````
 
-That will join from the current line to line 2, and from the current line + 2 lines, respectively.
+That will join from the start-line to the end-line.
 
 ## Moving:
-Can receive a number, (+|-)n, or $ as its argument.
-
-### Moving line:
 ````
-em 2
+em start-line end-line dest-line file?
 ````
 
-Will move the current line to line 2.
-
-### Moving range:
-````
-em 2 10
-````
-
-Will move lines from the current line, to the line 10, to line 2
-
-````
-em 2 +5
-````
-
-Will move the current line, plus the five subsequent lines, to the line 2.
+Will move from start-line to end-line, to the dest-line.
 
 ## Substitution:
-### Substitution on current line:
 ````
-esu "a" "b"
-````
-
-Can receive the g argument, like:
-
-````
-esu "a" "b" '' g
+esu start-line end-line "regex-src" "result" g? file?
 ````
 
-To replace every ocurrence.
-
-### Substition on range:
-````
-esu "a" "b" n
-````
-
-Will substitute "a" for "b" from the current line, to the line n.  n can be setted with +, like:
-
-````
-esu "a" "b" +n
-````
-
-It can also receive the g argument:
-
-````
-esu "a" "b" n g
-````
-
-Examples:
-````
-esu "a" "b" 10
-esu "a" "b" +5
-esu "a" "b" +5 g
-````
-
-#### Substitution on the entire file:
-The third argument can be %, like:
-````
-esu "a" "b" %
-esu "a" "b" % g
-````
-
-That will execute the substitution on the entire file.
+The g argument, and the file argument are optional.  g will make every ocurrence of "a" to be substitued with "b" in the specified range of lines, and file will make the substition in that file istead of the current file.
 
 ## Searching:
 The most common searching mechanism would be:
@@ -355,29 +270,12 @@ If a second argument fz is passed, the results will be presented in fzf, and if 
 Shell commands can be applied to a region using ec:
 
 ````
-ec 1 10 fmt
-````
-
-To apply a command to one line only, do:
-````
-ec 10 10 fmt
+ec start-line end-line command
 ````
 
 Commands with spaces should be:
 ````
-ec 1 10 "fmt -w 80"
-````
-
-ec can receive +n, -n, ., and $, to represent lines.  For example, to apply a command from the current line to last:
-
-````
-ec . $ fmt
-````
-
-Or from the current line, + 2 lines:
-
-````
-ec . +2 fmt
+ec start-line end-line "fmt -w 80"
 ````
 
 ## Checking indentation:
@@ -387,10 +285,20 @@ You can check how many tabs there is at the beginning of a line using:
 el
 ````
 
+Optionally, a line and a file can be specified:
+````
+el line? file?
+````
+
 And how many spaces using:
 
 ````
 els
+````
+
+And the optional line and file:
+````
+els line? file?
 ````
 
 ## Navigation:
@@ -592,10 +500,8 @@ You can edit the variable edcolor, to change the text color.  It does ANSI escap
 You can edit a region of the text usin $EDITOR.  For example, to edit the current line:
 
 ````
-ee . .
+ee . . file?
 ````
-
-Yo can use $, or (+|-)n, and so on.
 
 ## Termbin:
 You can paste a region of the text in termbin by using the function etermbin.  For example, to paste the line 10:
@@ -724,8 +630,8 @@ The functions are:
 There are other functions that are used internally by the ones above:
 - \_editarg: parse the arguments of a file;
 - \_editfzf: display fzf selection interfaces;
+- \_editindent: count tabs, or spaces, at the beginning of the line;
 - \_editline: calculate line numbers;
-- \_editread, er: read a region of file, and store in ~/.edit/readlines
 - \_editwindow: open/find windows;
 
 Also, some functions will come in pairs, for example: editappend, and \_editappend.  These \_functions are used for auto completing the arguments of the functions, and should not be called directly.

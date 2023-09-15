@@ -67,35 +67,9 @@ function edit {
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 }
 
-function _editread {
-	if [[ $1 != 0 ]] && [[ $2 != 0 ]] && [[ $3 != 0 ]]
-	then
-		[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
-		[[ -z $fn ]] && return 1
-		[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-		local lines=
-		edit "${1},${2}p" "$fn" > "$editreadlines"
-	fi
-
-	if [[ -n $4 ]] && [[ -f $editreadlines ]]
-	then
-		local res=
-		if [[ -n $5 ]]
-		then
-			local f="$5" && f="$(readlink -f "$f")"
-			[[ -z $f ]] && return 1
-			[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
-			res="$(edit "${4}r $editreadlines\nw" "$f")"
-		else
-			res="$(edit "${4}r $editreadlines\nw")"
-		fi
-
-		[[ -n $res ]] && echo "$res"
-	fi
-}
-
 function _editline {
 	local l="${1:-$fl}"
+	[[ -n $2 ]] && local fs="$(wc -l "$2" | cut -d ' ' -f1)"
 	[[ -z $l ]] && return 1
 	if [[ -n $fl ]]
 	then
@@ -125,13 +99,13 @@ function editcopy {
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] && return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
-	s="$(_editline "$s")"
-	e="$(_editline "$e")"
-	_editread $s $e "$fn"
+	s="$(_editline "$s" "$f")"
+	e="$(_editline "$e" "$f")"
+	local res="$(edit "${s},${e}p" "$f" > "$editreadlines")"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
-	[[ $4 == cut ]] && editdelete $e "$f"
-	[[ $f == $fn ]] && es l || es l $f
+	[[ $4 == cut ]] && editdelete $s $e "$f"
+	[[ $f == $fn ]] && es l
 }
 
 function editpaste {
@@ -140,11 +114,11 @@ function editpaste {
 	local f="${3:-$fn}"
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] && return 1
-	s="$(_editline "$s")"
+	s="$(_editline "$s" "$f")"
 	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
 	[[ $2 == w ]] && wl-paste > "$editreadlines"
-	[[ $2 != x ]] && [[ $2 != w ]] && _editread 0 0 0 $s "$f"
-	[[ $f == $fn ]] && es "$((s+1))" || es l $f
+	[[ $2 != x ]] && local res="$(edit "${s}r $editreadlines\nw" "$f")"
+	[[ $f == $fn ]] && es "$((s+1))"
 }
 
 function editcmd {
@@ -155,14 +129,14 @@ function editcmd {
 	[[ -z $2 ]] && return 4
 	local begin="$(_editline "$1")"
 	local end="$(_editline "$2")"
-	local region="$(editcopy $begin $end "$fn")"
+	local region="$(editcopy $begin $end '' '' "$fn")"
 	[[ $? -ne 0 ]] && return $?
 	local tempfile="$editdir/temp"
 	cat "$editreadlines" | $3 > "$tempfile"
 	mv "$tempfile" "$editreadlines"
 	local res="$(edit "$begin,${end}d\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
-	editpaste $(($begin - 1)) "$fn"
+	editpaste $(($begin - 1)) '' "$fn"
 }
 
 function _editarg {
@@ -280,8 +254,7 @@ $data"
 
 function editfilefind {
 	[[ -z $1 ]] && return 1
-	local re="$2"
-	[[ $re == r ]] \
+	[[ $2 == r ]] \
 		&& local files="$(grep -HinRIs "$1" ".")" \
 		|| local files="$(grep -HinIs "$1" ./*)"
 	[[ -z $files ]] && return 2
@@ -583,30 +556,45 @@ function editinsert {
 }
 
 function editdelete {
-	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $fl ]] && return 2
-	[[ -n $1 ]] && local to="$(_editline "$1")"
-	local res=
-	[[ -z $to ]] && res="$(edit "${fl}d\nw" "$fn")" \
-		|| res="$(edit "${fl},${to}d\nw" "$fn")"
+	local f="${3:-$fn}"
+	[[ -n $3 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	[[ -z $from ]] && return 2
+	from="$(_editline "$from" "$f")"
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ -z $to ]] \
+		&& local res="$(edit "${from}d\nw" "$f")" \
+		|| local res="$(edit "${from},${to}d\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
-	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
-	[[ $fl -gt $fs ]] && fl="$fs"
+	if [[ $f == $fn ]]
+	then
+		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+		[[ $fl -gt $fs ]] && fl="$fs"
+	fi
+
+	return 0
 }
 
 function editchange {
-	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	[[ -z $fl ]] && return 3
-	local data="$1"
-	[[ -n $2 ]] && local to="$(_editline "$2")"
-	local res=
-	[[ -z $to ]] && res="$(edit "${fl}c\n$data\n.\nw" "$fn")" \
-		|| res="$(edit "${fl},${to}c\n$data\n.\nw" "$fn")"
+	local f="${4:-$fn}"
+	[[ -n $4 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	[[ -z $from ]] && return 2
+	from="$(_editline "$from" "$f")"
+	local data="$3"
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ -z $to ]] \
+		&& local res="$(edit "${from}c\n$data\n.\nw" "$f")" \
+		|| local res="$(edit "${from},${to}c\n$data\n.\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
-	[[ -z $to ]] && editshow l || editshow ${fl},$to
+	if [[ $f == $fn ]]
+	then
+		[[ -z $to ]] && editshow l || editshow $from,$to
+	fi
+
+	return 0
 }
 
 function editchangeline {
@@ -620,131 +608,148 @@ function editchangeline {
 }
 
 function editsub {
-	[[ -n $5 ]] && local fn="$4" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	[[ -n $3 ]] && local to="$(_editline "$3")"
-	local in="$1"
-	local out="$2"
+	local f="${6:-$fn}"
+	[[ -n $6 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	[[ -z $from ]] && return 2
+	from="$(_editline "$from" "$f")"
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	local in="$3"
+	local out="$4"
 	in="${in//\\\\/\\\\\\\\}"
 	in="${in//\\N/\\\\\\n}"
 	out="${out//\\\\/\\\\\\\\}"
 	out="${out//\\N/\\\\\\n}"
 	local pattern="s/$in/$out/"
-	[[ $4 == "g" ]] && pattern="${pattern}g"
+	[[ $5 == "g" ]] && pattern="${pattern}g"
 	local res=
 	if [[ -z $to ]] || [[ $to == " " ]]
 	then
-		res="$(edit "$fl$pattern\nw" "$fn")"
+		res="$(edit "$from$pattern\nw" "$f")"
 	else
-		local lines="${fl},${to}"
-		[[ $3 == "%" ]] && lines="1,${fs}"
-		res="$(edit "$lines$pattern\nw" "$fn")"
+		res="$(edit "$from,$to$pattern\nw" "$f")"
 	fi
 
 	[[ -n $res ]] && echo "$res"
-	editshow l
+	[[ $f == $fn ]] && editshow l
+	return 0
 }
 
 function editjoin {
-	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $fl ]] && return 2
-	local l=
-	[[ -z $1 ]] && l="$((fl + 1))"
-	l="$(_editline "$l")"
-	local res=
-	[[ -n $l ]] && res="$(edit "${fl},${l}j\nw" "$fn")" && editshow ${fl}
+	local f="${3:-$fn}"
+	[[ -n $3 ]] && local f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	[[ -z $from ]] && return 2
+	[[ -z $1 ]] && from="$((from + 1))"
+	from="$(_editline "$from" "$f")"
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	local res="$(edit "$from,${to}j\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
+	[[ $f == $fn ]] \
+		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
+		&& [[ $fl -gt $fs ]] && fl="$fs"
+	return 0
 }
 
 function editmove {
-	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $fl ]] && return 2
-	local dest="$1"
-	[[ -z $1 ]] && dest="$((fl + 1))"
-	dest="$(_editline "$dest")"
-	[[ $dest -gt $fs ]] && return 3
-	[[ $dest -lt 1 ]] && return 4
-	[[ -n $2 ]] && local to="$(_editline "$2")"
-	local res=
-	[[ -n $to ]] && res="$(edit "${fl},${to}m$dest\nw" "$fn")" \
-		|| res="$(edit "${fl}m$dest\nw" "$fn")"
+	local f="${4:-$fn}"
+	[[ -n $4 ]] && local f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	[[ -z $from ]] && return 2
+	[[ -z $1 ]] && from="$((from + 1))"
+	from="$(_editline "$from" "$f")"
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	local dest="$(_editline "$3" "$f")"
+	[[ -z $dest ]] && return 3
+	[[ -n $to ]] \
+		&& local res="$(edit "$from,${to}m$dest\nw" "$f")" \
+		|| local res="$(edit "${from}m$dest\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
+	[[ $f == $fn ]] \
+		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
+		&& [[ $fl -gt $fs ]] && fl="$fs"
+	return 0
 }
 
 function edittransfer {
-	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	yank=
-	local line="$(_editline "$1")"
-	local n=
-	[[ -n $2 ]] && n="$(_editline "$2")"
-	if [[ $line -gt 0 ]]
+	local f="${4:-$fn}"
+	[[ -n $4 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	from="$(_editline "$from" "$f")"
+	[[ -z $from ]] && return 2
+	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ -n $3 ]] && local dest="$(_editline "$3" "$f")"
+	if [[ $dest -gt 0 ]]
 	then
-		local res=
-		[[ -n $n ]] && res="$(edcmd=p edit "${fl},${n}t$line\nw" "$fn")" \
-			|| res="$(edcmd=p edit "${fl}t$line\nw" "$fn")"
+		[[ -n $to ]] \
+			&& local res="$(edcmd=p edit "$from,${to}t$dest\nw" "$f")" \
+			|| local res="$(edcmd=p edit "${from}t$dest\nw" "$f")"
 		[[ -n $res ]] && echo "$res"
-		es $n
-	elif [[ $1 -eq 0 ]] && [[ -n $n ]]
+		[[ $f == $fn ]] \
+			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
+			&& [[ $fl -gt $fs ]] && fl="$fs"
+	elif [[ $dest -eq 0 ]] && [[ -n $to ]]
 	then
-		yank="$(editprint ${fl},$n)"
+		yank="$(editprint $from,$to "$f")"
 	else
-		yank="$(editprint l)"
+		yank="$(editprint $from "$f")"
 	fi
+
+	return 0
+}
+
+function _editindent {
+	[[ -z $3 ]] && return 3
+	local f="${2:-$fn}"
+	[[ -n $2 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	from="$(_editline "$from" "$f")"
+	[[ -z $from ]] && return 2
+	local line="$(ep $from "$f")"
+	if [[ -n $line ]]
+	then
+		[[ $3 -eq 1 ]] \
+			&& printf -- '%s' "$line" | awk -F '[ ]' '{ print NF-1 }' \
+			|| printf -- '%s' "$line" | awk -F '\t' '{ print NF-1 }'
+	else
+		return 4
+	fi
+
+	return 0
 }
 
 function editlevel {
-	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	local line=
-	[[ -n $1 ]] \
-		&& line="$(es $1)" \
-		|| line="$(es l)"
-	[[ -n $line ]] && echo "$line" | awk -F '\t' '{ print NF-1 }' || return 1
+	_editindent "${1:-$fl}" "${2:-$fn}" 0
 }
 
 function editspaces {
-	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	local n=0
-	local line=
-	[[ -n $1 ]] \
-		&& line="$(es $1)" \
-		|| line="$(es l)"
-	[[ -z $line ]] && return 3
-	while true
-	do
-		if [[ $line =~ ^\  ]]
-		then
-			n="$((n + 1))"
-			line="${line/ /}"
-		else
-			break	
-		fi
-	done
-
-	echo "$n"
+	_editindent "${1:-$fl}" "${2:-$fn}" 1
 }
 
 function editexternal {
-	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
-	[[ -z $1 ]] && return 2
-	[[ -z $2 ]] && return 3
-	local begin="$(_editline "$1")"
-	local end="$(_editline "$2")"
-	local region="$(editcopy $begin $end "$fn")"
-	[[ -z $begin ]] || [[ -z $end ]] && return 2
+	local f="${3:-$fn}"
+	[[ -n $3 ]] && f="$(readlink -f "$f")"
+	[[ -z $f ]] && return 1
+	local from="${1:-$fl}"
+	from="$(_editline "$from" "$f")"
+	[[ -z $from ]] && return 2
+	local to="${2:-$fl}"
+	to="$(_editline "$to" "$f")"
+	[[ -z $to ]] && return 3
+	editcopy $from $to '' '' "$f"
 	$EDITOR "$editreadlines"
-	local res="$(edit "${begin},${end}d\nw" "$fn")"
+	local res="$(edit "$from,${to}d\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
-	_editread 0 0 "$fn" $(($begin - 1))
+	editpaste $(($from - 1)) '' "$f"
+	[[ $f == $fn ]] \
+		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
+		&& [[ $fl -gt $fs ]] && fl="$fs"
+	return 0
 }
 
 function etermbin {
@@ -860,6 +865,24 @@ function _editchangeline {
 complete -o nospace -o filenames -o nosort -F _editchangeline editchangeline
 complete -o nospace -o filenames -o nosort -F _editchangeline echl
 
+function _editchange {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "$ + - ." -- $cur))
+			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "$ + - ." -- $cur))
+			;;
+		*)
+			COMPREPLY=($(compgen -f -- $cur))
+			;;
+	esac
+}
+
+complete -o nospace -o filenames -F _editchange editchange
+complete -o nospace -o filenames -F _editchange ech
+
 function _edcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
@@ -909,6 +932,9 @@ function _editdelete {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
+			;;
+		2)
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
@@ -978,6 +1004,9 @@ function _editjoin {
 		1)
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
+		2)
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
+			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
@@ -994,6 +1023,9 @@ function _editmove {
 			COMPREPLY=($(compgen -o nosort -W "$ + -" -- $cur))
 			;;
 		2)
+			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
+			;;
+		3)
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
@@ -1064,11 +1096,14 @@ complete -o nospace -o filenames -F _editpaste epaste
 function _editsub {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
-		3)
-			COMPREPLY=($(compgen -W "% \'\'"))
+		1)
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
-		4)
-			COMPREPLY=($(compgen -W "g \'\'"))
+		2)
+			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
+			;;
+		5)
+			COMPREPLY=($(compgen -W "g"))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))
