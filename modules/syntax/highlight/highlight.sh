@@ -7,10 +7,14 @@ ehitheme=camo
 mkdir -p "$ehidir"
 
 function editshowhi {
-	[[ -z $1 ]] && return 1
+	[[ -z $1 ]] \
+		&& >&2 echo "editshowhi: no argument" \
+		&& return 2
 	local file="${2:-$fn}"
 	file="$(readlink -f "$file")"
-	[[ -z $file ]] && return 2
+	[[ -z $file ]] \
+		&& >&2 echo "editshowhi: no file" \
+		&& return 1
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
 	mkdir -p "$dir"
@@ -46,11 +50,15 @@ function editshowhi {
 	editshow $1 "$dir/$name"
 	[[ -z $2 ]] && editshow $1 > /dev/null
 	[[ $fn == $2 ]] && editshow $1 > /dev/null
+	return 0
 }
 
 function _edithiextract {
 	local file="${1:-$fn}"
 	file="$(readlink -f "$file")"
+	[[ -z $file ]] \
+		&& >&2 echo "_edithiextract: no file" \
+		&& return 1
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
 	[[ -n $2 ]] && ehisyntax="$2"

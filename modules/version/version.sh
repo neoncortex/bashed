@@ -5,7 +5,9 @@ diffarg="--color -c"
 
 function editstore {
 	[[ -n $1  ]] && local fn="$1" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
+	[[ -z $fn ]] \
+		&& >&2 echo "editstore: no file" \
+		&& return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 	local dir="$editversiondir/$(dirname "$fn")"
@@ -16,7 +18,9 @@ function editstore {
 
 function editundo {
 	[[ -n $4  ]] && local fn="$4" && fn="$(readlink -f "$fn")"
-	[[ -z $fn ]] && return 1
+	[[ -z $fn ]] \
+		&& >&2 echo "editundo: no file" \
+		&& return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local dir="$editversiondir/$(dirname "$fn")"
 	local files=()
@@ -39,7 +43,9 @@ function editundo {
 		shopt -u dotglob
 	fi
 
-	[[ ${#files[@]} -eq 0 ]] && return 2
+	[[ ${#files[@]} -eq 0 ]] \
+		&& >&2 echo "editundo: no files" \
+		&& return 2
 	if [[ $1 == l ]] || [[ $1 == list ]]
 	then
 		local n=1
@@ -63,7 +69,9 @@ function editundo {
 		fi
 	elif [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
-		[[ -z $2 ]] && return 3
+		[[ -z $2 ]] \
+			&& >&2 echo "editundo: delete: no start file" \
+			&& return 3
 		local head="$2"
 		local tail="$3"
 		[[ -z $3 ]] && tail="$2"
@@ -88,7 +96,9 @@ function editundo {
 		fi
 	elif [[ $1 == diff ]]
 	then
-		[[ -z $2 ]] && [[ -z $3 ]] && return 4
+		[[ -z $2 ]] && [[ -z $3 ]] \
+			&& >&2 echo "editundo: diff: no files" \
+			&& return 4
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -121,7 +131,9 @@ function editundo {
 		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
-		[[ -z $2 ]] && return 5
+		[[ -z $2 ]] \
+			&& >&2 echo "editundo: es: no filename" \
+			&& return 5
 		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
 	then
@@ -133,7 +145,9 @@ function editundo {
 		fi
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
-		[[ -z $2 ]] && return 6
+		[[ -z $2 ]] \
+			&& >&2 echo "editundo: print: no filename" \
+			&& return 6
 		[[ -f ${files[$2]} ]] \
 			&& editshow a "${files[$2]}"
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
@@ -146,7 +160,9 @@ function editundo {
 		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
-		[[ -z $2 ]] && [[ -z $3 ]] && return 7
+		[[ -z $2 ]] && [[ -z $3 ]] \
+			&& >&2 echo "editundo: copy: no file names" \
+			&& return 7
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -159,7 +175,9 @@ function editundo {
 		fi
 	elif [[ $1 == copycurses ]] || [[ $1 == cpu ]]
 	then
-		[[ -z $2 ]] && return 8
+		[[ -z $2 ]] \
+			&& >&2 echo "editundo: copycurses: no destiny" \
+			&& return 8
 		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
 		if [[ -n $e_uresult ]]
 		then
