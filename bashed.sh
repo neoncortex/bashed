@@ -65,7 +65,6 @@ function edit {
 	[[ -z $1 ]] \
 		&& >&2 echo "edit: no command" \
 		&& return 2
-	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	result="$(echo -e "$1" | ed -s "$fn")"
 	echo "$result"
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
@@ -73,10 +72,20 @@ function edit {
 
 function _editline {
 	local l="${1:-$fl}"
-	[[ -n $2 ]] && local fs="$(wc -l "$2" | cut -d ' ' -f1)"
 	[[ -z $l ]] \
 		&& >&2 echo "_editline: no line" \
 		&& return 1
+	! [[ $l == . ]] \
+		&& ! [[ $l == $ ]] \
+		&& ! [[ $l =~ ^\+$ ]] \
+		&& ! [[ $l =~ ^\-$ ]] \
+		&& ! [[ $l =~ ^(\-|\+)?[0-9]+$ ]] \
+		&& >&2 echo "_editline: cant parse line" \
+		&& return 2
+	[[ -n $2 ]] && local fs="$(wc -l "$2" | cut -d ' ' -f1)"
+	[[ -z $fs ]] \
+		&& >&2 echo "_editline: file size is 0" \
+		&& return 3
 	if [[ -n $fl ]]
 	then
 		[[ $l == "." ]] && l="$fl"
@@ -84,16 +93,13 @@ function _editline {
 		[[ $l =~ ^\- ]] && l="${l/-/}" && l="$((fl - l))"
 		[[ $l =~ ^\-[0-9]+ ]] && l="${l/-/}" && l="$((fl - l))"
 		[[ $l =~ ^\+[0-9]+ ]] && l="${l/+/}" && l="$((fl + l))"
-	fi
-
-	if [[ -n $fs ]]
-	then
 		[[ $l == "$" ]] && l="$fs"
 		[[ $l -gt $fs ]] && l=$fs
 	fi
 
 	[[ $l -lt 1 ]] && l=1
 	echo "$l"
+	return 0
 }
 
 function editcopy {
@@ -111,7 +117,13 @@ function editcopy {
 		&& >&2 echo "editcopy: no file" \
 		&& return 1
 	s="$(_editline "$s" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editcopy: start line not recognized" \
+		&& return 4
 	e="$(_editline "$e" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editcopy: end line not recognized" \
+		&& return 5
 	local res="$(edit "${s},${e}p" "$f" > "$editreadlines")"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
@@ -130,6 +142,9 @@ function editpaste {
 		&& >&2 echo "editpaste: no file" \
 		&& return 1
 	s="$(_editline "$s" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editpaste: start line not recognized" \
+		&& return 3
 	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
 	[[ $2 == w ]] && wl-paste > "$editreadlines"
 	[[ $2 != x ]] && local res="$(edit "${s}r $editreadlines\nw" "$f")"
@@ -151,7 +166,13 @@ function editcmd {
 		&& >&2 echo "editcmd: no end line" \
 		&& return 4
 	local begin="$(_editline "$1")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editcmd: start line not recognized" \
+		&& return 5
 	local end="$(_editline "$2")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editcmd: end line not recognized" \
+		&& return 6
 	local region="$(editcopy $begin $end '' '' "$fn")"
 	[[ $? -ne 0 ]] && return $?
 	local tempfile="$editdir/temp"
@@ -460,11 +481,20 @@ function editshow {
 			local head="${arg/,*/}"
 			local tail="${arg/*,/}"
 			head="$(_editline "$head")"
+			[[ $? -ne 0 ]] \
+				&& >&2 echo "editshow: start line not recognized" \
+				&& return 4
 			tail="$(_editline "$tail")"
+			[[ $? -ne 0 ]] \
+				&& >&2 echo "editshow: end line not recognized" \
+				&& return 5
 			show="edit ${head},${tail}$edcmd"
 			fl="$tail"
 		else
 			arg="$(_editline "$arg")"
+			[[ $? -ne 0 ]] \
+				&& >&2 echo "editshow: line not recognized" \
+				&& return 6
 			show="edit ${arg}$edcmd"
 			fl="$arg"
 		fi
@@ -591,9 +621,6 @@ function editappend {
 		&& return 2
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
-	[[ -z $data ]] \
-		&& >&2 echo "editappend: no data" \
-		&& return 3
 	local line=$fl
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
@@ -621,7 +648,14 @@ function editdelete {
 		&& >&2 echo "editdelete: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editdelete: start line not recognized" \
+		&& return 3
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $to ]] \
+		&& >&2 echo "editdelete: end line not recognized" \
+		&& return 4
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}d\nw" "$f")" \
 		|| local res="$(edit "${from},${to}d\nw" "$f")"
@@ -646,10 +680,16 @@ function editchange {
 		&& >&2 echo "editchange: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editchange: start line not recognized" \
+		&& return 3
 	local data="$3"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
-	[[ -z $data ]] && return 3
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $to ]] \
+		&& >&2 echo "editchange: end line not recognized" \
+		&& return 4
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}c\n$data\n.\nw" "$f")" \
 		|| local res="$(edit "${from},${to}c\n$data\n.\nw" "$f")"
@@ -674,9 +714,6 @@ function editchangeline {
 		&& return 3
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
-	[[ -z $data ]] \
-		&& >&2 echo "editchangeline: no data" \
-		&& return 4
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && echo "$res"
 	editshow l
@@ -693,8 +730,18 @@ function editsub {
 		&& >&2 echo "editsub: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editsub: start line not recognized" \
+		&& return 3
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $to ]] \
+		&& >&2 echo "editsub: end line not recognized" \
+		&& return 4
 	local in="$3"
+	[[ -z $in ]] \
+		&& >&2 echo "editsub: missing regex" \
+		&& return 5
 	local out="$4"
 	in="${in//\\\\/\\\\\\\\}"
 	in="${in//\\N/\\\\\\n}"
@@ -725,9 +772,16 @@ function editjoin {
 	[[ -z $from ]] \
 		&& >&2 echo "editjoin: no start line" \
 		&& return 2
-	[[ -z $1 ]] && from="$((from + 1))"
 	from="$(_editline "$from" "$f")"
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editjoin: start line not recognized" \
+		&& return 3
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $to ]] \
+		&& >&2 echo "editjoin: end line not recognized" \
+		&& return 4
+	[[ -z $to ]] && local to="$((from + 1))"
 	local res="$(edit "$from,${to}j\nw" "$f")"
 	[[ -n $res ]] && echo "$res"
 	[[ $f == $fn ]] \
@@ -748,12 +802,19 @@ function editmove {
 		&& return 2
 	[[ -z $1 ]] && from="$((from + 1))"
 	from="$(_editline "$from" "$f")"
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "editmove: start line not recognized" \
+		&& return 3
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $to ]] \
+		&& >&2 echo "editmove: end line not recognized" \
+		&& return 4
 	local dest="$3"
-	[[ $dest -ne 0 ]] && dest="$(_editline "$3" "$f")"
+	[[ $dest != 0 ]] && dest="$(_editline "$3" "$f")"
 	[[ -z $dest ]] \
 		&& >&2 echo "editmove: no destiny" \
-		&& return 3
+		&& return 5
 	[[ -n $to ]] \
 		&& local res="$(edit "$from,${to}m$dest\nw" "$f")" \
 		|| local res="$(edit "${from}m$dest\nw" "$f")"
@@ -772,12 +833,20 @@ function edittransfer {
 		&& return 1
 	local from="${1:-$fl}"
 	from="$(_editline "$from" "$f")"
-	[[ -z $from ]] \
-		&& >&2 echo "edittransfer: no start line" \
+	[[ $? -ne 0 ]] \
+		&& >&2 echo "edittransfer: start line not recognized" \
 		&& return 2
-	[[ -n $2 ]] && local to="$(_editline "$2" "$f")"
+	[[ -n $2 ]] \
+		&& local to="$(_editline "$2" "$f")" \
+		&& [[ -z $o ]] \
+		&& >&2 echo "edittransfer: end line not recognized" \
+		&& return 3
 	local dest="$3"
-	[[ $dest -ne 0 ]] && dest="$(_editline "$3" "$f")"
+	[[ $dest != 0 ]] \
+		&& dest="$(_editline "$3" "$f")" \
+		&& [[ -z $dest ]] \
+		&& >&2 echo "edittransfer: destiny line not recognized" \
+		&& return 4
 	if [[ $dest -ge 0 ]]
 	then
 		[[ -n $to ]] \
@@ -813,16 +882,19 @@ function editlevel {
 	then
 		local spaces=0
 		local tabs=0
-		local res
+		local res=
+		ind=
 		while true
 		do
 			[[ ${line:0:1} == $' ' ]] \
 				&& spaces=$((spaces + 1)) \
 				&& res="$res[space]" \
+				&& ind="$ind " \
 				&& line="${line/ /}"
 			[[ ${line:0:1} == $'\t' ]] \
 				&& tabs=$((tabs + 1)) \
 				&& res="$res[tab]" \
+				&& ind="$ind\t" \
 				&& line="${line/$'\t'/}"
 			[[ ${line:0:1} != $' ' ]] \
 				&& [[ ${line:0:1} != $'\t' ]] \
@@ -831,6 +903,7 @@ function editlevel {
 
 		echo "spaces: $spaces, tabs: $tabs"
 		[[ -n $res ]] && echo "$res"
+		[[ -n $ind ]] && echo "\$ind="$ind""
 	else
 		return 4
 	fi
