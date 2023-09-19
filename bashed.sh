@@ -15,6 +15,7 @@ editwordkey="o"
 
 #fzf
 edfzfsize="80%"
+edfzfpsize="30%"
 
 mkdir -p "$editdir"
 
@@ -292,9 +293,8 @@ $data"
 	then
 		if [[ $2 == fz ]]
 		then
-			local zres="$(echo "$fileresult" \
-				| fzf-tmux -p $edfzfsize,$edfzfsize)"
-			if [[ $zres ]]
+			local zres="$(_editfzf '' 'echo' 0 "$fileresult")"
+			if [[ -n $zres ]]
 			then
 				fileresultindex="${zres/:*/}"
 				fl="${fileresult_a[$fileresultindex]}"
@@ -315,7 +315,7 @@ function editfilefind {
 		&& local files="$(grep -HinRIs "$1" ".")" \
 		|| local files="$(grep -HinIs "$1" ./*)"
 	[[ -z $files ]] && return 2
-	local res="$(echo "$files" | fzf-tmux -p $edfzfsize,$edfzfsize)"
+	local res="$(_editfzf '' 'echo' 0 "$files")"
 	local name="${res/:*/}"
 	local line="${res#*:}"
 	line="${line/:*/}"
@@ -352,7 +352,6 @@ function editshow {
 	[[ -z $fn ]] \
 		&& >&2 echo "editshow: no file" \
 		&& return 1
-	#[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	[[ -d $fn ]] \
 		&& >&2 echo "editshow: is a directory" \
 		&& return 2
@@ -439,8 +438,7 @@ function editshow {
 		elif [[ $arg == fz ]]
 		then
 			[[ -n "$fileresult" ]] \
-				&& local zres="$(echo "$fileresult" \
-					| fzf-tmux -p $edfzfsize,$edfzfsize)"
+				&& local res="$(_editfzf '' 'echo' 0 "$fileresult")"
 			if [[ -n $zres ]]
 			then
 				fileresultindex="${zres/:*/}"
@@ -952,12 +950,32 @@ function etermbin {
 function _editfzf {
 	local multiple="$1"
 	shift
-	local fzf="fzf-tmux -p ${edfzfsize},${edfzfsize}"
-	[[ $multiple -eq 1 ]] \
-		&& e_uresult=($(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			$fzf --layout=reverse-list --cycle -m)) \
-		|| e_uresult="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq | \
-			$fzf --layout=reverse-list --cycle)"
+	local preview="$1"
+	shift
+	local breakwords="$1"
+	shift
+	[[ $breakwords -eq 1 ]] \
+		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq)" \
+		|| local data="$(echo "$*" | sort | uniq)"
+	if [[ -n $preview ]]
+	then
+		if [[ $preview == echo ]]
+		then
+			echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+				--layout=reverse-list --cycle $multiple \
+				--preview-window down,$edfzfpsize,wrap \
+				--preview 'echo {}'
+		else
+			echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+				--layout=reverse-list --cycle $multiple \
+				--preview-window down,$edfzfpsize,wrap --preview \
+				"echo file: {}; echo -----------; cat "$preview/{}""
+		fi
+	else
+		echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+			--layout=reverse-list --cycle $multiple
+	fi
+
 	return 0
 }
 
@@ -988,13 +1006,13 @@ function editwords {
 			[[ -n $hiwords ]] && words=(${words[@]} $hiwords)
 		fi
 
-		_editfzf 0 "${words[@]}"
+		local res="$(_editfzf '' 'echo' 1 "${words[@]}")"
 	else
 		echo "editwords: tmux session not found"
 		return 2
 	fi
 
-	[[ -n $e_uresult ]] && tmux send-keys -l "$e_uresult"
+	[[ -n $res ]] && tmux send-keys -l "$res"
 	return 0
 }
 

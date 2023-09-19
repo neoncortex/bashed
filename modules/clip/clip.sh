@@ -29,14 +29,14 @@ function _edclipfile {
 function _editclipword {
 	if tmux run 2>/dev/null
 	then
-		_editfzf 0 "$@"
+		local res="$(_editfzf '' "$edclipdir" 1 "$@")"
 	else
 		echo "_edclipword: tmux session not found"
 		return 1
 	fi
 
-	[[ -n $e_uresult ]] \
-		&& local content="$(cat "$edclipdir/$e_uresult")" \
+	[[ -n $res ]] \
+		&& local content="$(cat "$edclipdir/$res")" \
 		&& tmux send-keys -l "$content"
 	return 0
 }
@@ -267,17 +267,12 @@ $g
 			"$edclipdir/$newname"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		_editfzf 1 "${files[@]}"
-		if [[ ${#e_uresult[@]} -gt 0 ]]
-		then
-			local IFS=
-			for i in "${e_uresult[@]}"
-			do
-				[[ -f $edclipdir/$i ]] && rm "$edclipdir/$i"
-			done
-
-			e_uresult=
-		fi
+		local res="$(_editfzf '-m' "$edclipdir" 1 "${files[@]}")"
+		local IFS=
+		for i in $res
+		do
+			[[ -f $edclipdir/$i ]] && rm "$edclipdir/$i"
+		done
 	elif [[ $1 == tx ]]
 	then
 		[[ -z $2 ]] \

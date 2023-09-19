@@ -61,12 +61,9 @@ function editundo {
 		done
 	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
-		if [[ -n $e_uresult ]]
-		then
-			eo "$e_uresult"
-			e_uresult=
-		fi
+		[[ ${#files[@]} -gt 0 ]] \
+			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		[[ -n $res ]] && cp "$res" "$fn"
 	elif [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
 		[[ -z $2 ]] \
@@ -83,17 +80,13 @@ function editundo {
 		done
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && _editfzf 1 "${files[@]}"
-		if [[ ${#e_uresult[@]} -gt 0 ]]
-		then
-			local IFS=$'\n'
-			for i in "${e_uresult[@]}"
-			do
-				[[ -f $i ]] && rm "$i"
-			done
-
-			e_uresult=
-		fi
+		[[ ${#files[@]} -gt 0 ]] \
+			&& local res="$(_editfzf '-m' '/' 1 "${files[@]}")"
+		local IFS=$'\n'
+		for i in $res
+		do
+			rm "$i"
+		done
 	elif [[ $1 == diff ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
@@ -113,20 +106,24 @@ function editundo {
 	then
 		if [[ -n $2 ]]
 		then
-			[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
-			if [[ -n $e_uresult ]]
-			then
-				diff $diffarg "$2" "$e_uresult"
-				e_uresult=
-			fi
+			[[ ${#files[@]} -gt 0 ]] \
+				&& local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			[[ -n $res ]] && diff $diffarg "$2" "$res"
 		else
-			[[ ${#files[@]} -gt 0 ]] && _editfzf 1 "${files[@]}"
-			if [[ ${#e_uresult[@]} -gt 0 ]]
+			[[ ${#files[@]} -gt 0 ]] \
+				&& local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			local resfiles=()
+			for i in $res
+			do
+				resfiles+=($i)
+			done
+
+			if [[ ${#resfiles[@]} -gt 0 ]]
 			then
-				local f1="${e_uresult[0]}"
-				local f2="${e_uresult[1]}"
-				diff $diffarg "$f1" "$f2"
-				e_uresult=
+				local f1="${resfiles[0]}"
+				local f2="${resfiles[1]}"
+				[[ -f $f1 ]] && [[ -f $f2 ]] \
+					&& diff $diffarg "$f1" "$f2"
 			fi
 		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
@@ -137,12 +134,9 @@ function editundo {
 		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
-		if [[ -n $e_uresult ]]
-		then
-			editshow a "$e_uresult"
-			e_uresult=
-		fi
+		[[ ${#files[@]} -gt 0 ]] \
+			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		[[ -n $res ]] && editshow a "$res"
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
 		[[ -z $2 ]] \
@@ -152,12 +146,9 @@ function editundo {
 			&& editshow a "${files[$2]}"
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
-		if [[ -n $e_uresult ]]
-		then
-			editshow a "$e_uresult"
-			e_uresult=
-		fi
+		[[ ${#files[@]} -gt 0 ]] \
+			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		[[ -n $res ]] && editshow a "$res"
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
@@ -178,12 +169,9 @@ function editundo {
 		[[ -z $2 ]] \
 			&& >&2 echo "editundo: copycurses: no destiny" \
 			&& return 8
-		[[ ${#files[@]} -gt 0 ]] && _editfzf 0 "${files[@]}"
-		if [[ -n $e_uresult ]]
-		then
-			cp "$e_uresult" "$2"
-			e_uresult=
-		fi
+		[[ ${#files[@]} -gt 0 ]] \
+			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		[[ -n $res ]] && cp "$res" "$2"
 	elif [[ $1 =~ [0-9]+ ]]
 	then
 		[[ -f ${files[$1]} ]] \

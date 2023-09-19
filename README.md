@@ -534,9 +534,9 @@ If the highlight module is available, it will also try to extract keywords from 
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
 - editwordkey: the key to be used with bind-key ro call editwords;
 - edfzfsize: size of the fzf tmux popup, by default, 80%;
+- edfzfpsize: size of the fzf preview window, by default, 30%;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
-- e_uresult: Contains the last selections of fzf;
 - fileresult: Contains the search results to be displayed by ef, and es s;
 - fileresult_a: It's an array that have one entry to each result of an ef search;
 - fn: Contains the complete path to the file beign edited;
