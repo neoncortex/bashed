@@ -910,15 +910,20 @@ This module will provide the function editshowhi, or ess for short.  This functi
 For files that are recognized by highlight, you just use the ess function as you would use es.  For files that it does not recognize, you may need to tell which language/type the file is.  For example:
 
 ````
-ess a sh
+ess a file sh
 ````
 
-will tell ess that the current file should be highlighted as a shell script.  This will be memorized, and future interactions with that file will use the sh highlight, so you will not need to pass sh anymore.
+will tell ess that the file should be highlighted as a shell script.  This will be memorized, and future interactions with that file will use the sh highlight, so you will not need to pass sh anymore.
 
 If you decide to change the theme, like setting ehitheme to vampire, for example, or some other theme, the theme will be loaded after the next file modification.  You can force a reloading by passing a 4th argument 'rewrite', like this:
 
 ````
-ess a '' '' rewrite
+ess a file sh rewrite
+````
+
+Omitting the third argument will keep the current language syntax:
+````
+ess a file '' rewrite
 ````
 
 ### Variables:
