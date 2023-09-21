@@ -61,27 +61,37 @@ function editundo {
 		done
 	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] \
-			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
-		[[ -n $res ]] && cp "$res" "$fn"
+		local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		[[ -z $res ]] && return 0
+		if [[ -f $res ]]
+		then
+			 cp "$res" "$fn"
+		else
+			echo >&2 "editundo: listcurses: file not found"
+			return 3
+		fi
 	elif [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
 		[[ -z $2 ]] \
 			&& >&2 echo "editundo: delete: no start file" \
-			&& return 3
+			&& return 4
 		local head="$2"
 		local tail="$3"
 		[[ -z $3 ]] && tail="$2"
 		for ((i=$head; i<=$tail; ++i))
 		do
-			[[ -n ${files[$i]} ]] \
-				&& rm "${files[$i]}" \
-				|| echo "?"
+			if [[ -f ${files[$i]} ]]
+			then
+				rm "${files[$i]}"
+			else
+				echo >&2 "editundo: delete: file not found"
+				return 5
+			fi
 		done
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] \
-			&& local res="$(_editfzf '-m' '/' 1 "${files[@]}")"
+		local res="$(_editfzf '-m' '/' 1 "${files[@]}")" \
+		[[ -z $res ]] && return 0
 		local IFS=$'\n'
 		for i in $res
 		do
@@ -91,7 +101,7 @@ function editundo {
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
 			&& >&2 echo "editundo: diff: no files" \
-			&& return 4
+			&& return 6
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -100,18 +110,25 @@ function editundo {
 		then
 			diff $diffarg "$f1" "$f2" 
 		else
-			echo "?"
+			echo >&2 "editundo: diff: cant read files"
+			return 7
 		fi
 	elif [[ $1 == diffcurses ]]
 	then
 		if [[ -n $2 ]]
 		then
-			[[ ${#files[@]} -gt 0 ]] \
-				&& local res="$(_editfzf '' "/" 1 "${files[@]}")"
-			[[ -n $res ]] && diff $diffarg "$2" "$res"
+			local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			[[ -z $res ]] && return 0
+			if [[ -f $res ]]
+			then
+				diff $diffarg "$2" "$res"
+			else
+				echo >&2 "editundo: diffcurses: file not found"
+				return 8
+			fi
 		else
-			[[ ${#files[@]} -gt 0 ]] \
-				&& local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			[[ -z $res ]] && return 0
 			local resfiles=()
 			for i in $res
 			do
@@ -122,38 +139,69 @@ function editundo {
 			then
 				local f1="${resfiles[0]}"
 				local f2="${resfiles[1]}"
-				[[ -f $f1 ]] && [[ -f $f2 ]] \
-					&& diff $diffarg "$f1" "$f2"
+			else
+				return 9
+			fi
+
+			if [[ -f $f1 ]] && [[ -f $f2 ]]
+			then
+				diff $diffarg "$f1" "$f2"
+			else
+				echo >&2 "editundo: diffcurses: cant read files"
+				return 10
 			fi
 		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
 		[[ -z $2 ]] \
 			&& >&2 echo "editundo: es: no filename" \
-			&& return 5
-		[[ -f ${files[$2]} ]] && editshow a "${files[$2]}"
+			&& return 11
+		if [[ -f ${files[$2]} ]]
+		then
+			editshow a "${files[$2]}"
+		else
+			echo >&2 "editundo: show: file not found"
+			return 12
+		fi
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] \
-			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
-		[[ -n $res ]] && editshow a "$res"
+		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		[[ -z $res ]] && return 0
+		if [[ -f $res ]]
+		then
+			editshow ${2:-a} "$res"
+		else
+			echo >&2 "editundo: showcurses: file not found"
+			return 13
+		fi
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
 		[[ -z $2 ]] \
 			&& >&2 echo "editundo: print: no filename" \
-			&& return 6
-		[[ -f ${files[$2]} ]] \
-			&& editshow a "${files[$2]}"
+			&& return 14
+		if [[ -f ${files[$2]} ]]
+		then
+			editshow a "${files[$2]}"
+		else
+			echo >&2 "editundo: print: file not found"
+			return 15
+		fi
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
 	then
-		[[ ${#files[@]} -gt 0 ]] \
-			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
-		[[ -n $res ]] && editshow a "$res"
+		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		[[ -z $res ]] && return 0
+		if [[ -f $res ]]
+		then
+			 editshow a "$res"
+		else
+			echo >&2 "editundo: printcurses: file not found"
+			return 16
+		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
 			&& >&2 echo "editundo: copy: no file names" \
-			&& return 7
+			&& return 17
 		local f1="$2"
 		local f2="$3"
 		[[ $2 =~ ^[0-9]+ ]] && f1="${files[$2]}"
@@ -162,26 +210,38 @@ function editundo {
 		then
 			cp "$f1" "$f2"
 		else
-			echo "?"
+			echo "editundo: copy: file not found"
+			return 18
 		fi
 	elif [[ $1 == copycurses ]] || [[ $1 == cpu ]]
 	then
 		[[ -z $2 ]] \
 			&& >&2 echo "editundo: copycurses: no destiny" \
-			&& return 8
-		[[ ${#files[@]} -gt 0 ]] \
-			&& local res="$(_editfzf '' '/' 1 "${files[@]}")"
-		[[ -n $res ]] && cp "$res" "$2"
+			&& return 19
+		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		[[ -z $res ]] && return 0
+		if [[ -f $res ]]
+		then
+			cp "$res" "$2"
+		else
+			echo >&2 "editundo: copycurses: file not found"
+			return 20
+		fi
 	elif [[ $1 =~ [0-9]+ ]]
 	then
-		[[ -f ${files[$1]} ]] \
-			&& cp "${files[$1]}" "$fn" \
-			|| echo "?"
+		if [[ -f ${files[$1]} ]]
+		then
+			cp "${files[$1]}" "$fn"
+		else
+			echo >&2 "editundo: file not found"
+			return 21
+		fi
+
 		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 		es 1
 	else
-		echo "?"
-		return 9
+		echo >&2 "?"
+		return 22
 	fi
 }
 

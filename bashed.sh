@@ -954,6 +954,7 @@ function _editfzf {
 	shift
 	local breakwords="$1"
 	shift
+	[[ -z $* ]] && return 1
 	[[ $breakwords -eq 1 ]] \
 		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq)" \
 		|| local data="$(echo "$*" | sort | uniq)"

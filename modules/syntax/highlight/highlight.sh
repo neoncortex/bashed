@@ -111,8 +111,8 @@ function _editshowhi {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -W "a b c d e f g G l m n p u v / \
-				. $ + - {1..$fs}" -- $cur))
+			COMPREPLY=($(compgen -W "a b c d e f fz g G l m n p u v / \
+				. $ + -" -- $cur))
 			;;
 		3)
 			local defs=()
