@@ -606,6 +606,32 @@ function editshow {
 	return 0
 }
 
+function editshowfzf {
+	local arg="$1"
+	local f="${2:-$fn}"
+	f="$(readlink -f "$f")"
+	[[ -z $f ]] \
+		&& &>2 echo "editshowfzf: no file" \
+		&& return 1
+	! [[ -f $f ]] \
+		&& &>2 echo "editshowfzf: file not found" \
+		&& return 2
+	[[ -z $arg ]] \
+		&& &>2 echo "editshowfzf: no argument" \
+		&& return 3
+	local res="$(_editfzf '' 'echo' 0 "$(edcolor=0 edcmd=n editshow \
+		"$arg" "$f")")"
+	[[ -z $res ]] && return 0
+	local line="${res/$'\t'*/}"
+	[[ -z $line ]] \
+		&& >&2 echo "editshowfzf: cant find line" \
+		&& return 4
+	[[ $f == $fn ]] \
+		&& editshow $line \
+		|| editshow $line "$f"
+	return 0
+}
+
 function editprint {
 	edcmd=p edcolor=0 editshow "$@"
 }
@@ -1052,6 +1078,7 @@ function ep { editprint "$@"; }
 function eq { editclose "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
+function esf { editshowfzf "$@"; }
 function ew { editwords "$@"; }
 function ews { editwordsrc "$@"; }
 function ey { edittransfer "$@"; }
@@ -1285,6 +1312,8 @@ complete -o nospace -o filenames -F _editshow es
 complete -o nospace -o filenames -F _editshow etermbin
 complete -o nospace -o filenames -F _editshow editprint
 complete -o nospace -o filenames -F _editshow ep
+complete -o nospace -o filenames -F _editshow editshowfzf
+complete -o nospace -o filenames -F _editshow esf
 
 function _editpaste {
 	local cur=${COMP_WORDS[COMP_CWORD]}

@@ -491,6 +491,9 @@ The function eprint receives and does the seame as the editshow, but without col
 edcmd=p edcolor=0 es ...
 ````
 
+## Searching line with fzf:
+The function editshowfzf, or esf, for short, provide a way to search for lines of text using fzf.  It receives the same argument as editshow.
+
 ## Disable line numbering:
 To disable line numbering for the next command:
 
