@@ -283,7 +283,7 @@ function editfind {
 		fileresult_a+=("${i/$'\t'*/}")
 		local data="$counter:${i/$'\t'/ }"
 		[[ -z $fileresult ]] \
-			&& fileresult="$counter:$data" \
+			&& fileresult="$data" \
 			|| fileresult="$fileresult
 $data"
 		counter=$((counter+1))
@@ -577,15 +577,16 @@ function editshow {
 		[[ -z $rows ]] && return 3
 		[[ -z $cols ]] && return 3
 		local head="$((fl + 1))"
+		local head="$fl"
 		[[ $head -gt $fs ]] && head="$fs"
 		local tail="$((fl + rows - 2))"
-		if [[ $tail -eq $fs ]] || [[ $tail -gt $fs ]]
+		if [[ $tail -ge $fs ]]
 		then
 			show="edit $fl,\$$edcmd"
 			fl="$fs"
 		else
 			show="edit $head,$tail$edcmd"
-			fl="$tail"
+			fl="$((tail + 1))"
 		fi
 	fi
 
@@ -982,8 +983,8 @@ function _editfzf {
 	shift
 	[[ -z $* ]] && return 1
 	[[ $breakwords -eq 1 ]] \
-		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort | uniq)" \
-		|| local data="$(echo "$*" | sort | uniq)"
+		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort -n | uniq)" \
+		|| local data="$(echo "$*" | sort -n | uniq)"
 	if [[ -n $preview ]]
 	then
 		if [[ $preview == echo ]]
