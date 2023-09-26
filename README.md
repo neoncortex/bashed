@@ -626,6 +626,7 @@ The functions are:
 - editopen, eo: open file;
 - editpaste, epaste: paste text from the temporary location, or clipboard;
 - editshow, es: show file text in various ways;
+- editshowfzf, esf: select a line using fzf;
 - editstore, et: store a version of file;
 - editsub, esu; substitution;
 - etermbin, paste in termbin;

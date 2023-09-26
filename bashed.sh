@@ -650,7 +650,9 @@ function editappend {
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
 	local res="$(edit "${line}a\n$data\n.\nw" "$fn")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] \
+		&& >&2 echo "$res" \
+		&& return 3
 	editshow "+$(echo -e "$data" | grep -c "^")"
 }
 
@@ -1097,7 +1099,7 @@ complete -o nospace -o filenames -o nosort -F _editappend ei
 
 function _editchangeline {
 	local cur=${COMP_WORDS[COMP_CWORD]}
-	local words=($(editprint l))
+	local words=($(edcolor=0 editshow l))
 	local word="${words[COMP_CWORD]}"
 	[[ -n $word ]] \
 		&& COMPREPLY=($(compgen -W "$word" -- $cur)) \
