@@ -2,7 +2,7 @@
 bash wrapper for the ed editor.
 
 # How it works:
-It is a collection of functions that wraps the ed functionalities, and manage the files and windows using tmux.
+It is a collection of functions that wraps the ed functionalities, and manage the files and windows using tmux, and fzf.  It keeps state, the file opened, current line, and various others,  with shell variables.
 
 # Dependencies:
 - ed;

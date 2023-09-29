@@ -142,10 +142,14 @@ function editpaste {
 	[[ -z $f ]] \
 		&& >&2 echo "editpaste: no file" \
 		&& return 1
-	s="$(_editline "$s" "$f")"
-	[[ $? -ne 0 ]] \
-		&& >&2 echo "editpaste: start line not recognized" \
-		&& return 3
+	if [[ $s != 0 ]]
+	then
+		s="$(_editline "$s" "$f")"
+		[[ $? -ne 0 ]] \
+			&& >&2 echo "editpaste: start line not recognized" \
+			&& return 3
+	fi
+
 	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
 	[[ $2 == w ]] && wl-paste > "$editreadlines"
 	[[ $2 != x ]] && local res="$(edit "${s}r $editreadlines\nw" "$f")"
@@ -178,10 +182,14 @@ function editcmd {
 	[[ $? -ne 0 ]] && return $?
 	local tempfile="$editdir/temp"
 	cat "$editreadlines" | $3 > "$tempfile"
-	mv "$tempfile" "$editreadlines"
-	local res="$(edit "$begin,${end}d\nw" "$fn")"
-	[[ -n $res ]] && echo "$res"
-	editpaste $(($begin - 1)) '' "$fn"
+	if [[ $? == 0 ]]
+	then
+		mv "$tempfile" "$editreadlines"
+		local res="$(edit "$begin,${end}d\nw" "$fn")"
+		[[ -n $res ]] && echo "$res"
+		editpaste $(($begin - 1)) '' "$fn"
+		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	fi
 }
 
 function _editarg {
@@ -1072,7 +1080,6 @@ function ef { editfind "$@"; }
 function eff { editfilefind "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
-function els { editspaces "$@"; }
 function el { editlevel "$@"; }
 function em { editmove "$@"; }
 function eo { editopen "$@"; }
