@@ -2,6 +2,7 @@
 
 # files and directories
 editdir="$HOME/.edit"
+editsearchdir="$editdir/search"
 editreadlines="$editdir/readlines"
 
 # edit
@@ -232,21 +233,23 @@ function editopen {
 		return 4
 	fi
 
-	[[ $2 == 'u' ]] && tmux splitw -b -c "$f"
-	[[ $2 == 'd' ]] && tmux splitw -c "$f"
-	[[ $2 == 'l' ]] && tmux splitw -b -c "$f" -h
-	[[ $2 == 'r' ]] && tmux splitw -c "$f" -h
-	[[ $2 == 'n' ]] && tmux neww -c "$f"
-	[[ $2 == 'ul' ]] && tmux select-pane -U && tmux splitw -b -c "$f" -h
-	[[ $2 == 'ur' ]] && tmux select-pane -U && tmux splitw -c "$f" -h
-	[[ $2 == 'dl' ]] && tmux select-pane -U && tmux splitw -b -c "$f" -h
-	[[ $2 == 'dr' ]] && tmux select-pane -U && tmux splitw -c "$f" -h
-	[[ $2 == 'ld' ]] && tmux select-pane -L && tmux splitw -c "$f"
-	[[ $2 == 'lu' ]] && tmux select-pane -L && tmux splitw -b -c "$f"
-	[[ $2 == 'rd' ]] && tmux select-pane -R && tmux splitw -c "$f"
-	[[ $2 == 'ru' ]] && tmux select-pane -L && tmux splitw -b -c "$f"
+	local location="$2"
+	[[ $location == 0 ]] && location=
+	[[ $location == 'u' ]] && tmux splitw -b -c "$f"
+	[[ $location == 'd' ]] && tmux splitw -c "$f"
+	[[ $location == 'l' ]] && tmux splitw -b -c "$f" -h
+	[[ $location == 'r' ]] && tmux splitw -c "$f" -h
+	[[ $location == 'n' ]] && tmux neww -c "$f"
+	[[ $location == 'ul' ]] && tmux select-pane -U && tmux splitw -b -c "$f" -h
+	[[ $location == 'ur' ]] && tmux select-pane -U && tmux splitw -c "$f" -h
+	[[ $location == 'dl' ]] && tmux select-pane -U && tmux splitw -b -c "$f" -h
+	[[ $location == 'dr' ]] && tmux select-pane -U && tmux splitw -c "$f" -h
+	[[ $location == 'ld' ]] && tmux select-pane -L && tmux splitw -c "$f"
+	[[ $location == 'lu' ]] && tmux select-pane -L && tmux splitw -b -c "$f"
+	[[ $location == 'rd' ]] && tmux select-pane -R && tmux splitw -c "$f"
+	[[ $location == 'ru' ]] && tmux select-pane -L && tmux splitw -b -c "$f"
 	tmux select-pane -T "$f"
-	if [[ -z $2 ]]
+	if [[ -z $location ]]
 	then
 		fn="$f"
 		cd "$(dirname "$fn")"
@@ -319,11 +322,48 @@ function editfilefind {
 	[[ -z $1 ]] \
 		&& >&2 echo "editfilefind: no argument" \
 		&& return 1
-	[[ $2 == r ]] \
-		&& local files="$(grep -HinRIs "$1" ".")" \
-		|| local files="$(grep -HinIs "$1" ./*)"
-	[[ -z $files ]] && return 2
-	local res="$(_editfzf '' 'echo' 0 "$files")"
+	local dir="$editsearchdir/$PWD"
+	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
+	local cache="$dir/$date"
+	local cache_file=
+	local data=
+	for i in $dir/*.search
+	do
+		[[ -f $i ]] \
+			&& local word="$(cat $i)" \
+			|| continue
+		[[ "$word" == "$1" ]] && cache_file="$i"
+	done
+
+	[[ -f $cache_file ]] \
+		&& data="${cache_file/.search/.res}"
+	if [[ $4 == new ]] || ! [[ -f $cache_file ]]
+	then
+		[[ -f $cache_file ]] && rm "$cache_file"
+		[[ -f $data ]] && rm "$data"
+		[[ $2 == r ]] \
+			&& local files="$(grep -HinRIs "$1" ".")" \
+			|| local files="$(grep -HinIs "$1" ./*)"
+		[[ -z $files ]] && return 2
+		mkdir -p "$dir"
+		! [[ -d $dir ]] \
+			&& >&2 echo "editfindfile: directory not found" \
+			&& return 3
+		echo "$1" > "$cache.search"
+		echo "$files" > "$cache.res"
+		local res="$(_editfzf '' 'echo' 0 "$files")"
+	else
+		if [[ -f $data ]]
+		then
+			>&2 echo "editfindfile: using cache: $data"
+			local res="$(_editfzf '' 'echo' 0 "$(cat "$data")")"
+		else
+			>&2 echo "editfindfile: cache file not found"
+			return 4
+		fi
+	fi
+
+	[[ -z $res ]] && return 5
 	local name="${res/:*/}"
 	local line="${res#*:}"
 	line="${line/:*/}"
@@ -1239,6 +1279,9 @@ function _editfilefind {
 		3)
 			COMPREPLY=($(compgen -W "u d l r ul ur dl dr ru rd \
 				lu ld" -- $cur))
+			;;
+		4)
+			COMPREPLY=($(compgen -o nosort -W "cache new" -- $cur))
 			;;
 		*)
 			COMPREPLY=($(compgen -f -- $cur))

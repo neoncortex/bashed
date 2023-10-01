@@ -1,8 +1,11 @@
 # bashed
 bash wrapper for the ed editor.
 
+# What it is:
+It is a collection of functions that wraps the ed functionalities, and manage the files and windows using tmux, and fzf.  This allows files to be edited directly from the bash prompt.  It offers features like versioning, content searching, syntax highlight, and others.
+
 # How it works:
-It is a collection of functions that wraps the ed functionalities, and manage the files and windows using tmux, and fzf.  It keeps state, the file opened, current line, and various others,  with shell variables.
+It keeps state, the file opened, current line, and various others,  with shell variables, and files.
 
 # Dependencies:
 - ed;
@@ -21,8 +24,11 @@ Add to your ~/.bashrc:
 source /path/to/bashed/bashed.sh
 ````
 
-## Optional, prompt:
-You can customize the prompt to show the file size, and current line.  For example, in ~/.bashrc:
+## User interface:
+Since it is a prompt editor, the user will have no indication of which file is opened, unless some customizations in the environinment are made.  Below are two suggested ways to configure bash and tmux to show the file opened, its size, and the current line.
+
+### bash prompt:
+The function below will show in the bash prompt the file size, and current line.  Plus it will show the return results of commands.  In ~/.bashrc:
 
 ````
 function prompt {
@@ -40,8 +46,8 @@ function prompt {
 PROMPT_COMMAND=prompt
 ````
 
-## Optional, tmux:
-You can customize tmux to show the file path in it's pane name.  In ~/.tmux.conf:
+### tmux pane name:
+The tmux options below will make tmux show the pane name, and the opened file path and name in it's pane name, in case there is a opened file.  In ~/.tmux.conf:
 
 ````
 set -g pane-border-status top
@@ -64,7 +70,7 @@ For example, to open a file into a new panel on top of the current one:
 eo file u
 ````
 
-Also, you can subdivide an existing pane.  Lets say you window have two panes, and you want to subdivide the unfocused pane, then: ul, for subdivide the upper pane, and open in the left, ur, for subdividing the upper pane, and open on the right, lu, for subdivide the left pane, and open on the top, ld, for subdivide the left pane, and open on the bottom, rl and rd does the same as lu and ld, but for the right pane, and dl and dr does the same as ul and ur, but for the bottom pane.
+Also, you can subdivide an existing pane.  Lets say you window have two panes, and you want to subdivide the unfocused pane, then: ul, for subdivide the upper pane, and open in the left, ur, for subdividing the upper pane, and open on the right, lu, for subdivide the left pane, and open on the top, ld, for subdivide the left pane, and open on the bottom, rl and rd does the same as lu and ld, but for the right pane, and dl and dr does the same as ul and ur, but for the bottom pane.  This argument, when 0, have no effect, and the file will be opened on the current pane.
 
 ### File arguments:
 Files can be opened with arguments. These arguments can specify a line, or a string.  Examples:
@@ -104,6 +110,12 @@ eff content 0 l
 Or recursively:
 ````
 eff content r l
+````
+
+The results will be cached, and the next search using the same words, in the same directory, will display the cached results.  To make a new search, without using the cached results, a 4th argument, new, is used:
+
+````
+eff content r 0 new
 ````
 
 ## Specifying lines to edit:
@@ -549,6 +561,8 @@ If the highlight module is available, it will also try to extract keywords from 
 
 ### File variables:
 - editdir: Contains the path to the edit directory.  By default: $HOME/.edit;
+- editreadlines: File used to store lines that where cut/copied; 
+- editsearchdir: Contains the path to store the file search cache;
 
 ## Using e:
 Commands can be passed directly to ed, using e, like:
