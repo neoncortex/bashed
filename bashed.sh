@@ -19,6 +19,8 @@ edfzfsize="80%"
 edfzfpsize="30%"
 
 mkdir -p "$editdir"
+mkdir -p "$editdir/dict"
+mkdir -p "$editdir/search"
 
 function _editwindow {
 	local IFS=$' \t\n'
@@ -181,10 +183,22 @@ function editcmd {
 		&& return 6
 	local region="$(editcopy $begin $end '' '' "$fn")"
 	[[ $? -ne 0 ]] && return $?
+	[[ -z $editdir ]] \
+		&& >&2 echo "editcmd: editdir is not set" \
+		&& return 7
+	! [[ -d $editdir ]] \
+		&& >&2 echo "editcmd: editdir does not exist" \
+		&& return 8
 	local tempfile="$editdir/temp"
+	! [[ -f $editreadlines ]] \
+		&& >&2 echo "editcmd: editreadlines file does not exist" \
+		&& return 9
 	cat "$editreadlines" | $3 > "$tempfile"
 	if [[ $? == 0 ]]
 	then
+		[[ -z $tempfile ]] \
+			&& >&2 echo "editcmd: tempfile does not exist" \
+			&& return 10
 		mv "$tempfile" "$editreadlines"
 		local res="$(edit "$begin,${end}d\nw" "$fn")"
 		[[ -n $res ]] && echo "$res"
@@ -226,7 +240,8 @@ function editopen {
 	[[ $? -eq 1 ]] && return 3
 	if tmux run 2>/dev/null
 	then
-		tmux bind-key $editwordkey run -b \
+		local wordkey="${editwordkey:-o}"
+		tmux bind-key $wordkey run -b \
 			"bash -ic \"fn=\"$f\" editwords\""
 	else
 		>&2 echo "editopen: tmux session not found"
@@ -318,15 +333,28 @@ $data"
 	fi
 }
 
+function editfindg {
+	[[ -z $1 ]] \
+		&& >&2 echo "editfindg: no argument" \
+		&& return 1
+	local arg="g/$1/n"
+	shift
+	editfind "$arg" "$@"
+}
+
 function editfilefind {
 	[[ -z $1 ]] \
 		&& >&2 echo "editfilefind: no argument" \
 		&& return 1
+	[[ -z $editsearchdir ]] \
+		&& >&2 echo "editfilefind: editsearchdir is not set" \
+		&& return 2
 	local dir="$editsearchdir/$PWD"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 	local cache="$dir/$date"
 	local cache_file=
 	local data=
+	local IFS=$'\n\t '
 	for i in $dir/*.search
 	do
 		[[ -f $i ]] \
@@ -344,11 +372,11 @@ function editfilefind {
 		[[ $2 == r ]] \
 			&& local files="$(grep -HinRIs "$1" ".")" \
 			|| local files="$(grep -HinIs "$1" ./*)"
-		[[ -z $files ]] && return 2
+		[[ -z $files ]] && return 3
 		mkdir -p "$dir"
 		! [[ -d $dir ]] \
 			&& >&2 echo "editfindfile: directory not found" \
-			&& return 3
+			&& return 4
 		echo "$1" > "$cache.search"
 		echo "$files" > "$cache.res"
 		local res="$(_editfzf '' 'echo' 0 "$files")"
@@ -359,11 +387,11 @@ function editfilefind {
 			local res="$(_editfzf '' 'echo' 0 "$(cat "$data")")"
 		else
 			>&2 echo "editfindfile: cache file not found"
-			return 4
+			return 5
 		fi
 	fi
 
-	[[ -z $res ]] && return 5
+	[[ -z $res ]] && return 6
 	local name="${res/:*/}"
 	local line="${res#*:}"
 	line="${line/:*/}"
@@ -405,7 +433,8 @@ function editshow {
 		&& return 2
 	if tmux run 2>/dev/null
 	then
-		tmux bind-key $editwordkey run -b \
+		local wordkey="${editwordkey:-o}"
+		tmux bind-key $wordkey run -b \
 			"bash -ic \"fn=\"$fn\"; editwords\""
 	else
 		>&2 echo "editshow: tmux session not found"
@@ -421,6 +450,7 @@ function editshow {
 	[[ -z $1 ]] && arg="+"
 	local IFS=$' \t\n'
 	local show=
+	local cmd="${edcmd:-n}"
 	if [[ -n $fileresult_a ]] && [[ -n $fileresultindex ]]
 	then
 		if [[ $arg =~ f([0-9]+) ]]
@@ -501,7 +531,7 @@ function editshow {
 
 	if [[ $arg == r ]]
 	then
-		if [[ -n $eslast ]] && [[ ${eslast:0-1} != $edcmd ]]
+		if [[ -n $eslast ]] && [[ ${eslast:0-1} != $cmd ]]
 		then
 			[[ ${eslast:0-1} == "p" ]] \
 				&& eslast="${eslast/%p/n}" \
@@ -512,11 +542,11 @@ function editshow {
 	elif [[ $arg == $ ]] || [[ $arg == "G" ]]
 	then
 		fl="$fs"
-		show="edit ${fl}$edcmd"
+		show="edit ${fl}$cmd"
 	elif [[ $arg == g ]]
 	then
 		fl="1"
-		show="edit ${fl}$edcmd"
+		show="edit ${fl}$cmd"
 	elif [[ $arg =~ ^([.+-]?([0-9]+)?)(,[$+]?([0-9]+)?)?$ ]] \
 		&& [[ $arg != . ]]
 	then
@@ -534,14 +564,14 @@ function editshow {
 			[[ $? -ne 0 ]] \
 				&& >&2 echo "editshow: end line not recognized" \
 				&& return 5
-			show="edit ${head},${tail}$edcmd"
+			show="edit ${head},${tail}$cmd"
 			fl="$tail"
 		else
 			arg="$(_editline "$arg")"
 			[[ $? -ne 0 ]] \
 				&& >&2 echo "editshow: line not recognized" \
 				&& return 6
-			show="edit ${arg}$edcmd"
+			show="edit ${arg}$cmd"
 			fl="$arg"
 		fi
 	elif [[ $arg =~ ^\/.*(,\/.*)? ]] && [[ -z $show ]]
@@ -557,29 +587,29 @@ function editshow {
 				&& tail="$fs" \
 				|| tail="$(editlocate "${tail/\//}" $((fl + 1)))"
 			[[ -n $head ]] && [[ -n $tail ]] \
-				&& show="edit ${head},${tail}$edcmd" \
+				&& show="edit ${head},${tail}$cmd" \
 				&& fl="$tail"
 		else
 			local line="$(editlocate "${arg/\//}")"
-			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$edcmd" \
+			[[ $line =~ ^[0-9]+$ ]] && show="edit ${line}$cmd" \
 				&& fl="$line"
 		fi
 	elif [[ $arg == l ]] || [[ $arg == . ]]
 	then
-		show="edit ${fl}$edcmd"
+		show="edit ${fl}$cmd"
 	elif [[ $pagesize -ge $fs ]]
 	then
-		show="edit "1,${fs}$edcmd""
+		show="edit "1,${fs}$cmd""
 	elif [[ $arg == n ]]
 	then
 		[[ $eslastarg == "p" ]] \
 			&& fl="$((fl + pagesize + 2))"
 		if [[ $fl -ge $((fs - pagesize)) ]]
 		then
-			show="edit "$((fs - pagesize)),${fs}$edcmd""
+			show="edit "$((fs - pagesize)),${fs}$cmd""
 			fl="$fs"
 		else
-			show="edit "${fl},$((fl + pagesize))$edcmd""
+			show="edit "${fl},$((fl + pagesize))$cmd""
 			fl="$((fl + pagesize + 1))"
 		fi
 	elif [[ $arg == p ]]
@@ -592,23 +622,23 @@ function editshow {
 			&& fl="$((fl - pagesize - 1))"
 		if [[ $fl -le $pagesize ]]
 		then
-			show="edit "1,${pagesize}$edcmd""
+			show="edit "1,${pagesize}$cmd""
 			fl="$pagesize"
 		else
-			show="edit "$((fl - pagesize)),${fl}$edcmd""
+			show="edit "$((fl - pagesize)),${fl}$cmd""
 			fl="$((fl - pagesize - 1))"
 		fi
 	elif [[ $arg == b ]]
 	then
-		show="edit "1,${pagesize}$edcmd""
+		show="edit "1,${pagesize}$cmd""
 		fl="$((pagesize + 1))"
 	elif [[ $arg == e ]]
 	then
-		show="edit "$((fs - pagesize)),${fs}$edcmd""
+		show="edit "$((fs - pagesize)),${fs}$cmd""
 		fl="$((fs - pagesize - 1))"
 	elif [[ $arg == a ]]
 	then
-		show="edit ,$edcmd"
+		show="edit ,$cmd"
 	elif [[ $arg == c ]]
 	then
 		local head="$((fl - (pagesize / 2)))"
@@ -616,7 +646,7 @@ function editshow {
 		[[ $head -lt 1 ]] && head="1" \
 			&& tail="$((tail + (pagesize / 2)))"
 		[[ $tail -gt $fs ]] && tail="$fs"
-		show="edit ${head},${tail}$edcmd"
+		show="edit ${head},${tail}$cmd"
 	elif [[ $arg == v ]]
 	then
 		local rows=
@@ -630,10 +660,10 @@ function editshow {
 		local tail="$((fl + rows - 2))"
 		if [[ $tail -ge $fs ]]
 		then
-			show="edit $fl,\$$edcmd"
+			show="edit $fl,\$$cmd"
 			fl="$fs"
 		else
-			show="edit $head,$tail$edcmd"
+			show="edit $head,$tail$cmd"
 			fl="$((tail + 1))"
 		fi
 	fi
@@ -660,21 +690,19 @@ function editshowfzf {
 	local f="${2:-$fn}"
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& &>2 echo "editshowfzf: no file" \
+		&& >&2 echo "editshowfzf: no file" \
 		&& return 1
 	! [[ -f $f ]] \
-		&& &>2 echo "editshowfzf: file not found" \
+		&& >&2 echo "editshowfzf: file not found" \
 		&& return 2
-	[[ -z $arg ]] \
-		&& &>2 echo "editshowfzf: no argument" \
-		&& return 3
+	[[ -z $arg ]] && arg="a"
 	local res="$(_editfzf '' 'echo' 0 "$(edcolor=0 edcmd=n editshow \
 		"$arg" "$f")")"
 	[[ -z $res ]] && return 0
 	local line="${res/$'\t'*/}"
 	[[ -z $line ]] \
 		&& >&2 echo "editshowfzf: cant find line" \
-		&& return 4
+		&& return 3
 	[[ $f == $fn ]] \
 		&& editshow $line \
 		|| editshow $line "$f"
@@ -959,6 +987,7 @@ function editlevel {
 		local tabs=0
 		local res=
 		ind=
+		local IFS=$'\t\n '
 		while true
 		do
 			[[ ${line:0:1} == $' ' ]] \
@@ -1035,22 +1064,24 @@ function _editfzf {
 	[[ $breakwords -eq 1 ]] \
 		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort -n | uniq)" \
 		|| local data="$(echo "$*" | sort -n | uniq)"
+	local size="${edfzfsize:-80%}"
+	local psize="${edfzfpsize:-30%}"
 	if [[ -n $preview ]]
 	then
 		if [[ $preview == echo ]]
 		then
-			echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+			echo "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
-				--preview-window down,$edfzfpsize,wrap \
+				--preview-window down,$psize,wrap \
 				--preview 'echo {}'
 		else
-			echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+			echo "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
-				--preview-window down,$edfzfpsize,wrap --preview \
+				--preview-window down,$psize,wrap --preview \
 				"echo file: {}; echo -----------; cat "$preview/{}""
 		fi
 	else
-		echo "$data" | fzf-tmux -p ${edfzfsize},${edfzfsize} \
+		echo "$data" | fzf-tmux -p ${size},${size} \
 			--layout=reverse-list --cycle $multiple
 	fi
 
@@ -1066,6 +1097,15 @@ function editwords {
 	then
 		local words=($(editprint a "$f"))
 		local extension="${f/*l/}"
+		[[ -z $editdir ]] \
+			&& >&2 echo "editwords: editdir is not set" \
+			&& return 2
+		! [[ -d $editdir ]] \
+			&& >&2 echo "editwords: editdir does not exist" \
+			&& return 3
+		! [[ -d $editdir/dict ]] \
+			&& >&2 echo "editwords: dict dir does not exist" \
+			&& return 4
 		local dict_words="$editdir/dict/words"
 		local ext_words="$editdir/dict/$extension"
 		local local_words="$(dirname $f)/.bashed-words"
@@ -1101,7 +1141,8 @@ function editwordsrc {
 		&& return 1
 	if tmux run 2>/dev/null
 	then
-		tmux bind-key $editwordkey run -b \
+		local wordkey="${editwordkey:-o}"
+		tmux bind-key $wordkey run -b \
 			"bash -ic \"fn=\"$f\"; editwords\""
 	else
 		return 2
@@ -1118,6 +1159,7 @@ function ee { editexternal "$@"; }
 function efl { editlocate "$@"; }
 function ef { editfind "$@"; }
 function eff { editfilefind "$@"; }
+function efg { editfindg "$@"; }
 function ei { editinsert "$@"; }
 function ej { editjoin "$@"; }
 function el { editlevel "$@"; }
@@ -1174,7 +1216,7 @@ function _editchange {
 complete -o nospace -o filenames -F _editchange editchange
 complete -o nospace -o filenames -F _editchange ech
 
-function _edcmd {
+function _editcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1192,8 +1234,8 @@ function _edcmd {
 	esac
 }
 
-complete -o nospace -o filenames -F _edcmd edcmd
-complete -o nospace -o filenames -F _edcmd ec
+complete -o nospace -o filenames -F _editcmd editcmd
+complete -o nospace -o filenames -F _editcmd ec
 
 function _editcopy {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -1269,6 +1311,8 @@ function _editfind {
 
 complete -o nospace -o filenames -F _editfind editfind
 complete -o nospace -o filenames -F _editfind ef
+complete -o nospace -o filenames -F _editfind editfindg
+complete -o nospace -o filenames -F _editfind efg
 
 function _editfilefind {
 	local cur=${COMP_WORDS[COMP_CWORD]}

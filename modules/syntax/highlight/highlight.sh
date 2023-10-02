@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
 
+[[ -z $editdir ]] && \
+	>&2 echo "highlight: editdir is not set"
+! [[ -d $editdir ]] && \
+	>&2 echo "highlight: editdir does not exist"
 ehidir="$editdir/syntax/hi"
 ehidefs="/usr/share/highlight/langDefs"
 ehioutformat="xterm256"
 ehitheme=camo
+
 mkdir -p "$ehidir"
 
 function editshowhi {
-	[[ -z $1 ]] \
-		&& >&2 echo "editshowhi: no argument" \
-		&& return 2
+	local arg="$1"
+	[[ -z $arg ]] && arg="+"
 	local file="${2:-$fn}"
 	file="$(readlink -f "$file")"
 	[[ -z $file ]] \
 		&& >&2 echo "editshowhi: no file" \
 		&& return 1
+	[[ -z $ehidir ]] \
+		&& >&2 echo "editshowhi: ehidir is not set" \
+		&& return 2
+	! [[ -d $ehidir ]] \
+		&& >&2 echo "editshowhi: ehidir does not exist" \
+		&& return 3
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
 	mkdir -p "$dir"
@@ -37,19 +47,21 @@ function editshowhi {
 	local syntfile="$dir/${name}__syntax"
 	if [[ $rewrite == 1 ]]
 	then
+		local format="${ehioutformat:-xterm256}"
+		local theme="${ehitheme:-camo}"
 		[[ -n $ehisyntax ]] && echo "$ehisyntax" > "$syntfile"
 		[[ -f $syntfile ]] \
 			&& local syntax="$(cat "$syntfile")"
 		[[ -n $syntax ]] \
-			&& highlight --syntax "$syntax" -s $ehitheme \
-			--out-format=$ehioutformat "$file" > "$dir/$name" \
-			|| highlight -s $ehitheme --out-format=$ehioutformat \
-			"$file" > "$dir/$name"
+			&& highlight --syntax "$syntax" -s $theme \
+				--out-format=$format "$file" > "$dir/$name" \
+			|| highlight -s $theme --out-format=$format \
+				"$file" > "$dir/$name"
 	fi
 
-	editshow $1 "$dir/$name"
-	[[ -z $2 ]] && editshow $1 > /dev/null
-	[[ $fn == $2 ]] && editshow $1 > /dev/null
+	editshow $arg "$dir/$name"
+	[[ -z $2 ]] && editshow $arg > /dev/null
+	[[ $fn == $2 ]] && editshow $arg > /dev/null
 	return 0
 }
 
@@ -59,22 +71,29 @@ function _edithiextract {
 	[[ -z $file ]] \
 		&& >&2 echo "_edithiextract: no file" \
 		&& return 1
+	[[ -z $ehidir ]] \
+		&& >&2 echo "_edithiextract: ehidir is not set" \
+		&& return 2
+	! [[ -d $ehidir ]] \
+		&& >&2 echo "_edithiextract: ehidir does not exist" \
+		&& return 3
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
 	[[ -n $2 ]] && ehisyntax="$2"
 	local syntfile="$dir/${name}__syntax"
-	[[ -n $ehisyntax ]] && local hi_file="$ehidefs/${ehisyntax}.lang"
+	local defs="${ehidefs:-/usr/share/highlight/langDefs}"
+	[[ -n $ehisyntax ]] && local hi_file="$defs/${ehisyntax}.lang"
 	! [[ -f $hi_file ]] && hi_file=
 	if [[ -f $syntfile ]] && [[ -z $hi_file ]]
 	then
 		syntax="$(cat "$syntfile")"
-		local hi_file="$ehidefs/${syntax}.lang"
+		local hi_file="$defs/${syntax}.lang"
 	fi
 
 	if [[ -z $hi_file ]] && [[ -n $file ]]
 	then
 		local extension="${file/*.}"
-		[[ -n $extension ]] && hi_file="$ehidefs/${extension}.lang"
+		[[ -n $extension ]] && hi_file="$defs/${extension}.lang"
 		! [[ -f $hi_file ]] && hi_file=
 	fi
 
@@ -116,7 +135,9 @@ function _editshowhi {
 			;;
 		3)
 			local defs=()
-			for i in $ehidefs/*.lang
+			local IFS=$'\n\t '
+			local defs="${ehidefs:-/usr/share/highlight/langDefs}"
+			for i in $defs/*.lang
 			do
 				lang="${i/.lang/}"
 				lang="${lang/*\//}"

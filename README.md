@@ -294,6 +294,12 @@ This will return a list with all occurences of "re".  More details on how to nav
 
 If a second argument fz is passed, the results will be presented in fzf, and if one of them is selected, the line of the selection will be used as new current line.
 
+The efg function calls ef, but it wraps the first argument in g//n.  Its a shortcut for:
+
+````
+ef g/re/n'
+````
+
 ## Commands:
 Shell commands can be applied to a region using ec:
 
