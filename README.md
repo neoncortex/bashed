@@ -297,7 +297,7 @@ If a second argument fz is passed, the results will be presented in fzf, and if 
 The efg function calls ef, but it wraps the first argument in g//n.  Its a shortcut for:
 
 ````
-ef g/re/n'
+ef 'g/re/n'
 ````
 
 ## Commands:
