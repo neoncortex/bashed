@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 [[ -z $editdir ]] && \
-	>&2 echo "highlight: editdir is not set"
+	_editalert "highlight: editdir is not set"
 ! [[ -d $editdir ]] && \
-	>&2 echo "highlight: editdir does not exist"
+	_editalert "highlight: editdir does not exist"
 ehidir="$editdir/syntax/hi"
 ehidefs="/usr/share/highlight/langDefs"
 ehioutformat="xterm256"
@@ -17,13 +17,13 @@ function editshowhi {
 	local file="${2:-$fn}"
 	file="$(readlink -f "$file")"
 	[[ -z $file ]] \
-		&& >&2 echo "editshowhi: no file" \
+		&& >&2 _editalert "editshowhi: no file" \
 		&& return 1
 	[[ -z $ehidir ]] \
-		&& >&2 echo "editshowhi: ehidir is not set" \
+		&& >&2 _editalert "editshowhi: ehidir is not set" \
 		&& return 2
 	! [[ -d $ehidir ]] \
-		&& >&2 echo "editshowhi: ehidir does not exist" \
+		&& >&2 _editalert "editshowhi: ehidir does not exist" \
 		&& return 3
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"
@@ -69,13 +69,13 @@ function _edithiextract {
 	local file="${1:-$fn}"
 	file="$(readlink -f "$file")"
 	[[ -z $file ]] \
-		&& >&2 echo "_edithiextract: no file" \
+		&& >&2 _editalert "_edithiextract: no file" \
 		&& return 1
 	[[ -z $ehidir ]] \
-		&& >&2 echo "_edithiextract: ehidir is not set" \
+		&& >&2 _editalert "_edithiextract: ehidir is not set" \
 		&& return 2
 	! [[ -d $ehidir ]] \
-		&& >&2 echo "_edithiextract: ehidir does not exist" \
+		&& >&2 _editalert "_edithiextract: ehidir does not exist" \
 		&& return 3
 	local dir="$ehidir/$(dirname "$file")"
 	local name="$(basename "$file")"

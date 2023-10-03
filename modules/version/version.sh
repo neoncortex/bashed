@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 [[ -z $editdir ]] && \
-	>&2 echo "version: editdir is not set"
+	_editalert "version: editdir is not set"
 ! [[ -d $editdir ]] && \
-	>&2 echo "version: editdir does not exist"
+	_editalert "version: editdir does not exist"
 editversiondir="$editdir/version"
 diffarg="--color -c"
 
@@ -12,15 +12,15 @@ mkdir -p "$editversiondir"
 function editstore {
 	[[ -n $1  ]] && local fn="$1" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "editstore: no file" \
+		&& _editalert "editstore: no file" \
 		&& return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 	[[ -z $editversiondir ]] \
-		&& >&2 echo "editstore: editversiondir is not set" \
+		&& _editalert "editstore: editversiondir is not set" \
 		&& return 2
 	! [[ -d $editversiondir ]] \
-		&& >&2 echo "editstore: editversiondir does not exist" \
+		&& _editalert "editstore: editversiondir does not exist" \
 		&& return 3
 	local dir="$editversiondir/$(dirname "$fn")"
 	mkdir -p "$dir"
@@ -31,14 +31,14 @@ function editstore {
 function editundo {
 	[[ -n $4  ]] && local fn="$4" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "editundo: no file" \
+		&& _editalert "editundo: no file" \
 		&& return 1
 	[[ ${fn:0:1} != '/' ]] && fn="$PWD/$fn"
 	[[ -z $editversiondir ]] \
-		&& >&2 echo "editundo: editversiondir is not set" \
+		&& _editalert "editundo: editversiondir is not set" \
 		&& return 2
 	! [[ -d $editversiondir ]] \
-		&& >&2 echo "editundo: editversiondir does not exist" \
+		&& _editalert "editundo: editversiondir does not exist" \
 		&& return 3
 	local dir="$editversiondir/$(dirname "$fn")"
 	local files=()
@@ -62,7 +62,7 @@ function editundo {
 	fi
 
 	[[ ${#files[@]} -eq 0 ]] \
-		&& >&2 echo "editundo: no files" \
+		&& _editalert "editundo: no files" \
 		&& return 4
 	if [[ $1 == l ]] || [[ $1 == list ]]
 	then
@@ -85,13 +85,13 @@ function editundo {
 		then
 			 cp "$res" "$fn"
 		else
-			echo >&2 "editundo: listcurses: file not found"
+			_editalert "editundo: listcurses: file not found"
 			return 5
 		fi
 	elif [[ $1 == delete ]] || [[ $1 == rm ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editundo: delete: no start file" \
+			&& _editalert "editundo: delete: no start file" \
 			&& return 6
 		local head="$2"
 		local tail="$3"
@@ -102,7 +102,7 @@ function editundo {
 			then
 				rm "${files[$i]}"
 			else
-				echo >&2 "editundo: delete: file not found"
+				_editalert "editundo: delete: file not found"
 				return 7
 			fi
 		done
@@ -118,7 +118,7 @@ function editundo {
 	elif [[ $1 == diff ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
-			&& >&2 echo "editundo: diff: no files" \
+			&& _editalert "editundo: diff: no files" \
 			&& return 8
 		local f1="$2"
 		local f2="$3"
@@ -128,7 +128,7 @@ function editundo {
 		then
 			diff $diffarg "$f1" "$f2" 
 		else
-			echo >&2 "editundo: diff: cant read files"
+			_editalert "editundo: diff: cant read files"
 			return 9
 		fi
 	elif [[ $1 == diffcurses ]]
@@ -141,7 +141,7 @@ function editundo {
 			then
 				diff $diffarg "$2" "$res"
 			else
-				echo >&2 "editundo: diffcurses: file not found"
+				_editalert "editundo: diffcurses: file not found"
 				return 10
 			fi
 		else
@@ -165,20 +165,20 @@ function editundo {
 			then
 				diff $diffarg "$f1" "$f2"
 			else
-				echo >&2 "editundo: diffcurses: cant read files"
+				_editalert "editundo: diffcurses: cant read files"
 				return 12
 			fi
 		fi
 	elif [[ $1 == es ]] || [[ $1 == show ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editundo: es: no filename" \
+			&& _editalert "editundo: es: no filename" \
 			&& return 13
 		if [[ -f ${files[$2]} ]]
 		then
 			editshow a "${files[$2]}"
 		else
-			echo >&2 "editundo: show: file not found"
+			_editalert "editundo: show: file not found"
 			return 14
 		fi
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
@@ -195,13 +195,13 @@ function editundo {
 	elif [[ $1 == p ]] || [[ $1 == print ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editundo: print: no filename" \
+			&& _editalert "editundo: print: no filename" \
 			&& return 16
 		if [[ -f ${files[$2]} ]]
 		then
 			editshow a "${files[$2]}"
 		else
-			echo >&2 "editundo: print: file not found"
+			_editalert "editundo: print: file not found"
 			return 17
 		fi
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
@@ -212,13 +212,13 @@ function editundo {
 		then
 			 editshow a "$res"
 		else
-			echo >&2 "editundo: printcurses: file not found"
+			_editalert "editundo: printcurses: file not found"
 			return 18
 		fi
 	elif [[ $1 == copy ]] || [[ $1 == cp ]]
 	then
 		[[ -z $2 ]] && [[ -z $3 ]] \
-			&& >&2 echo "editundo: copy: no file names" \
+			&& _editalert "editundo: copy: no file names" \
 			&& return 19
 		local f1="$2"
 		local f2="$3"
@@ -228,13 +228,13 @@ function editundo {
 		then
 			cp "$f1" "$f2"
 		else
-			echo "editundo: copy: file not found"
+			_editalert "editundo: copy: file not found"
 			return 20
 		fi
 	elif [[ $1 == copycurses ]] || [[ $1 == cpu ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editundo: copycurses: no destiny" \
+			&& _editalert "editundo: copycurses: no destiny" \
 			&& return 21
 		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
 		[[ -z $res ]] && return 0
@@ -242,7 +242,7 @@ function editundo {
 		then
 			cp "$res" "$2"
 		else
-			echo >&2 "editundo: copycurses: file not found"
+			_editalert "editundo: copycurses: file not found"
 			return 22
 		fi
 	elif [[ $1 =~ [0-9]+ ]]
@@ -251,14 +251,14 @@ function editundo {
 		then
 			cp "${files[$1]}" "$fn"
 		else
-			echo >&2 "editundo: file not found"
+			_editalert "editundo: file not found"
 			return 23
 		fi
 
 		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 		es 1
 	else
-		echo >&2 "?"
+		_editalert "?"
 		return 24
 	fi
 }

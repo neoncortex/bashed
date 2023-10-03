@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 [[ -z $editdir ]] && \
-	>&2 echo "clip: editdir is not set"
+	_editalert "clip: editdir is not set"
 ! [[ -d $editdir ]] && \
-	>&2 echo "clip: editdir does not exist"
+	_editalert "clip: editdir does not exist"
 edclipcolor=31
 edclipdir="$editdir/clip"
 edclipkey="b"
@@ -12,7 +12,7 @@ mkdir -p "$edclipdir"
 
 function _edclipfile {
 	[[ -z $1 ]] \
-		&& >&2 echo "_edclipfile: no file name" \
+		&& _editalert "_edclipfile: no file name" \
 		&& return 1
 	local name="$1"
 	shift
@@ -33,16 +33,16 @@ function _edclipfile {
 
 function _editclipword {
 	[[ -z $edclipdir ]] \
-		&& >&2 echo "_editclipword: edclipdir is not set" \
+		&& _editalert "_editclipword: edclipdir is not set" \
 		&& return 1
 	! [[ -d $edclipdir ]] \
-		&& >&2 echo "_editclipword: edclipdir does not exist" \
+		&& _editalert "_editclipword: edclipdir does not exist" \
 		&& return 2
 	if tmux run 2>/dev/null
 	then
 		local res="$(_editfzf '' "$edclipdir" 1 "$@")"
 	else
-		echo "_edclipword: tmux session not found"
+		_editalert "_edclipword: tmux session not found"
 		return 3
 	fi
 
@@ -57,10 +57,10 @@ function _editclipstart {
 	local files=()
 	local n=1
 	[[ -z $edclipdir ]] \
-		&& >&2 echo "_editclipstart: edclipdir is not set" \
+		&& _editalert "_editclipstart: edclipdir is not set" \
 		&& return 1
 	! [[ -d $edclipdir ]] \
-		&& >&2 echo "_editclipstart: edclipdir does not exist" \
+		&& _editalert "_editclipstart: edclipdir does not exist" \
 		&& return 2
 	for i in $edclipdir/*
 	do
@@ -82,36 +82,36 @@ _editclipstart > /dev/null
 
 function editclipboard {
 	[[ -z $edclipdir ]] \
-		&& >&2 echo "editclipboard: edclipdir is not set" \
+		&& _editalert "editclipboard: edclipdir is not set" \
 		&& return 1
 	! [[ -d $edclipdir ]] \
-		&& >&2 echo "editclipboard: edclipdir does not exist" \
+		&& _editalert "editclipboard: edclipdir does not exist" \
 		&& return 2
 	[[ -z $1 ]] \
-		&& >&2 echo "editclipboard: no argument" \
+		&& _editalert "editclipboard: no argument" \
 		&& return 3
 	local filename="$fn"
 	local IFS=$' \n\t'
 	local files=($(_editclipstart))
 	[[ ${#files[@]} -eq 0 ]] \
-		&& >&2 echo "editclipboard: no files" \
+		&& _editalert "editclipboard: no files" \
 		&& return 4
 	if [[ $1 == copy ]] || [[ $1 == c ]]
 	then
 		local region="$fl"
 		[[ -n $2 ]] && region="$2"
 		[[ -z $region ]] \
-			&& >&2 echo "editclipboard: copy: no region" \
+			&& _editalert "editclipboard: copy: no region" \
 			&& return 5
 		[[ -n $3 ]] && resname="$3"
 		[[ -n $4 ]] && filename="$4" \
 			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] \
-			&& >&2 echo "editclipboard: copy: no filename" \
+			&& _editalert "editclipboard: copy: no filename" \
 			&& return 6
 		content="$(es $region "$filename")"
 		[[ -z $content ]] \
-			&& >&2 echo "editclipboard: copy: no content" \
+			&& _editalert "editclipboard: copy: no content" \
 			&& return 7
 		if [[ -n $resname ]]
 		then
@@ -127,7 +127,7 @@ function editclipboard {
 	elif [[ $1 == add ]] || [[ $1 == a ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: add: no content" \
+			&& _editalert "editclipboard: add: no content" \
 			&& return 8
 		[[ -n $3 ]] && resname="$3"
 		local content="$2"
@@ -145,21 +145,21 @@ function editclipboard {
 	elif [[ $1 == paste ]] || [[ $1 == p ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: paste: no clipfile name" \
+			&& _editalert "editclipboard: paste: no clipfile name" \
 			&& return 9
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: paste: no clipfile" \
+			&& _editalert "editclipboard: paste: no clipfile" \
 			&& return 10
 		local line="${3:-$fl}"
 		[[ -n $4 ]] \
 			&& filename="$4" \
 			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] \
-			&& >&2 echo "editclipboard: paste: no filename" \
+			&& _editalert "editclipboard: paste: no filename" \
 			&& return 11
 		[[ -z $line ]] \
-			&& >&2 echo "editclipboard: paste: no line" \
+			&& _editalert "editclipboard: paste: no line" \
 			&& return 12
 		editcopy 1 '$' '' '' "$edclipdir/$clipfile"
 		editpaste "$line" '' "$filename"
@@ -168,18 +168,18 @@ function editclipboard {
 		local region="$fl"
 		[[ -n $2 ]] && region="$2"
 		[[ -z $region ]] \
-			&& >&2 echo "editclipboard: cut: no region" \
+			&& _editalert "editclipboard: cut: no region" \
 			&& return 13
 		[[ -n $3 ]] && resname="$3"
 		[[ -n $4 ]] \
 			&& filename="$4" \
 			&& filename="$(readlink -f "$filename")"
 		[[ -z $filename ]] \
-			&& >&2 echo "editclipboard: cut: no filename" \
+			&& _editalert "editclipboard: cut: no filename" \
 			&& return 14
 		content="$(es $region "$filename")"
 		[[ -z $content ]] \
-			&& >&2 echo "editclipboard: cut: no content" \
+			&& _editalert "editclipboard: cut: no content" \
 			&& return 15
 		if [[ $region =~ , ]]
 		then
@@ -221,7 +221,7 @@ function editclipboard {
 	elif [[ $1 == search ]] || [[ $1 == s ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: search: no argument" \
+			&& _editalert "editclipboard: search: no argument" \
 			&& return 16
 		local searchresult=()
 		for ((i=0; i < ${#files[@]}; ++i))
@@ -238,7 +238,7 @@ function editclipboard {
 	elif [[ $1 == searchcontent ]] || [[ $1 == sc ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: searchcontent: no argument" \
+			&& _editalert "editclipboard: searchcontent: no argument" \
 			&& return 17
 		local searchresult=()
 		for ((i=0; i < ${#files[@]}; ++i))
@@ -259,36 +259,36 @@ $g
 	elif [[ $1 == show ]] || [[ $1 == sh ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: show: no clip filename" \
+			&& _editalert "editclipboard: show: no clip filename" \
 			&& return 18
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: show: no clip file" \
+			&& _editalert "editclipboard: show: no clip file" \
 			&& return 19
 		content="$(cat "$edclipdir/$clipfile")"
 		printf -- '%s' "$content"
 	elif [[ $1 == delete ]] || [[ $1 == d ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: delete: no clip filename" \
+			&& _editalert "editclipboard: delete: no clip filename" \
 			&& return 20
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: delete: no clip file" \
+			&& _editalert "editclipboard: delete: no clip file" \
 			&& return 21
 		[[ -f $edclipdir/$clipfile ]] && rm "$edclipdir/$clipfile"
 	elif [[ $1 == rename ]] || [[ $1 == r ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: rename: no clip filename" \
+			&& _editalert "editclipboard: rename: no clip filename" \
 			&& return 22
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: rename: no clip file" \
+			&& _editalert "editclipboard: rename: no clip file" \
 			&& return 23
 		local newname="$3"
 		[[ -z $newname ]] \
-			&& >&2 echo "editclipboard: rename: no new name" \
+			&& _editalert "editclipboard: rename: no new name" \
 			&& return 24
 		[[ -f $edclipdir/$clipfile ]] && mv "$edclipdir/$clipfile" \
 			"$edclipdir/$newname"
@@ -303,18 +303,18 @@ $g
 	elif [[ $1 == tx ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: tx: no clip filename" \
+			&& _editalert "editclipboard: tx: no clip filename" \
 			&& return 25
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: tx: no clip file" \
+			&& _editalert "editclipboard: tx: no clip file" \
 			&& return 26
 		cat "$edclipdir/$clipfile" | xclip -r -i
 	elif [[ $1 == fx ]]
 	then
 		local content="$(xclip -o)"
 		[[ -z $content ]] \
-			&& >&2 echo "editclipboard: fx: no content" \
+			&& _editalert "editclipboard: fx: no content" \
 			&& return 27
 		local resname="$2"
 		if [[ -n $resname ]]
@@ -327,18 +327,18 @@ $g
 	elif [[ $1 == tw ]]
 	then
 		[[ -z $2 ]] \
-			&& >&2 echo "editclipboard: tw: no clip filename" \
+			&& _editalert "editclipboard: tw: no clip filename" \
 			&& return 28
 		local clipfile="$(_edclipfile "$2" "${files[@]}")"
 		[[ -z $clipfile ]] \
-			&& >&2 echo "editclipboard: tw: no clip file" \
+			&& _editalert "editclipboard: tw: no clip file" \
 			&& return 29
 		cat "$edclipdir/$clipfile" | wl-copy
 	elif [[ $1 == fw ]]
 	then
 		local content="$(wl-paste)"
 		[[ -z $content ]] \
-			&& >&2 echo "editclipboard: fw: no content" \
+			&& _editalert "editclipboard: fw: no content" \
 			&& return 30
 		local resname="$2"
 		if [[ -n $resname ]]

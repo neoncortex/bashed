@@ -4,6 +4,7 @@
 editdir="$HOME/.edit"
 editsearchdir="$editdir/search"
 editreadlines="$editdir/readlines"
+edcontentcmd="xdg-open"
 
 # edit
 edcmd="n"
@@ -17,6 +18,9 @@ editwordkey="o"
 #fzf
 edfzfsize="80%"
 edfzfpsize="30%"
+
+#sound
+edsound=1
 
 mkdir -p "$editdir"
 mkdir -p "$editdir/dict"
@@ -61,13 +65,24 @@ function _editwindow {
 	done
 }
 
+function _editalert {
+	[[ -n $1 ]] \
+		&& >&2 echo "$1"
+	local sound="${2:-$ederrorsound}"
+	[[ $edsound == 1 ]] \
+		&& [[ -n $sound ]] \
+		&& [[ -f $sound ]] \
+		&& $(ffplay -nodisp -autoexit "$sound" >/dev/null 2>&1 &)
+	return 0
+}
+
 function edit {
 	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "edit: no file" \
+		&& _editalert "edit: no file" \
 		&& return 1
 	[[ -z $1 ]] \
-		&& >&2 echo "edit: no command" \
+		&& _editalert "edit: no command" \
 		&& return 2
 	result="$(echo -e "$1" | ed -s "$fn")"
 	echo "$result"
@@ -77,18 +92,18 @@ function edit {
 function _editline {
 	local l="${1:-$fl}"
 	[[ -z $l ]] \
-		&& >&2 echo "_editline: no line" \
+		&& _editalert "_editline: no line" \
 		&& return 1
 	! [[ $l == . ]] \
 		&& ! [[ $l == $ ]] \
 		&& ! [[ $l =~ ^\+$ ]] \
 		&& ! [[ $l =~ ^\-$ ]] \
 		&& ! [[ $l =~ ^(\-|\+)?[0-9]+$ ]] \
-		&& >&2 echo "_editline: cant parse line" \
+		&& _editalert "_editline: cant parse line" \
 		&& return 2
 	[[ -n $2 ]] && local fs="$(wc -l "$2" | cut -d ' ' -f1)"
 	[[ -z $fs ]] \
-		&& >&2 echo "_editline: file size is 0" \
+		&& _editalert "_editline: file size is 0" \
 		&& return 3
 	if [[ -n $fl ]]
 	then
@@ -111,22 +126,22 @@ function editcopy {
 	local e=${2:-$fl}
 	local f="${5:-$fn}"
 	[[ -z $s ]] \
-		&& >&2 echo "editcopy: no start line" \
+		&& _editalert "editcopy: no start line" \
 		&& return 2
 	[[ -z $e ]] \
-		&& >&2 echo "editcopy: no end line" \
+		&& _editalert "editcopy: no end line" \
 		&& return 3
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editcopy: no file" \
+		&& _editalert "editcopy: no file" \
 		&& return 1
 	s="$(_editline "$s" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editcopy: start line not recognized" \
+		&& _editalert "editcopy: start line not recognized" \
 		&& return 4
 	e="$(_editline "$e" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editcopy: end line not recognized" \
+		&& _editalert "editcopy: end line not recognized" \
 		&& return 5
 	local res="$(edit "${s},${e}p" "$f" > "$editreadlines")"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
@@ -138,18 +153,18 @@ function editcopy {
 function editpaste {
 	local s=${1:-$fl}
 	[[ -z $s ]] \
-		&& >&2 echo "editpaste: no start line" \
+		&& _editalert "editpaste: no start line" \
 		&& return 2
 	local f="${3:-$fn}"
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editpaste: no file" \
+		&& _editalert "editpaste: no file" \
 		&& return 1
 	if [[ $s != 0 ]]
 	then
 		s="$(_editline "$s" "$f")"
 		[[ $? -ne 0 ]] \
-			&& >&2 echo "editpaste: start line not recognized" \
+			&& _editalert "editpaste: start line not recognized" \
 			&& return 3
 	fi
 
@@ -162,42 +177,42 @@ function editpaste {
 function editcmd {
 	[[ -n $4 ]] && local fn="$4" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "editcmd: no file" \
+		&& _editalert "editcmd: no file" \
 		&& return 1
 	[[ -z $3 ]] \
-		&& >&2 echo "editcmd: no command" \
+		&& _editalert "editcmd: no command" \
 		&& return 2
 	[[ -z $1 ]] \
-		&& >&2 echo "editcmd: no start line" \
+		&& _editalert "editcmd: no start line" \
 		&& return 3
 	[[ -z $2 ]] \
-		&& >&2 echo "editcmd: no end line" \
+		&& _editalert "editcmd: no end line" \
 		&& return 4
 	local begin="$(_editline "$1")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editcmd: start line not recognized" \
+		&& _editalert "editcmd: start line not recognized" \
 		&& return 5
 	local end="$(_editline "$2")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editcmd: end line not recognized" \
+		&& _editalert "editcmd: end line not recognized" \
 		&& return 6
 	local region="$(editcopy $begin $end '' '' "$fn")"
 	[[ $? -ne 0 ]] && return $?
 	[[ -z $editdir ]] \
-		&& >&2 echo "editcmd: editdir is not set" \
+		&& _editalert "editcmd: editdir is not set" \
 		&& return 7
 	! [[ -d $editdir ]] \
-		&& >&2 echo "editcmd: editdir does not exist" \
+		&& _editalert "editcmd: editdir does not exist" \
 		&& return 8
 	local tempfile="$editdir/temp"
 	! [[ -f $editreadlines ]] \
-		&& >&2 echo "editcmd: editreadlines file does not exist" \
+		&& _editalert "editcmd: editreadlines file does not exist" \
 		&& return 9
 	cat "$editreadlines" | $3 > "$tempfile"
 	if [[ $? == 0 ]]
 	then
 		[[ -z $tempfile ]] \
-			&& >&2 echo "editcmd: tempfile does not exist" \
+			&& _editalert "editcmd: tempfile does not exist" \
 			&& return 10
 		mv "$tempfile" "$editreadlines"
 		local res="$(edit "$begin,${end}d\nw" "$fn")"
@@ -209,7 +224,7 @@ function editcmd {
 
 function _editarg {
 	[[ -z $1 ]] \
-		&& >&2 echo "_editarg: no argument" \
+		&& _editalert "_editarg: no argument" \
 		&& return 1
 	argument="$1"
 	local session="$(tmux display-message -p '#S')"
@@ -229,22 +244,24 @@ function editopen {
 	fi
 
 	[[ -z $f ]] \
-		&& >&2 echo "editopen: no file" \
+		&& _editalert "editopen: no file" \
 		&& return 1
 	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
 	f="$(readlink -f "$f")"
 	! [[ -f $f ]] \
-		&& >&2 echo "editopen: file not found" \
+		&& _editalert "editopen: file not found" \
 		&& return 2
 	_editwindow "$f" "$argument"
-	[[ $? -eq 1 ]] && return 3
+	[[ $? -eq 1 ]] \
+		&& _editalert '' "$edalertsound" \
+		&& return 3
 	if tmux run 2>/dev/null
 	then
 		local wordkey="${editwordkey:-o}"
 		tmux bind-key $wordkey run -b \
 			"bash -ic \"fn=\"$f\" editwords\""
 	else
-		>&2 echo "editopen: tmux session not found"
+		_editalert "editopen: tmux session not found"
 		return 4
 	fi
 
@@ -291,10 +308,10 @@ function editclose {
 
 function editfind {
 	[[ -z $1 ]] \
-		&& >&2 echo "editfind: no argument" \
+		&& _editalert "editfind: no argument" \
 		&& return 1
 	[[ -z $fn ]] \
-		&& >&2 echo "editfind: no file" \
+		&& _editalert "editfind: no file" \
 		&& return 2
 	local result="$(edit "$1" "$fn")"
 	[[ -z $result ]] && return
@@ -335,7 +352,7 @@ $data"
 
 function editfindg {
 	[[ -z $1 ]] \
-		&& >&2 echo "editfindg: no argument" \
+		&& _editalert "editfindg: no argument" "$ederrorsound" \
 		&& return 1
 	local arg="g/$1/n"
 	shift
@@ -344,10 +361,10 @@ function editfindg {
 
 function editfilefind {
 	[[ -z $1 ]] \
-		&& >&2 echo "editfilefind: no argument" \
+		&& _editalert "editfilefind: no argument" \
 		&& return 1
 	[[ -z $editsearchdir ]] \
-		&& >&2 echo "editfilefind: editsearchdir is not set" \
+		&& _editalert "editfilefind: editsearchdir is not set" \
 		&& return 2
 	local dir="$editsearchdir/$PWD"
 	local date="$(date +'%Y-%m-%d_%H-%M-%S')"
@@ -375,7 +392,7 @@ function editfilefind {
 		[[ -z $files ]] && return 3
 		mkdir -p "$dir"
 		! [[ -d $dir ]] \
-			&& >&2 echo "editfindfile: directory not found" \
+			&& _editalert "editfindfile: directory not found" \
 			&& return 4
 		echo "$1" > "$cache.search"
 		echo "$files" > "$cache.res"
@@ -383,10 +400,11 @@ function editfilefind {
 	else
 		if [[ -f $data ]]
 		then
-			>&2 echo "editfindfile: using cache: $data"
+			_editalert "editfindfile: using cache: $data" \
+				"$edalertsound"
 			local res="$(_editfzf '' 'echo' 0 "$(cat "$data")")"
 		else
-			>&2 echo "editfindfile: cache file not found"
+			_editalert "editfindfile: cache file not found"
 			return 5
 		fi
 	fi
@@ -401,10 +419,10 @@ function editfilefind {
 function editlocate {
 	[[ -n $3 ]] && local fn="$3" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "editlocate: no file" \
+		&& _editalert "editlocate: no file" \
 		&& return 1
 	[[ -z $1 ]] \
-		&& >&2 echo "editlocate: no argument" \
+		&& _editalert "editlocate: no argument" \
 		&& return 2
 	[[ -n $2 ]] && local fl="$2"
 	local pattern="$1"
@@ -426,10 +444,10 @@ function editshow {
 	fi
 
 	[[ -z $fn ]] \
-		&& >&2 echo "editshow: no file" \
+		&& _editalert "editshow: no file" \
 		&& return 1
 	[[ -d $fn ]] \
-		&& >&2 echo "editshow: is a directory" \
+		&& _editalert "editshow: is a directory" \
 		&& return 2
 	if tmux run 2>/dev/null
 	then
@@ -437,7 +455,7 @@ function editshow {
 		tmux bind-key $wordkey run -b \
 			"bash -ic \"fn=\"$fn\"; editwords\""
 	else
-		>&2 echo "editshow: tmux session not found"
+		_editalert "editshow: tmux session not found"
 		return 3
 	fi
 
@@ -463,7 +481,7 @@ function editshow {
 				printf -- '%s' "$fileresultindex:"
 				editshow ${fl}
 			else
-				echo "?"
+				_editalert "?"
 			fi
 
 			return
@@ -558,18 +576,18 @@ function editshow {
 			local tail="${arg/*,/}"
 			head="$(_editline "$head")"
 			[[ $? -ne 0 ]] \
-				&& >&2 echo "editshow: start line not recognized" \
+				&& _editalert "editshow: start line not recognized" \
 				&& return 4
 			tail="$(_editline "$tail")"
 			[[ $? -ne 0 ]] \
-				&& >&2 echo "editshow: end line not recognized" \
+				&& _editalert "editshow: end line not recognized" \
 				&& return 5
 			show="edit ${head},${tail}$cmd"
 			fl="$tail"
 		else
 			arg="$(_editline "$arg")"
 			[[ $? -ne 0 ]] \
-				&& >&2 echo "editshow: line not recognized" \
+				&& _editalert "editshow: line not recognized" \
 				&& return 6
 			show="edit ${arg}$cmd"
 			fl="$arg"
@@ -690,10 +708,10 @@ function editshowfzf {
 	local f="${2:-$fn}"
 	f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editshowfzf: no file" \
+		&& _editalert "editshowfzf: no file" \
 		&& return 1
 	! [[ -f $f ]] \
-		&& >&2 echo "editshowfzf: file not found" \
+		&& _editalert "editshowfzf: file not found" \
 		&& return 2
 	[[ -z $arg ]] && arg="a"
 	local res="$(_editfzf '' 'echo' 0 "$(edcolor=0 edcmd=n editshow \
@@ -701,7 +719,7 @@ function editshowfzf {
 	[[ -z $res ]] && return 0
 	local line="${res/$'\t'*/}"
 	[[ -z $line ]] \
-		&& >&2 echo "editshowfzf: cant find line" \
+		&& _editalert "editshowfzf: cant find line" \
 		&& return 3
 	[[ $f == $fn ]] \
 		&& editshow $line \
@@ -715,10 +733,10 @@ function editprint {
 
 function editappend {
 	[[ -z $fn ]] \
-		&& >&2 echo "editappend: no file" \
+		&& _editalert "editappend: no file" \
 		&& return 1
 	[[ -z $fl ]] \
-		&& >&2 echo "editappend: no line" \
+		&& _editalert "editappend: no line" \
 		&& return 2
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
@@ -734,7 +752,7 @@ function editappend {
 
 function editinsert {
 	[[ -z $fl ]] \
-		&& >&2 echo "editinsert: no line" \
+		&& _editalert "editinsert: no line" \
 		&& return 1
 	fl="$((fl - 1))"
 	editappend "$@"
@@ -744,20 +762,20 @@ function editdelete {
 	local f="${3:-$fn}"
 	[[ -n $3 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editdelete: no file" \
+		&& _editalert "editdelete: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	[[ -z $from ]] \
-		&& >&2 echo "editdelete: no start line" \
+		&& _editalert "editdelete: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editdelete: start line not recognized" \
+		&& _editalert "editdelete: start line not recognized" \
 		&& return 3
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
-		&& >&2 echo "editdelete: end line not recognized" \
+		&& _editalert "editdelete: end line not recognized" \
 		&& return 4
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}d\nw" "$f")" \
@@ -776,22 +794,22 @@ function editchange {
 	local f="${4:-$fn}"
 	[[ -n $4 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editchange: no file" \
+		&& _editalert "editchange: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	[[ -z $from ]] \
-		&& >&2 echo "editchange: no start line" \
+		&& _editalert "editchange: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editchange: start line not recognized" \
+		&& _editalert "editchange: start line not recognized" \
 		&& return 3
 	local data="$3"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
-		&& >&2 echo "editchange: end line not recognized" \
+		&& _editalert "editchange: end line not recognized" \
 		&& return 4
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}c\n$data\n.\nw" "$f")" \
@@ -807,13 +825,13 @@ function editchange {
 
 function editchangeline {
 	[[ -z $fn ]] \
-		&& >&2 echo "editchangeline: no file" \
+		&& _editalert "editchangeline: no file" \
 		&& return 1
 	[[ -z $1 ]] \
-		&& >&2 echo "editchangeline: no data" \
+		&& _editalert "editchangeline: no data" \
 		&& return 2
 	[[ -z $fl ]] \
-		&& >&2 echo "editchangeline: no line" \
+		&& _editalert "editchangeline: no line" \
 		&& return 3
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
@@ -826,24 +844,24 @@ function editsub {
 	local f="${6:-$fn}"
 	[[ -n $6 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editsub: no file" \
+		&& _editalert "editsub: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	[[ -z $from ]] \
-		&& >&2 echo "editsub: no start line" \
+		&& _editalert "editsub: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editsub: start line not recognized" \
+		&& _editalert "editsub: start line not recognized" \
 		&& return 3
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
-		&& >&2 echo "editsub: end line not recognized" \
+		&& _editalert "editsub: end line not recognized" \
 		&& return 4
 	local in="$3"
 	[[ -z $in ]] \
-		&& >&2 echo "editsub: missing regex" \
+		&& _editalert "editsub: missing regex" \
 		&& return 5
 	local out="$4"
 	in="${in//\\\\/\\\\\\\\}"
@@ -869,20 +887,20 @@ function editjoin {
 	local f="${3:-$fn}"
 	[[ -n $3 ]] && local f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editjoin: no file" \
+		&& _editalert "editjoin: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	[[ -z $from ]] \
-		&& >&2 echo "editjoin: no start line" \
+		&& _editalert "editjoin: no start line" \
 		&& return 2
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editjoin: start line not recognized" \
+		&& _editalert "editjoin: start line not recognized" \
 		&& return 3
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
-		&& >&2 echo "editjoin: end line not recognized" \
+		&& _editalert "editjoin: end line not recognized" \
 		&& return 4
 	[[ -z $to ]] && local to="$((from + 1))"
 	local res="$(edit "$from,${to}j\nw" "$f")"
@@ -897,26 +915,26 @@ function editmove {
 	local f="${4:-$fn}"
 	[[ -n $4 ]] && local f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editmove: no file" \
+		&& _editalert "editmove: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	[[ -z $from ]] \
-		&& >&2 echo "editmove: no start line" \
+		&& _editalert "editmove: no start line" \
 		&& return 2
 	[[ -z $1 ]] && from="$((from + 1))"
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "editmove: start line not recognized" \
+		&& _editalert "editmove: start line not recognized" \
 		&& return 3
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
-		&& >&2 echo "editmove: end line not recognized" \
+		&& _editalert "editmove: end line not recognized" \
 		&& return 4
 	local dest="$3"
 	[[ $dest != 0 ]] && dest="$(_editline "$3" "$f")"
 	[[ -z $dest ]] \
-		&& >&2 echo "editmove: no destiny" \
+		&& _editalert "editmove: no destiny" \
 		&& return 5
 	[[ -n $to ]] \
 		&& local res="$(edit "$from,${to}m$dest\nw" "$f")" \
@@ -932,29 +950,29 @@ function edittransfer {
 	local f="${4:-$fn}"
 	[[ -n $4 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "edittransfer: no file" \
+		&& _editalert "edittransfer: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	from="$(_editline "$from" "$f")"
 	[[ $? -ne 0 ]] \
-		&& >&2 echo "edittransfer: start line not recognized" \
+		&& _editalert "edittransfer: start line not recognized" \
 		&& return 2
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $o ]] \
-		&& >&2 echo "edittransfer: end line not recognized" \
+		&& _editalert "edittransfer: end line not recognized" \
 		&& return 3
 	local dest="$3"
 	[[ $dest != 0 ]] \
 		&& dest="$(_editline "$3" "$f")" \
 		&& [[ -z $dest ]] \
-		&& >&2 echo "edittransfer: destiny line not recognized" \
+		&& _editalert "edittransfer: destiny line not recognized" \
 		&& return 4
 	if [[ $dest -ge 0 ]]
 	then
 		[[ -n $to ]] \
-			&& local res="$(edcmd=p edit "$from,${to}t$dest\nw" "$f")" \
-			|| local res="$(edcmd=p edit "${from}t$dest\nw" "$f")"
+			&& local res="$(editprint "$from,${to}t$dest\nw" "$f")" \
+			|| local res="$(editprint "${from}t$dest\nw" "$f")"
 		[[ -n $res ]] && echo "$res"
 		[[ $f == $fn ]] \
 			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
@@ -973,12 +991,12 @@ function editlevel {
 	local f="${2:-$fn}"
 	[[ -n $2 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editlevel: no file" \
+		&& _editalert "editlevel: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	from="$(_editline "$from" "$f")"
 	[[ -z $from ]] \
-		&& >&2 echo "editlevel: no line" \
+		&& _editalert "editlevel: no line" \
 		&& return 2
 	local line="$(ep $from "$f")"
 	if [[ -n $line ]]
@@ -1019,17 +1037,17 @@ function editexternal {
 	local f="${3:-$fn}"
 	[[ -n $3 ]] && f="$(readlink -f "$f")"
 	[[ -z $f ]] \
-		&& >&2 echo "editexternal: no file" \
+		&& _editalert "editexternal: no file" \
 		&& return 1
 	local from="${1:-$fl}"
 	from="$(_editline "$from" "$f")"
 	[[ -z $from ]] \
-		&& >&2 echo "editexternal: no start line" \
+		&& _editalert "editexternal: no start line" \
 		&& return 2
 	local to="${2:-$fl}"
 	to="$(_editline "$to" "$f")"
 	[[ -z $to ]] \
-		&& >&2 echo "editexternal: no end line" \
+		&& _editalert "editexternal: no end line" \
 		&& return 3
 	editcopy $from $to '' '' "$f"
 	$EDITOR "$editreadlines"
@@ -1044,11 +1062,11 @@ function editexternal {
 
 function etermbin {
 	[[ -z $1 ]] \
-		&& >&2 echo "etermbin: no argument" \
+		&& _editalert "etermbin: no argument" \
 		&& return 2
 	[[ -n $2 ]] && local fn="$2" && fn="$(readlink -f "$fn")"
 	[[ -z $fn ]] \
-		&& >&2 echo "etermbin: no file" \
+		&& _editalert "etermbin: no file" \
 		&& return 1
 	editprint $1 | nc termbin.com 9999
 }
@@ -1091,20 +1109,20 @@ function _editfzf {
 function editwords {
 	local f="${1:-$fn}"
 	[[ -z $f ]] \
-		&& >&2 echo "editwords: no file" \
+		&& _editalert "editwords: no file" \
 		&& return 1
 	if tmux run 2>/dev/null
 	then
 		local words=($(editprint a "$f"))
 		local extension="${f/*l/}"
 		[[ -z $editdir ]] \
-			&& >&2 echo "editwords: editdir is not set" \
+			&& _editalert "editwords: editdir is not set" \
 			&& return 2
 		! [[ -d $editdir ]] \
-			&& >&2 echo "editwords: editdir does not exist" \
+			&& _editalert "editwords: editdir does not exist" \
 			&& return 3
 		! [[ -d $editdir/dict ]] \
-			&& >&2 echo "editwords: dict dir does not exist" \
+			&& _editalert "editwords: dict dir does not exist" \
 			&& return 4
 		local dict_words="$editdir/dict/words"
 		local ext_words="$editdir/dict/$extension"
@@ -1126,7 +1144,7 @@ function editwords {
 
 		local res="$(_editfzf '' 'echo' 1 "${words[@]}")"
 	else
-		echo "editwords: tmux session not found"
+		_editalert "editwords: tmux session not found"
 		return 2
 	fi
 
@@ -1137,7 +1155,7 @@ function editwords {
 function editwordsrc {
 	local f="${1:-$fn}"
 	[[ -z $f ]] \
-		&& >&2 echo "editwordsrc: no file" \
+		&& _editalert "editwordsrc: no file" \
 		&& return 1
 	if tmux run 2>/dev/null
 	then
@@ -1149,10 +1167,23 @@ function editwordsrc {
 	fi
 }
 
+function editcontent {
+	local f="${1:-$fn}"
+	[[ -z $f ]] \
+		&& _editalert "editfiles: no file" \
+		&& return 1
+	local res="$(_editfzf '' 'echo' 1 "$(editprint a "$f" | \
+		grep -E '^([/~.]\/*|.*\:\/\/*)')")"
+	[[ -n $res ]] \
+		&& ($edcontentcmd "$res" &)
+	return 0
+}
+
 function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function echl { editchangeline "$@"; }
 function ec { editcmd "$@"; }
+function ect { editcontent "$@"; }
 function ecopy { editcopy "$@"; }
 function edel { editdelete "$@"; }
 function ee { editexternal "$@"; }

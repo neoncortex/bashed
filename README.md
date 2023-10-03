@@ -16,6 +16,7 @@ It keeps state, the file opened, current line, and various others,  with shell v
 - highlight;
 - wl-clipboard;
 - xclip;
+- ffplay;
 
 # Configuration:
 Add to your ~/.bashrc:
@@ -512,6 +513,11 @@ edcmd=p edcolor=0 es ...
 ## Searching line with fzf:
 The function editshowfzf, or esf, for short, provide a way to search for lines of text using fzf.  It receives the same argument as editshow.
 
+## Content with fzf:
+The function editcontent, or ect, for short, display file paths and urls on fzf.  The selection will be opened using the command inside the variable edcontentcmd, that is by default, xdg-open.
+
+The contents are filtered with grep -E, using the pattern: '^([/~.]\\/\*|.\*\\:\\/\\/\*)'.
+
 ## Disable line numbering:
 To disable line numbering for the next command:
 
@@ -551,13 +557,22 @@ Also, you can have a file called .bashed-words in a directory.  The words inside
 
 If the highlight module is available, it will also try to extract keywords from the langDefs highlight files, using the \_edithiextract function.  It will try to extract based on the extension, or it will use the type setted by the user using the ess function of the highligth module.
 
+## Sounds:
+A sound can be played for errors, and alerts.  The variable edsound controls if sounds should or should not be played, by setting it to 1, or 0, respectively.  The sound files shoud be setted in the variables:
+- ederrorsound;
+- edalertsound;
+
+They should be a path to the desired sound file.  The sound files will be played using ffplay.
+
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
+- edcontentcmd: Contains the command used to open files and urls;
 - editwordkey: the key to be used with bind-key ro call editwords;
 - edfzfsize: size of the fzf tmux popup, by default, 80%;
 - edfzfpsize: size of the fzf preview window, by default, 30%;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
+- edsound: Sets the sound on, or off.  By default, 1;
 - fileresult: Contains the search results to be displayed by ef, and es s;
 - fileresult_a: It's an array that have one entry to each result of an ef search;
 - fn: Contains the complete path to the file beign edited;
@@ -566,6 +581,8 @@ If the highlight module is available, it will also try to extract keywords from 
 - pagesize: Size of a page.  Used by es n, es p, and es c;
 
 ### File variables:
+- edalertsound: sound file to play on alerts;
+- ederrorsound: sound file to play on errors;
 - editdir: Contains the path to the edit directory.  By default: $HOME/.edit;
 - editreadlines: File used to store lines that where cut/copied; 
 - editsearchdir: Contains the path to store the file search cache;
@@ -656,6 +673,7 @@ The functions are:
 - editwords, ew: show a list of words from a file and type the selction;
 
 There are other functions that are used internally by the ones above:
+- \_editalert: display messages and play sounds during alerts and errors;
 - \_editarg: parse the arguments of a file;
 - \_editfzf: display fzf selection interfaces;
 - \_editindent: count tabs, or spaces, at the beginning of the line;
