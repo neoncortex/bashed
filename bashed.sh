@@ -30,14 +30,15 @@ mkdir -p "$editdir/dict"
 mkdir -p "$editdir/search"
 
 function _editwindow {
-	local IFS=$' \t\n'
-	local window=
-	local pane=
+	local IFS=$'\t\n'
 	local session="$(tmux display-message -p '#S')"
 	for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
 	do
-		if [[ $i == $1 ]] && [[ -n $window ]] && [[ -n $pane ]]
+		local location="${i/\ */}"
+		if [[ "${i#$location\ }" == "$1" ]]
 		then
+			local window="${location/::*/}"
+			local pane="${location/*::/}"
 			if [[ $3 == 'n' ]]
 			then
 				tmux select-window -t "$session:$window"
@@ -62,9 +63,6 @@ function _editwindow {
 				return 1
 			fi
 		fi
-
-		window="${i/::*/}"
-		pane="${i/*::/}"
 	done
 }
 
@@ -1193,12 +1191,13 @@ function editdata {
 	local files=
 	while read line
 	do
-		if [[ $line =~ ^([~.\/]|\$HOME|\$PWD)\/.*$ ]] \
+		if [[ $line =~ ^[~.\/\$][^\{\(\[].*\/.*$ ]] \
 		|| [[ $line =~ ^[a-zA-Z0-9]+:\/\/.*$ ]]
 		then
 			files="$files
 $line"
-		elif [[ $line =~ (\'|\")([~.\/].*|\$HOME\/.*|\$PWD\/.*|.*:\/\/.*)(\'|\") ]]
+		elif [[ $line =~ (\'|\")[~.\/\$][^\(\{\[].*\/.*(\'|\") ]] \
+		|| [[ $line =~ (\'|\")[a-zA-Z0-9]+:\/\/.*(\'|\") ]]
 		then
 			local data="$line"
 			local path=
@@ -1208,8 +1207,8 @@ $line"
 				local char="${data:0:1}"
 				if [[ $char =~ (\'|\") ]] && [[ $inside == 1 ]]
 				then
-					inside=0
-				elif [[ $char =~ (\'|\") ]]
+					break
+				elif [[ $char =~ (\'|\") ]] && [[ -z $inside ]]
 				then
 					inside=1
 				else
@@ -1224,8 +1223,12 @@ $path"
 		fi
 	done < "$f"
 
-	local res="$(_editfzf '' 'echo' 0 "${files[@]}")"
-	[[ -n $res ]] && $eddatacmd "$res" &
+	if [[ ${#files[@]} -gt 0 ]]
+	then
+		local res="$(_editfzf '' 'echo' 0 "${files[@]}")"
+		[[ -n $res ]] && $eddatacmd "$res" &
+	fi
+
 	return 0
 }
 
