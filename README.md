@@ -516,7 +516,7 @@ The function editshowfzf, or esf, for short, provide a way to search for lines o
 ## Content with fzf:
 The function editdata, or edata, for short, display file paths and urls on fzf.  The selection will be opened using the command inside the variable eddatacmd, that is by default, xdg-open.
 
-It will display any file path, or url, that are by itself, alone in one line, or any quoted line or url that it finds.
+It will display any file path, or url, that are by itself, alone in one line, or any quoted file path or url that it finds.
 
 ## Disable line numbering:
 To disable line numbering for the next command:
