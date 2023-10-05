@@ -4,7 +4,7 @@
 editdir="$HOME/.edit"
 editsearchdir="$editdir/search"
 editreadlines="$editdir/readlines"
-edcontentcmd="xdg-open"
+eddatacmd="xdg-open"
 
 # edit
 edcmd="n"
@@ -18,6 +18,9 @@ editwordkey="o"
 #fzf
 edfzfsize="80%"
 edfzfpsize="30%"
+
+#tmux
+edtmuxpsize="80%"
 
 #sound
 edsound=1
@@ -206,7 +209,7 @@ function editcmd {
 		&& return 8
 	local tempfile="$editdir/temp"
 	! [[ -f $editreadlines ]] \
-		&& _editalert "editcmd: editreadlines file does not exist" \
+		&& _editalert "editcmd: editreadlines does not exist" \
 		&& return 9
 	cat "$editreadlines" | $3 > "$tempfile"
 	if [[ $? == 0 ]]
@@ -241,12 +244,16 @@ function editopen {
 		local argument="${1#*:}"
 		local f="${1/:*/}"
 		[[ $f == $argument ]] && argument=
+		[[ -n $3 ]] && argument="$3"
 	fi
 
 	[[ -z $f ]] \
 		&& _editalert "editopen: no file" \
 		&& return 1
-	[[ ${f:0:1} != '/' ]] && f="$PWD/$f"
+	[[ ${f:0:1} != '/' ]] \
+		&& [[ ${f:0:1} != '~' ]] \
+		&& [[ $f =~ '\$HOME' ]] \
+		&& f="$PWD/$f"
 	f="$(readlink -f "$f")"
 	! [[ -f $f ]] \
 		&& _editalert "editopen: file not found" \
@@ -1049,14 +1056,25 @@ function editexternal {
 	[[ -z $to ]] \
 		&& _editalert "editexternal: no end line" \
 		&& return 3
-	editcopy $from $to '' '' "$f"
-	$EDITOR "$editreadlines"
-	local res="$(edit "$from,${to}d\nw" "$f")"
-	[[ -n $res ]] && echo "$res"
-	editpaste $(($from - 1)) '' "$f"
-	[[ $f == $fn ]] \
-		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
-		&& [[ $fl -gt $fs ]] && fl="$fs"
+	if tmux run 2>/dev/null
+	then
+		editcopy $from $to '' '' "$f"
+		! [[ -f $editreadlines ]] \
+			&& _editalert "editexternal: editreadlines does not exist" \
+			&& return 4
+		local size="${edtmuxpsize:-80%}"
+		tmux display-popup -h $size -w $size -E "$EDITOR "$editreadlines""
+		local res="$(edit "$from,${to}d\nw" "$f")"
+		[[ -n $res ]] && echo "$res"
+		editpaste $(($from - 1)) '' "$f"
+		[[ $f == $fn ]] \
+			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
+			&& [[ $fl -gt $fs ]] && fl="$fs"
+	else
+		_editalert "editexternal: tmux session not found"
+		return 5
+	fi
+
 	return 0
 }
 
@@ -1142,7 +1160,7 @@ function editwords {
 			[[ -n $hiwords ]] && words=(${words[@]} $hiwords)
 		fi
 
-		local res="$(_editfzf '' 'echo' 1 "${words[@]}")"
+		local res="$(_editfzf '-m' 'echo' 1 "${words[@]}")"
 	else
 		_editalert "editwords: tmux session not found"
 		return 2
@@ -1167,15 +1185,47 @@ function editwordsrc {
 	fi
 }
 
-function editcontent {
+function editdata {
 	local f="${1:-$fn}"
 	[[ -z $f ]] \
 		&& _editalert "editfiles: no file" \
 		&& return 1
-	local res="$(_editfzf '' 'echo' 1 "$(editprint a "$f" | \
-		grep -E '^([/~.]\/*|.*\:\/\/*)')")"
-	[[ -n $res ]] \
-		&& ($edcontentcmd "$res" &)
+	local files=
+	while read line
+	do
+		if [[ $line =~ ^([~.\/]|\$HOME|\$PWD)\/.*$ ]] \
+		|| [[ $line =~ ^[a-zA-Z0-9]+:\/\/.*$ ]]
+		then
+			files="$files
+$line"
+		elif [[ $line =~ (\'|\")([~.\/].*|\$HOME\/.*|\$PWD\/.*|.*:\/\/.*)(\'|\") ]]
+		then
+			local data="$line"
+			local path=
+			local inside=
+			for ((i=1; i <= ${#line}; ++i))
+			do
+				local char="${data:0:1}"
+				if [[ $char =~ (\'|\") ]] && [[ $inside == 1 ]]
+				then
+					inside=0
+				elif [[ $char =~ (\'|\") ]]
+				then
+					inside=1
+				else
+					[[ $inside == 1 ]] && path="$path$char"
+				fi
+
+				data="${data:1:${#data}}"
+			done
+
+			files="$files
+$path"
+		fi
+	done < "$f"
+
+	local res="$(_editfzf '' 'echo' 0 "${files[@]}")"
+	[[ -n $res ]] && $eddatacmd "$res" &
 	return 0
 }
 
@@ -1183,8 +1233,8 @@ function ea { editappend "$@"; }
 function ech { editchange "$@"; }
 function echl { editchangeline "$@"; }
 function ec { editcmd "$@"; }
-function ect { editcontent "$@"; }
 function ecopy { editcopy "$@"; }
+function edata { editdata "$@"; }
 function edel { editdelete "$@"; }
 function ee { editexternal "$@"; }
 function efl { editlocate "$@"; }

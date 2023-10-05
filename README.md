@@ -514,9 +514,9 @@ edcmd=p edcolor=0 es ...
 The function editshowfzf, or esf, for short, provide a way to search for lines of text using fzf.  It receives the same argument as editshow.
 
 ## Content with fzf:
-The function editcontent, or ect, for short, display file paths and urls on fzf.  The selection will be opened using the command inside the variable edcontentcmd, that is by default, xdg-open.
+The function editdata, or edata, for short, display file paths and urls on fzf.  The selection will be opened using the command inside the variable eddatacmd, that is by default, xdg-open.
 
-The contents are filtered with grep -E, using the pattern: '^([/~.]\\/\*|.\*\\:\\/\\/\*)'.
+It will display any file path, or url, that are by itself, alone in one line, or any quoted line or url that it finds.
 
 ## Disable line numbering:
 To disable line numbering for the next command:
@@ -534,6 +534,8 @@ You can edit a region of the text usin $EDITOR.  For example, to edit the curren
 ````
 ee . . file?
 ````
+
+The editor will be opened inside a tmux popup.  The size of the popup is controlled by the variable edtmuxpsize.
 
 ## Termbin:
 You can paste a region of the text in termbin by using the function etermbin.  For example, to paste the line 10:
@@ -566,13 +568,14 @@ They should be a path to the desired sound file.  The sound files will be played
 
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;
-- edcontentcmd: Contains the command used to open files and urls;
+- eddatacmd: Contains the command used to open files and urls;
 - editwordkey: the key to be used with bind-key ro call editwords;
 - edfzfsize: size of the fzf tmux popup, by default, 80%;
 - edfzfpsize: size of the fzf preview window, by default, 30%;
+- edsound: Sets the sound on, or off.  By default, 1;
+- edtmuxpsize: Size of tmux popup, by default, 80%;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
-- edsound: Sets the sound on, or off.  By default, 1;
 - fileresult: Contains the search results to be displayed by ef, and es s;
 - fileresult_a: It's an array that have one entry to each result of an ef search;
 - fn: Contains the complete path to the file beign edited;
@@ -652,6 +655,7 @@ The functions are:
 - editcopy, ecopy: copy text to a temporary location or clipboard;
 - editchange, ec: change lines;
 - editclose, eq: close file;
+- editdata, edata: Display files and urls of a file on fzf for selection;
 - editdelete, edel: delete lines;
 - editexternal, ee: edit region in $EDITOR;
 - editfind, ef: find text;
