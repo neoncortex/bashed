@@ -781,6 +781,7 @@ function editappend {
 		&& return 2
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ $data =~ ^(\\n)+$ ]] && data="${data/\\n/}"
 	local line=$fl
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))

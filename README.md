@@ -529,6 +529,8 @@ edcmd=p edcolor=0 es ...
 ## Searching line with fzf:
 The function editshowfzf, or esf, for short, provide a way to search for lines of text using fzf.  It receives the same argument as editshow.
 
+Also can be used for text navigation.  Without arguments, it will display the whole text file contents in fzf, with the current line selected, so its easy to navigate the text using it.
+
 ## Content with fzf:
 The function editdata, or edata, for short, display file paths and urls on fzf.  The selection will be opened using the command inside the variable eddatacmd, that is by default, xdg-open.
 
