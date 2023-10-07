@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-[[ -z $editdir ]] && \
-	_editalert "version: editdir is not set"
-! [[ -d $editdir ]] && \
-	_editalert "version: editdir does not exist"
+[[ -z $editdir ]] \
+	&& _editalert "version: editdir is not set"
+! [[ -d $editdir ]] \
+	&& _editalert "version: editdir does not exist"
 editversiondir="$editdir/version"
 diffarg="--color -c"
 
@@ -79,7 +79,7 @@ function editundo {
 		done
 	elif [[ $1 == listcurses ]] || [[ $1 == lu ]]
 	then
-		local res="$(_editfzf '' '/' 1 "${files[@]}")"
+		local res="$(_editfzf '' '/' 1 1 "${files[@]}")"
 		[[ -z $res ]] && return 0
 		if [[ -f $res ]]
 		then
@@ -100,6 +100,7 @@ function editundo {
 		do
 			if [[ -f ${files[$i]} ]]
 			then
+				edsound=0 _edialert "deleted ${files[$i]}"
 				rm "${files[$i]}"
 			else
 				_editalert "editundo: delete: file not found"
@@ -108,12 +109,14 @@ function editundo {
 		done
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		local res="$(_editfzf '-m' '/' 1 "${files[@]}")" \
+		local res="$(_editfzf '-m' '/' 1 1 "${files[@]}")"
 		[[ -z $res ]] && return 0
 		local IFS=$'\n'
 		for i in $res
 		do
-			rm "$i"
+			[[ -f $i ]] \
+				&& edsound=0 _edialert "deleted $i" \
+				&& rm "$i"
 		done
 	elif [[ $1 == diff ]]
 	then
@@ -135,7 +138,7 @@ function editundo {
 	then
 		if [[ -n $2 ]]
 		then
-			local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			local res="$(_editfzf '' "/" 1 1 "${files[@]}")"
 			[[ -z $res ]] && return 0
 			if [[ -f $res ]]
 			then
@@ -145,7 +148,7 @@ function editundo {
 				return 10
 			fi
 		else
-			local res="$(_editfzf '' "/" 1 "${files[@]}")"
+			local res="$(_editfzf '' "/" 1 1 "${files[@]}")"
 			[[ -z $res ]] && return 0
 			local resfiles=()
 			for i in $res
@@ -183,7 +186,7 @@ function editundo {
 		fi
 	elif [[ $1 == esu ]] || [[ $1 == showcurses ]]
 	then
-		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		local res="$(_editfzf '' '/' 1 1 "${files[@]}")"
 		[[ -z $res ]] && return 0
 		if [[ -f $res ]]
 		then
@@ -206,7 +209,7 @@ function editundo {
 		fi
 	elif [[ $1 == pu ]] || [[ $1 == printcurses ]]
 	then
-		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		local res="$(_editfzf '' '/' 1 1 "${files[@]}")"
 		[[ -z $res ]] && return 0
 		if [[ -f $res ]]
 		then
@@ -236,7 +239,7 @@ function editundo {
 		[[ -z $2 ]] \
 			&& _editalert "editundo: copycurses: no destiny" \
 			&& return 21
-		local res="$(_editfzf '' '/' 1 "${files[@]}")" \
+		local res="$(_editfzf '' '/' 1 1 "${files[@]}")"
 		[[ -z $res ]] && return 0
 		if [[ -f $res ]]
 		then

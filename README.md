@@ -14,9 +14,10 @@ It keeps state, the file opened, current line, and various others,  with shell v
 
 ## Optional:
 - highlight;
-- wl-clipboard;
+- notify-send;
+- paplay, or ffplay;
 - xclip;
-- ffplay;
+- wl-clipboard;
 
 # Configuration:
 Add to your ~/.bashrc:
@@ -82,6 +83,15 @@ eo file:'hello world'
 ````
 
 In the first command, file will be opened, and the line 10 will be setted as the current line.  On the second, file will be opened, the string "hello world" will be searched, and the line containing that string will be setted as the current line.
+
+Arguments also can passed as a third argument:
+
+````
+eo file n 10
+eo file n 'hello word'
+````
+
+This may be useful when scripting.
 
 ## Closing files:
 ````
@@ -498,6 +508,12 @@ es f1
 es m
 ````
 
+The argument mf does the same as m, but display the results in fzf, allowing to quick select one line in that region:
+
+````
+es mf
+````
+
 #### Display the list again:
 ````
 es s
@@ -564,7 +580,10 @@ A sound can be played for errors, and alerts.  The variable edsound controls if 
 - ederrorsound;
 - edalertsound;
 
-They should be a path to the desired sound file.  The sound files will be played using ffplay.
+They should be a path to the desired sound file.  The sound files will be played using paplay, or if its not available, ffplay.
+
+## Notifications:
+If the variable ednotifysend contains 1, notify-send will be used to display notifications.
 
 ## Variables:
 - edcmd: Contains the command that should be used by es.  It should be p, or n;

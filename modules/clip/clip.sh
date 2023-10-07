@@ -40,7 +40,7 @@ function _editclipword {
 		&& return 2
 	if tmux run 2>/dev/null
 	then
-		local res="$(_editfzf '' "$edclipdir" 1 "$@")"
+		local res="$(_editfzf '' "$edclipdir" 1 1 "$@")"
 	else
 		_editalert "_edclipword: tmux session not found"
 		return 3
@@ -290,15 +290,17 @@ $g
 		[[ -z $newname ]] \
 			&& _editalert "editclipboard: rename: no new name" \
 			&& return 24
-		[[ -f $edclipdir/$clipfile ]] && mv "$edclipdir/$clipfile" \
-			"$edclipdir/$newname"
+		[[ -f $edclipdir/$clipfile ]] \
+			&& mv "$edclipdir/$clipfile" "$edclipdir/$newname"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
-		local res="$(_editfzf '-m' "$edclipdir" 1 "${files[@]}")"
+		local res="$(_editfzf '-m' "$edclipdir" 1 1 "${files[@]}")"
 		local IFS=
 		for i in $res
 		do
-			[[ -f $edclipdir/$i ]] && rm "$edclipdir/$i"
+			[[ -f $edclipdir/$i ]] \
+				&& edsound=0 _edialert "deleted $edclipdir/$i" \
+				&& rm "$edclipdir/$i"
 		done
 	elif [[ $1 == tx ]]
 	then
@@ -381,14 +383,15 @@ function _editclipboard {
 			if [[ $prev == delete ]] || [[ $prev == d ]] \
 				|| [[ $prev == rename ]] || [[ $prev == r ]] \
 				|| [[ $prev == paste ]] || [[ $prev == p ]] \
-				|| [[ $prev == tx ]] || [[ $prev == tw ]]
+				|| [[ $prev == tx ]] || [[ $prev == tw ]] \
+				|| [[ $prev == type ]]
 			then
 				COMPREPLY=($(compgen -o default -W \
 					"$(_editclipboardcompletion)" -- $cur))
 			elif [[ $prev == copy ]] || [[ $prev == c ]] \
 				|| [[ $prev == cut ]] || [[ $prev == x ]]
 			then
-				COMPREPLY=($(compgen -W "a b c d e f g G l m \
+				COMPREPLY=($(compgen -W "a b c d e f g G l m mf \
 					n p u v / . $ + - {1..$fs}" -- $cur))
 			else
 				COMPREPLY=($(compgen -o default -- $cur))

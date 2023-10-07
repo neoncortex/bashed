@@ -59,7 +59,7 @@ function editshowhi {
 				"$file" > "$dir/$name"
 	fi
 
-	editshow $arg "$dir/$name"
+	edcolor=0 editshow $arg "$dir/$name"
 	[[ -z $2 ]] && editshow $arg > /dev/null
 	[[ $fn == $2 ]] && editshow $arg > /dev/null
 	return 0
@@ -130,7 +130,7 @@ function _editshowhi {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -W "a b c d e f fz g G l m n p u v / \
+			COMPREPLY=($(compgen -W "a b c d e f fz g G l m mf n p u v / \
 				. $ + -" -- $cur))
 			;;
 		3)

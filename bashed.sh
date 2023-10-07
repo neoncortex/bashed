@@ -25,6 +25,9 @@ edtmuxpsize="80%"
 #sound
 edsound=1
 
+#notify send
+ednotifysend=0
+
 mkdir -p "$editdir"
 mkdir -p "$editdir/dict"
 mkdir -p "$editdir/search"
@@ -47,10 +50,14 @@ function _editwindow {
 				tmux send-keys -t "$pane" \
 					"cd \"\$(dirname \"\$fn\")\"" Enter
 				tmux send-keys -t "$pane" "fl=1" Enter
+				tmux send-keys -t "$pane" "clear" Enter
 				tmux send-keys -t "$pane" \
 					"[[ -f \$PWD/.bashed ]] " \
-					"&& source \$PWD/.bashed" Enter
-				tmux send-keys -t "$pane" "clear" Enter
+					"&& source \$PWD/.bashed" \
+					"&& clear " \
+					"&& _editalert \"loaded " \
+					"\$PWD/.bashed\" \"\$edalertsound\" " \
+					Enter
 				[[ -n $2 ]] \
 					&& tmux send-keys \
 					"_editarg \"$2\" \"$pane\"" Enter \
@@ -67,13 +74,30 @@ function _editwindow {
 }
 
 function _editalert {
-	[[ -n $1 ]] \
-		&& >&2 echo "$1"
+	if [[ $ednotifysend == 1 ]]
+	then
+		[[ -n $1 ]] \
+			&& >&2 echo "$1" \
+			&& notify-send -a bashed "$1"
+	else
+		[[ -n $1 ]] && >&2 echo "$1"
+	fi
+
 	local sound="${2:-$ederrorsound}"
+	local player=
+	if [[ -n $(type -P paplay) ]]
+	then
+		player="paplay"
+	elif [[ -n $(type -P ffplay) ]]
+	then
+		player="ffplay -nodisp -autoexit"
+	fi
+
 	[[ $edsound == 1 ]] \
 		&& [[ -n $sound ]] \
 		&& [[ -f $sound ]] \
-		&& $(ffplay -nodisp -autoexit "$sound" >/dev/null 2>&1 &)
+		&& [[ -n $player ]] \
+		&& $($player "$sound" >/dev/null 2>&1 &)
 	return 0
 }
 
@@ -291,7 +315,9 @@ function editopen {
 		fn="$f"
 		cd "$(dirname "$fn")"
 		fl=1
-		[[ -f $PWD/.bashed ]] && source "$PWD/.bashed"
+		[[ -f $PWD/.bashed ]] \
+			&& _editalert "loaded $PWD/.bashed" "$edalertsound" \
+			&& source "$PWD/.bashed"
 		[[ -n $argument ]] \
 			&& _editarg "$argument" \
 			|| editshow 1
@@ -341,7 +367,7 @@ $data"
 	then
 		if [[ $2 == fz ]]
 		then
-			local zres="$(_editfzf '' 'echo' 0 "$fileresult")"
+			local zres="$(_editfzf '' 'echo' 0 1 "$fileresult")"
 			if [[ -n $zres ]]
 			then
 				fileresultindex="${zres/:*/}"
@@ -401,13 +427,13 @@ function editfilefind {
 			&& return 4
 		echo "$1" > "$cache.search"
 		echo "$files" > "$cache.res"
-		local res="$(_editfzf '' 'echo' 0 "$files")"
+		local res="$(_editfzf '' 'echo' 0 1 "$files")"
 	else
 		if [[ -f $data ]]
 		then
 			_editalert "editfindfile: using cache: $data" \
 				"$edalertsound"
-			local res="$(_editfzf '' 'echo' 0 "$(cat "$data")")"
+			local res="$(_editfzf '' 'echo' 0 1 "$(cat "$data")")"
 		else
 			_editalert "editfindfile: cache file not found"
 			return 5
@@ -536,13 +562,22 @@ function editshow {
 			fi
 
 			return
+		elif [[ $arg == mf ]]
+		then
+			local res="$(_editfzf '' 'echo' 0 1 "$(edcolor=0 editshow m)")"
+			if [[ -n $res ]]
+			then
+				local line="${res/$'\t'*/}"
+				echo "$line"
+				[[ -n $line ]] && editshow $line
+			fi
 		elif [[ $arg == fz ]]
 		then
 			[[ -n "$fileresult" ]] \
-				&& local res="$(_editfzf '' 'echo' 0 "$fileresult")"
-			if [[ -n $zres ]]
+				&& local res="$(_editfzf '' 'echo' 0 1 "$fileresult")"
+			if [[ -n $res ]]
 			then
-				fileresultindex="${zres/:*/}"
+				fileresultindex="${res/:*/}"
 				fl="${fileresult_a[$fileresultindex]}"
 				printf -- '%s' "$fileresultindex:"
 				editshow ${fl}
@@ -719,7 +754,8 @@ function editshowfzf {
 		&& _editalert "editshowfzf: file not found" \
 		&& return 2
 	[[ -z $arg ]] && arg="a"
-	local res="$(_editfzf '' 'echo' 0 "$(edcolor=0 edcmd=n editshow \
+	local l="${fl:-1}"
+	local res="$(_editfzf '' 'echo' 0 $l "$(edcolor=0 edcmd=n editshow \
 		"$arg" "$f")")"
 	[[ -z $res ]] && return 0
 	local line="${res/$'\t'*/}"
@@ -1094,6 +1130,8 @@ function _editfzf {
 	shift
 	local breakwords="$1"
 	shift
+	local line="$1"
+	shift
 	[[ -z $* ]] && return 1
 	[[ $breakwords -eq 1 ]] \
 		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort -n | uniq)" \
@@ -1106,17 +1144,20 @@ function _editfzf {
 		then
 			echo "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
+				--sync --bind "start:pos($line)" \
 				--preview-window down,$psize,wrap \
 				--preview 'echo {}'
 		else
 			echo "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
+				--sync --bind "start:pos($line)" \
 				--preview-window down,$psize,wrap --preview \
 				"echo file: {}; echo -----------; cat "$preview/{}""
 		fi
 	else
 		echo "$data" | fzf-tmux -p ${size},${size} \
-			--layout=reverse-list --cycle $multiple
+			--layout=reverse-list --cycle $multiple \
+			--sync --bind "start:pos($line)"
 	fi
 
 	return 0
@@ -1142,7 +1183,7 @@ function editwords {
 			&& return 4
 		local dict_words="$editdir/dict/words"
 		local ext_words="$editdir/dict/$extension"
-		local local_words="$(dirname $f)/.bashed-words"
+		local local_words="$(dirname "$f")/.bashed-words"
 		[[ -f $dict_words ]] \
 			&& local dict="$(cat "$dict_words" | sed 's/\n/ /g')" \
 			&& words=(${words[@]} $dict)
@@ -1151,6 +1192,7 @@ function editwords {
 			&& words=(${words[@]} $dict)
 		[[ -f $local_words ]] \
 			&& local dict="$(cat "$local_words" | sed 's/\n/ /g')" \
+			&& edsound=0 _editalert "loaded $local_words" \
 			&& words=(${words[@]} $dict)
 		if [[ $(type -t _edithiextract) == function ]]
 		then
@@ -1158,7 +1200,7 @@ function editwords {
 			[[ -n $hiwords ]] && words=(${words[@]} $hiwords)
 		fi
 
-		local res="$(_editfzf '-m' 'echo' 1 "${words[@]}")"
+		local res="$(_editfzf '-m' 'echo' 1 1 "${words[@]}")"
 	else
 		_editalert "editwords: tmux session not found"
 		return 2
@@ -1191,23 +1233,22 @@ function editdata {
 	local files=
 	while read line
 	do
-		if [[ $line =~ ^[~.\/\$][^\{\(\[].*\/.*$ ]] \
+		local path=
+		if [[ $line =~ ^[~.\/\$.*\/].*$ ]] \
 		|| [[ $line =~ ^[a-zA-Z0-9]+:\/\/.*$ ]]
 		then
-			files="$files
-$line"
-		elif [[ $line =~ (\'|\")[~.\/\$][^\(\{\[].*\/.*(\'|\") ]] \
+			path="$line"
+		elif [[ $line =~ (\'|\")[~.\/\$].*\/.*(\'|\") ]] \
 		|| [[ $line =~ (\'|\")[a-zA-Z0-9]+:\/\/.*(\'|\") ]]
 		then
 			local data="$line"
-			local path=
 			local inside=
-			for ((i=1; i <= ${#line}; ++i))
+			for ((i=0; i <= ${#line}; ++i))
 			do
 				local char="${data:0:1}"
 				if [[ $char =~ (\'|\") ]] && [[ $inside == 1 ]]
 				then
-					break
+					inside=0
 				elif [[ $char =~ (\'|\") ]] && [[ -z $inside ]]
 				then
 					inside=1
@@ -1217,15 +1258,21 @@ $line"
 
 				data="${data:1:${#data}}"
 			done
-
-			files="$files
-$path"
 		fi
+
+		[[ -n $path ]] \
+			&& ! [[ $path =~ ^\$\{ ]] \
+			&& ! [[ $path =~ ^\$\( ]] \
+			&& ! [[ $path =~ ^\.[\ \*] ]] \
+			&& ! [[ $path =~ ^\* ]] \
+			&& ! [[ $path =~ ^\$.\  ]] \
+			&& files="$files
+$path"
 	done < "$f"
 
 	if [[ ${#files[@]} -gt 0 ]]
 	then
-		local res="$(_editfzf '' 'echo' 0 "${files[@]}")"
+		local res="$(_editfzf '' 'echo' 0 1 "${files[@]}")"
 		[[ -n $res ]] && $eddatacmd "$res" &
 	fi
 
@@ -1479,7 +1526,7 @@ function _editshow {
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -W "a b c d e f fz g G l m n p u \
+			COMPREPLY=($(compgen -W "a b c d e f fz g G l m mf n p u \
 				v / . $ + -" -- $cur))
 			;;
 		*)
