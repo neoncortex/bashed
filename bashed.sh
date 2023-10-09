@@ -55,11 +55,12 @@ function _editwindow {
 				tmux send-keys -t "$pane" "fl=1" Enter
 				tmux send-keys -t "$pane" "clear" Enter
 				tmux send-keys -t "$pane" \
-					"[[ -f \$PWD/.bashed ]] " \
-					"&& source \$PWD/.bashed" \
-					"&& clear " \
-					"&& _editalert \"loaded " \
-					"\$PWD/.bashed\" \"\$edalertsound\" " \
+					"if [[ -f \$PWD/.bashed ]]; then " \
+					"source \$PWD/.bashed; " \
+					"clear; " \
+					"_editalert \"loaded " \
+					"\$PWD/.bashed\" \"\$edalertsound\"; " \
+					"else clear; fi " \
 					Enter
 				[[ -n $2 ]] \
 					&& tmux send-keys \
@@ -381,7 +382,9 @@ function editopen {
 }
 
 function editclose {
-	[[ $1 == delete ]] && rm "$fn"
+	[[ $1 == delete ]] \
+		 && rm "$fn" \
+		_editalert "editclose: deleting "$fn"" "$edalertsound"
 	[[ -n $fn ]] && fn=
 	[[ -n $fl ]] && fl=
 	[[ -n $fs ]] && fs=
