@@ -3,7 +3,9 @@
 # files and directories
 editdir="$HOME/.edit"
 editsearchdir="$editdir/search"
-editreadlines="$editdir/readlines"
+edittempdir="$editdir/temp"
+#editreadlines="$editdir/readlines"
+editreadlines=
 eddatacmd="xdg-open"
 
 # edit
@@ -30,7 +32,8 @@ ednotifysend=0
 
 mkdir -p "$editdir"
 mkdir -p "$editdir/dict"
-mkdir -p "$editdir/search"
+mkdir -p "$editsearchdir"
+mkdir -p "$edittempdir"
 
 function _editwindow {
 	local IFS=$'\t\n'
@@ -77,10 +80,10 @@ function _editalert {
 	if [[ $ednotifysend == 1 ]]
 	then
 		[[ -n $1 ]] \
-			&& >&2 echo "$1" \
+			&& >&2 printf -- '%s\n' "$1" \
 			&& notify-send -a bashed "$1"
 	else
-		[[ -n $1 ]] && >&2 echo "$1"
+		[[ -n $1 ]] && >&2 printf -- '%s\n' "$1"
 	fi
 
 	local sound="${2:-$ederrorsound}"
@@ -109,8 +112,8 @@ function edit {
 	[[ -z $1 ]] \
 		&& _editalert "edit: no command" \
 		&& return 2
-	result="$(echo -e "$1" | ed -s "$fn")"
-	echo "$result"
+	result="$(printf -- '%b\n' "$1" | ed -s "$fn")"
+	printf -- '%s\n' "$result"
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 }
 
@@ -142,7 +145,37 @@ function _editline {
 	fi
 
 	[[ $l -lt 1 ]] && l=1
-	echo "$l"
+	printf -- '%s\n' "$l"
+	return 0
+}
+
+function edittemp {
+	[[ -z $1 ]] \
+		&& _editalert "editttemp: no argument" \
+		&& return 1
+	if [[ $1 == create ]]
+	then
+		local file="$(mktemp $edittempdir/temp.XXXXXX)"
+		if [[ -f $file ]]
+		then
+			printf -- '%s\n' "$file"
+		else
+			_editalert "edittemp: cant create temporary file"
+			return 2
+		fi
+	elif [[ $1 == clean ]]
+	then
+		if [[ -d $edittempdir ]]
+		then
+			for i in $edittempdir/*
+			do
+				[[ -f $i ]] && rm "$i"
+			done
+		else
+			_editalert "edittemp: edittempdir does not exist"
+		fi
+	fi
+
 	return 0
 }
 
@@ -168,6 +201,11 @@ function editcopy {
 	[[ $? -ne 0 ]] \
 		&& _editalert "editcopy: end line not recognized" \
 		&& return 5
+	[[ -f $editreadlines ]] && rm "$editreadlines"
+	editreadlines="$(edittemp create)"
+	! [[ -f $editreadlines ]] \
+		&& _editalert "editcopy: cant create temporary file" \
+		&& return 6
 	local res="$(edit "${s},${e}p" "$f" > "$editreadlines")"
 	[[ $3 == x ]] && cat "$editreadlines" | xclip -r -i
 	[[ $3 == w ]] && cat "$editreadlines" | wl-copy
@@ -185,6 +223,7 @@ function editpaste {
 	[[ -z $f ]] \
 		&& _editalert "editpaste: no file" \
 		&& return 1
+	! [[ -f $f ]] && touch "$f"
 	if [[ $s != 0 ]]
 	then
 		s="$(_editline "$s" "$f")"
@@ -193,9 +232,20 @@ function editpaste {
 			&& return 3
 	fi
 
-	[[ $2 == x ]] && xclip -r -o > "$editreadlines"
-	[[ $2 == w ]] && wl-paste > "$editreadlines"
-	[[ $2 != x ]] && local res="$(edit "${s}r $editreadlines\nw" "$f")"
+	[[ $fs == 0 ]] && s=0
+	if [[ $2 == x ]] || [[ $2 == w ]]
+	then
+		[[ -f $editreadlines ]] && rm "$editreadlines"
+		editreadlines="$(edittemp create)"
+		! [[ -f $editreadlines ]] \
+			&& _editalert "editpaste: cant create temporary file" \
+			&& return 4
+		[[ $2 == x ]] && xclip -r -o > "$editreadlines"
+		[[ $2 == w ]] && wl-paste > "$editreadlines"
+	fi
+
+	local res="$(edit "${s}r $editreadlines\nw" "$f")"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	[[ $f == $fn ]] && es "$((s+1))"
 }
 
@@ -221,7 +271,7 @@ function editcmd {
 	[[ $? -ne 0 ]] \
 		&& _editalert "editcmd: end line not recognized" \
 		&& return 6
-	local region="$(editcopy $begin $end '' '' "$fn")"
+	editcopy $begin $end '' '' "$fn"
 	[[ $? -ne 0 ]] && return $?
 	[[ -z $editdir ]] \
 		&& _editalert "editcmd: editdir is not set" \
@@ -229,21 +279,26 @@ function editcmd {
 	! [[ -d $editdir ]] \
 		&& _editalert "editcmd: editdir does not exist" \
 		&& return 8
-	local tempfile="$editdir/temp"
+	local tempfile="$(edittemp create)"
+	! [[ -f $tempfile ]] \
+		&& _editalert "editcmd: cant create temporary file" \
+		&& return 9
 	! [[ -f $editreadlines ]] \
 		&& _editalert "editcmd: editreadlines does not exist" \
-		&& return 9
+		&& return 10
 	cat "$editreadlines" | $3 > "$tempfile"
 	if [[ $? == 0 ]]
 	then
 		[[ -z $tempfile ]] \
 			&& _editalert "editcmd: tempfile does not exist" \
-			&& return 10
-		mv "$tempfile" "$editreadlines"
+			&& return 11
+		mv -- "$tempfile" "$editreadlines"
 		local res="$(edit "$begin,${end}d\nw" "$fn")"
-		[[ -n $res ]] && echo "$res"
+		[[ -n $res ]] && printf -- '%s\n' "$res"
 		editpaste $(($begin - 1)) '' "$fn"
 		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
+	else
+		rm "$tempfile"
 	fi
 }
 
@@ -277,13 +332,11 @@ function editopen {
 		&& [[ $f =~ '\$HOME' ]] \
 		&& f="$PWD/$f"
 	f="$(readlink -f "$f")"
-	! [[ -f $f ]] \
-		&& _editalert "editopen: file not found" \
-		&& return 2
+	! [[ -f $f ]] && touch "$f"
 	_editwindow "$f" "$argument"
 	[[ $? -eq 1 ]] \
 		&& _editalert '' "$edalertsound" \
-		&& return 3
+		&& return 2
 	if tmux run 2>/dev/null
 	then
 		local wordkey="${editwordkey:-o}"
@@ -291,7 +344,7 @@ function editopen {
 			"bash -ic \"fn=\"$f\" editwords\""
 	else
 		_editalert "editopen: tmux session not found"
-		return 4
+		return 3
 	fi
 
 	local location="$2"
@@ -328,6 +381,7 @@ function editopen {
 }
 
 function editclose {
+	[[ $1 == delete ]] && rm "$fn"
 	[[ -n $fn ]] && fn=
 	[[ -n $fl ]] && fl=
 	[[ -n $fs ]] && fs=
@@ -376,7 +430,7 @@ $data"
 				editshow ${fl}
 			fi
 		else
-			echo "$fileresult"
+			printf -- '%s\n' "$fileresult"
 		fi
 	fi
 }
@@ -425,8 +479,8 @@ function editfilefind {
 		! [[ -d $dir ]] \
 			&& _editalert "editfindfile: directory not found" \
 			&& return 4
-		echo "$1" > "$cache.search"
-		echo "$files" > "$cache.res"
+		printf -- '%s\n' "$1" > "$cache.search"
+		printf -- '%s\n'  "$files" > "$cache.res"
 		local res="$(_editfzf '' 'echo' 0 1 "$files")"
 	else
 		if [[ -f $data ]]
@@ -462,7 +516,7 @@ function editlocate {
 		ef "${fl},${fs}g/$pattern/n" | head -n1)"
 	to="${to/\ */}"
 	to="${to/*:/}"
-	echo "$to"
+	printf '%s\n' "$to"
 }
 
 function editshow {
@@ -492,9 +546,11 @@ function editshow {
 
 	fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ -z $fs ]] && return 3
+	[[ $fs == 0 ]] \
+		&& fl=0 \
+		&& return 0
 	[[ -z $pagesize ]] && pagesize=20
-	[[ -z $fl ]] && fl=1
-	! [[ $fl =~ [0-9]+ ]] && fl="$fs"
+	fl="$(_editline "${fl:-1}")"
 	local arg="$1"
 	[[ -z $1 ]] && arg="+"
 	local IFS=$' \t\n'
@@ -527,7 +583,7 @@ function editshow {
 			fi
 
 			fl="${fileresult_a[$fileresultindex]}"
-			printf "$fileresultindex:"
+			printf -- '$s\n' "$fileresultindex:"
 			editshow $fl
 			return
 		elif [[ $arg == d ]]
@@ -541,12 +597,12 @@ function editshow {
 			fi
 
 			fl="${fileresult_a[$fileresultindex]}"
-			printf "$fileresultindex:"
+			printf -- '%s\n' "$fileresultindex:"
 			editshow $fl
 			return
 		elif [[ $arg == s ]]
 		then
-			[[ -n "$fileresult" ]] && echo "$fileresult"
+			[[ -n "$fileresult" ]] && printf -- '%s\n' "$fileresult"
 			return
 		elif [[ $arg == m ]]
 		then
@@ -568,7 +624,6 @@ function editshow {
 			if [[ -n $res ]]
 			then
 				local line="${res/$'\t'*/}"
-				echo "$line"
 				[[ -n $line ]] && editshow $line
 			fi
 		elif [[ $arg == fz ]]
@@ -787,9 +842,9 @@ function editappend {
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
 	local res="$(edit "${line}a\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] \
-		&& >&2 echo "$res" \
+		&& >&2 printf -- '%s\n' "$res" \
 		&& return 3
-	editshow "+$(echo -e "$data" | grep -c "^")"
+	editshow "+$(printf -- '%b\n' "$data" | grep -c "^")"
 }
 
 function editinsert {
@@ -822,7 +877,7 @@ function editdelete {
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}d\nw" "$f")" \
 		|| local res="$(edit "${from},${to}d\nw" "$f")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	if [[ $f == $fn ]]
 	then
 		fs="$(wc -l "$fn" | cut -d ' ' -f1)"
@@ -856,7 +911,7 @@ function editchange {
 	[[ -z $to ]] \
 		&& local res="$(edit "${from}c\n$data\n.\nw" "$f")" \
 		|| local res="$(edit "${from},${to}c\n$data\n.\nw" "$f")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	if [[ $f == $fn ]]
 	then
 		[[ -z $to ]] && editshow l || editshow $from,$to
@@ -878,7 +933,7 @@ function editchangeline {
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	editshow l
 }
 
@@ -920,7 +975,7 @@ function editsub {
 		res="$(edit "$from,$to$pattern\nw" "$f")"
 	fi
 
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	[[ $f == $fn ]] && editshow l
 	return 0
 }
@@ -946,7 +1001,7 @@ function editjoin {
 		&& return 4
 	[[ -z $to ]] && local to="$((from + 1))"
 	local res="$(edit "$from,${to}j\nw" "$f")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	[[ $f == $fn ]] \
 		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
 		&& [[ $fl -gt $fs ]] && fl="$fs"
@@ -981,7 +1036,7 @@ function editmove {
 	[[ -n $to ]] \
 		&& local res="$(edit "$from,${to}m$dest\nw" "$f")" \
 		|| local res="$(edit "${from}m$dest\nw" "$f")"
-	[[ -n $res ]] && echo "$res"
+	[[ -n $res ]] && printf -- '%s\n' "$res"
 	[[ $f == $fn ]] \
 		&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
 		&& [[ $fl -gt $fs ]] && fl="$fs"
@@ -1015,7 +1070,7 @@ function edittransfer {
 		[[ -n $to ]] \
 			&& local res="$(editprint "$from,${to}t$dest\nw" "$f")" \
 			|| local res="$(editprint "${from}t$dest\nw" "$f")"
-		[[ -n $res ]] && echo "$res"
+		[[ -n $res ]] && printf -- '%s\n' "$res"
 		[[ $f == $fn ]] \
 			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
 			&& [[ $fl -gt $fs ]] && fl="$fs"
@@ -1052,12 +1107,12 @@ function editlevel {
 		do
 			[[ ${line:0:1} == $' ' ]] \
 				&& spaces=$((spaces + 1)) \
-				&& res="$res[space]" \
+				&& res="${res}[space]" \
 				&& ind="$ind " \
 				&& line="${line/ /}"
 			[[ ${line:0:1} == $'\t' ]] \
 				&& tabs=$((tabs + 1)) \
-				&& res="$res[tab]" \
+				&& res="${res}[tab]" \
 				&& ind="$ind\t" \
 				&& line="${line/$'\t'/}"
 			[[ ${line:0:1} != $' ' ]] \
@@ -1065,9 +1120,9 @@ function editlevel {
 				&& break
 		done
 
-		echo "spaces: $spaces, tabs: $tabs"
-		[[ -n $res ]] && echo "$res"
-		[[ -n $ind ]] && echo "\$ind="$ind""
+		>&2 printf -- "spaces: %s, tabs: %s\n" "$spaces" "$tabs"
+		[[ -n $res ]] && >&2 printf -- '%s\n' "$res"
+		[[ -n $ind ]] && >&2 printf -- '%s\n' "\$ind="$ind""
 	else
 		return 4
 	fi
@@ -1100,7 +1155,7 @@ function editexternal {
 		local size="${edtmuxpsize:-80%}"
 		tmux display-popup -h $size -w $size -E "$EDITOR "$editreadlines""
 		local res="$(edit "$from,${to}d\nw" "$f")"
-		[[ -n $res ]] && echo "$res"
+		[[ -n $res ]] && printf -- '%s\n' "$res"
 		editpaste $(($from - 1)) '' "$f"
 		[[ $f == $fn ]] \
 			&& fs="$(wc -l "$fn" | cut -d ' ' -f1)" \
@@ -1110,6 +1165,7 @@ function editexternal {
 		return 5
 	fi
 
+	[[ -f $editreadlines ]] && rm "$editreadlines"
 	return 0
 }
 
@@ -1135,28 +1191,29 @@ function _editfzf {
 	shift
 	[[ -z $* ]] && return 1
 	[[ $breakwords -eq 1 ]] \
-		&& local data="$(echo "$*" | sed 's/\ /\n/g' | sort -n | uniq)" \
-		|| local data="$(echo "$*" | sort -n | uniq)"
+		&& local data="$(printf -- '%s\n' "$*" | sed 's/\ /\n/g' | \
+			sort -n | uniq)" \
+		|| local data="$(printf -- '%s\n' "$*" | sort -n | uniq)"
 	local size="${edfzfsize:-80%}"
 	local psize="${edfzfpsize:-30%}"
 	if [[ -n $preview ]]
 	then
 		if [[ $preview == echo ]]
 		then
-			echo "$data" | fzf-tmux -p ${size},${size} \
+			printf -- '%s\n' "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
 				--sync --bind "start:pos($line)" \
 				--preview-window down,$psize,wrap \
 				--preview 'echo {}'
 		else
-			echo "$data" | fzf-tmux -p ${size},${size} \
+			printf -- '%s\n' "$data" | fzf-tmux -p ${size},${size} \
 				--layout=reverse-list --cycle $multiple \
 				--sync --bind "start:pos($line)" \
 				--preview-window down,$psize,wrap --preview \
 				"echo file: {}; echo -----------; cat "$preview/{}""
 		fi
 	else
-		echo "$data" | fzf-tmux -p ${size},${size} \
+		printf -- '%s\n' "$data" | fzf-tmux -p ${size},${size} \
 			--layout=reverse-list --cycle $multiple \
 			--sync --bind "start:pos($line)"
 	fi
@@ -1303,6 +1360,7 @@ function eq { editclose "$@"; }
 function esu { editsub "$@"; }
 function es { editshow "$@"; }
 function esf { editshowfzf "$@"; }
+function etemp { edittemp "$@"; }
 function ew { editwords "$@"; }
 function ews { editwordsrc "$@"; }
 function ey { edittransfer "$@"; }
@@ -1340,6 +1398,7 @@ function _editchange {
 			COMPREPLY=($(compgen -o nosort -W "$ + - ." -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1347,6 +1406,18 @@ function _editchange {
 
 complete -o nospace -o filenames -F _editchange editchange
 complete -o nospace -o filenames -F _editchange ech
+
+function _editclose {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "delete" -- $cur))
+			;;
+	esac
+}
+
+complete -o nospace -o filenames -F _editclose editclose
+complete -o nospace -o filenames -F _editclose eq
 
 function _editcmd {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -1361,6 +1432,7 @@ function _editcmd {
 			COMPREPLY=($(compgen -c))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1385,6 +1457,7 @@ function _editcopy {
 			COMPREPLY=($(compgen -W "cut" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1403,6 +1476,7 @@ function _editdelete {
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1421,6 +1495,7 @@ function _editexternal {
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1436,6 +1511,7 @@ function _editfind {
 			COMPREPLY=($(compgen -o nosort -W "fz" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1460,6 +1536,7 @@ function _editfilefind {
 			COMPREPLY=($(compgen -o nosort -W "cache new" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1478,6 +1555,7 @@ function _editjoin {
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1499,6 +1577,7 @@ function _editmove {
 			COMPREPLY=($(compgen -o nosort -W "$ +" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1515,13 +1594,14 @@ function _editopen {
 				lu ld" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
 }
 
-complete -o nospace -o filenames -F _editopen editopen
-complete -o nospace -o filenames -F _editopen eo
+complete -o filenames -F _editopen editopen
+complete -o filenames -F _editopen eo
 
 function _editshow {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -1531,6 +1611,7 @@ function _editshow {
 				v / . $ + -" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1551,12 +1632,10 @@ function _editpaste {
 			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
 			;;
 		2)
-			COMPREPLY=($(compgen -o nosort -W "$ + ." -- $cur))
-			;;
-		3)
 			COMPREPLY=($(compgen -W "w x" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1578,6 +1657,7 @@ function _editsub {
 			COMPREPLY=($(compgen -W "g"))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
@@ -1585,6 +1665,18 @@ function _editsub {
 
 complete -o nospace -o filenames -F _editsub editsub
 complete -o nospace -o filenames -F _editsub esu
+
+function _edittemp {
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	case "$COMP_CWORD" in
+		1)
+			COMPREPLY=($(compgen -o nosort -W "create clean" -- $cur))
+			;;
+	esac
+}
+
+complete -o nospace -o filenames -F _edittemp edittemp
+complete -o nospace -o filenames -F _edittemp etemp
 
 function _edittransfer {
 	local cur=${COMP_WORDS[COMP_CWORD]}
@@ -1596,6 +1688,7 @@ function _edittransfer {
 			COMPREPLY=($(compgen -o nosort -W "+" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac

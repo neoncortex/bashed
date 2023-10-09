@@ -28,7 +28,7 @@ function _edclipfile {
 		done
 	fi
 
-	echo "$clipfile"
+	printf -- '%s\n' "$clipfile"
 }
 
 function _editclipword {
@@ -67,14 +67,14 @@ function _editclipstart {
 		files+=("$(basename "$i")")
 	done
 
-	local res="$(echo ${files[@]})"
+	local res="$(printf -- '%s\n' ${files[@]})"
 	if tmux run 2>/dev/null
 	then
 		local key="${edclipkey:-b}"
 		tmux bind-key $key run -b "bash -ic \"_editclipword $res\""
 	fi
 
-	echo "${files[@]}"
+	printf -- '%s\n' "${files[@]}"
 	return 0
 }
 
@@ -115,14 +115,14 @@ function editclipboard {
 			&& return 7
 		if [[ -n $resname ]]
 		then
-			echo "$content" > "$edclipdir/$resname"
+			printf -- '%s\n' "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 			local extension="$(basename "$filename")"
 			[[ $extension =~ (^.)?[^.]+\.[^.]+ ]] \
 				&& extension=".${filename##*.}" \
 				|| extension=
-			echo "$content" > "$edclipdir/$date$extension"
+			printf -- '%s\n' "$content" > "$edclipdir/$date$extension"
 		fi
 	elif [[ $1 == add ]] || [[ $1 == a ]]
 	then
@@ -133,14 +133,14 @@ function editclipboard {
 		local content="$2"
 		if [[ -n $resname ]]
 		then
-			echo "$content" > "$edclipdir/$resname"
+			printf -- '%s\n' "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
 			local extension="$(basename "$filename")"
 			[[ $extension =~ (^.)?[^.]+\.[^.]+ ]] \
 				&& extension=".${filename##*.}" \
 				|| extension=
-			echo "$content" > "$edclipdir/$date$extension"
+			printf -- '%s\n' "$content" > "$edclipdir/$date$extension"
 		fi
 	elif [[ $1 == paste ]] || [[ $1 == p ]]
 	then
@@ -197,8 +197,8 @@ function editclipboard {
 			&& extension=".${filename##*.}" \
 			|| extension=
 		[[ -n $resname ]] \
-			&& echo "$content" > "$edclipdir/$resname" \
-			|| echo "$content" > "$edclipdir/$date$extension"
+			&& printf -- '%s\n' "$content" > "$edclipdir/$resname" \
+			|| printf -- '%s\n' "$content" > "$edclipdir/$date$extension"
 	elif [[ $1 == list ]] || [[ $1 == l ]]
 	then
 		read -r rows cols < <(stty size)
@@ -214,7 +214,7 @@ function editclipboard {
 		do
 			local color="${edclipcolor:-31}"
 			printf -- '\033[%sm%s\n' "$color" "$separator"
-			echo "$i - ${files[$i]}"
+			printf -- '%s\n' "$i - ${files[$i]}"
 			printf -- '%s\033[0m\n' "$separator"
 			(es a "$edclipdir/${files[$i]}")
 		done
@@ -233,7 +233,7 @@ function editclipboard {
 		local IFS=
 		for i in ${searchresult[@]}
 		do
-			echo "$i"
+			printf -- '%s\n' "$i"
 		done
 	elif [[ $1 == searchcontent ]] || [[ $1 == sc ]]
 	then
@@ -291,7 +291,7 @@ $g
 			&& _editalert "editclipboard: rename: no new name" \
 			&& return 24
 		[[ -f $edclipdir/$clipfile ]] \
-			&& mv "$edclipdir/$clipfile" "$edclipdir/$newname"
+			&& mv -- "$edclipdir/$clipfile" "$edclipdir/$newname"
 	elif [[ $1 == deletecurses ]] || [[ $1 == du ]]
 	then
 		local res="$(_editfzf '-m' "$edclipdir" 1 1 "${files[@]}")"
@@ -321,10 +321,10 @@ $g
 		local resname="$2"
 		if [[ -n $resname ]]
 		then
-			echo "$content" > "$edclipdir/$resname"
+			printf -- '%s\n' "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-			echo "$content" > "$edclipdir/$date"
+			printf -- '%s\n' "$content" > "$edclipdir/$date"
 		fi
 	elif [[ $1 == tw ]]
 	then
@@ -345,10 +345,10 @@ $g
 		local resname="$2"
 		if [[ -n $resname ]]
 		then
-			echo "$content" > "$edclipdir/$resname"
+			printf -- '%s\n' "$content" > "$edclipdir/$resname"
 		else
 			local date="$(date +'%Y-%m-%d_%H-%M-%S')"
-			echo "$content" > "$edclipdir/$date"
+			printf -- '%s\n' "$content" > "$edclipdir/$date"
 		fi
 	elif [[ $1 == type ]]
 	then
@@ -365,7 +365,7 @@ function _editclipboardcompletion {
 		files+=("$(basename "$i")")
 	done
 
-	echo "${files[@]}"
+	printf -- '%s\n' "${files[@]}"
 }
 
 function _editclipboard {
@@ -398,6 +398,7 @@ function _editclipboard {
 			fi
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac

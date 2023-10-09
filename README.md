@@ -98,6 +98,12 @@ This may be useful when scripting.
 eq
 ````
 
+You can pass a argument, delete, that will close, and delete the file:
+
+````
+eq delete
+````
+
 ## Finding files:
 It is possible to search for file contents using editfilefind, or eff, for short:
 
@@ -217,7 +223,13 @@ ey start-line end-line
 This will copy the current line to the variable $yank.
 
 ## ecopy and epaste:
-ecopy and epaste are two functinos that allows to copy and paste a portion of a text file to a temporary location, or the X/Wayland clipboard, so it can be pasted in another shell, file, etc.  The temporary location will be ~/.edit/readlines.
+ecopy and epaste are two functinos that allows to copy and paste a portion of a text file to a temporary location, or the X/Wayland clipboard, so it can be pasted in another shell, file, etc.  The temporary file will be created on demand, inside the directory $edittempdir.  It may happen that previously used files stay inside $edittempdir, you can clean it by running;
+
+````
+edittemp clean
+````
+
+This will delete all temporary created files.
 
 ### ecopy:
 ecopy works that way:
@@ -264,7 +276,6 @@ to paste in the current line from the X11 clipboard, using xclip:
 epaste . . x
 ````
 
-to paste in the 
 ## Joining:
 ### Joining lines:
 ````
@@ -608,8 +619,9 @@ If the variable ednotifysend contains 1, notify-send will be used to display not
 - edalertsound: sound file to play on alerts;
 - ederrorsound: sound file to play on errors;
 - editdir: Contains the path to the edit directory.  By default: $HOME/.edit;
-- editreadlines: File used to store lines that where cut/copied; 
 - editsearchdir: Contains the path to store the file search cache;
+- edittempdir: Contains the path to the temporary directory.  By default: $editdir/temp;
+- editreadlines: Temporary file used to store lines that where cut/copied; 
 
 ## Using e:
 Commands can be passed directly to ed, using e, like:
@@ -667,7 +679,7 @@ function my_special_function { echo "special"; }
 ````
 
 ## Function dictionary:
-The functions that are to be used directly have two names: one "big" name, unambiguous, and other shorter, easier to type.
+Most functions that are to be used directly have two names: one "big" name, unambiguous, and other shorter, easier to type.
 
 The functions are:
 - edit, e: execute ed commands on file;
@@ -691,7 +703,8 @@ The functions are:
 - editshowfzf, esf: select a line using fzf;
 - editstore, et: store a version of file;
 - editsub, esu; substitution;
-- etermbin, paste in termbin;
+- etermbin: paste in termbin;
+- edittemp, etemp: create or clean the temp files;
 - edittransfer, ey: copy lines;
 - editundo, eu: show, diff, restore, delete stored version files;
 - editwordsrc, ews: set the current file as a source of words;

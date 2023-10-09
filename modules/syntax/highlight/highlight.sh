@@ -49,7 +49,7 @@ function editshowhi {
 	then
 		local format="${ehioutformat:-xterm256}"
 		local theme="${ehitheme:-camo}"
-		[[ -n $ehisyntax ]] && echo "$ehisyntax" > "$syntfile"
+		[[ -n $ehisyntax ]] && printf -- '%s\n' "$ehisyntax" > "$syntfile"
 		[[ -f $syntfile ]] \
 			&& local syntax="$(cat "$syntfile")"
 		[[ -n $syntax ]] \
@@ -120,7 +120,7 @@ function _edithiextract {
 			fi
 		done < "$hi_file"
 
-		echo "${words[@]}"
+		printf -- '%s\n' "${words[@]}"
 	fi
 }
 
@@ -144,12 +144,14 @@ function _editshowhi {
 				defs+=("$lang")
 			done
 
-			COMPREPLY=($(compgen -W "$(echo ${defs[@]})" -- $cur))
+			COMPREPLY=($(compgen -W "$(printf -- '%s\n' \
+				${defs[@]})" -- $cur))
 			;;
 		4)
 			COMPREPLY=($(compgen -W "rewrite" -- $cur))
 			;;
 		*)
+			local IFS=$'\n'
 			COMPREPLY=($(compgen -f -- $cur))
 			;;
 	esac
