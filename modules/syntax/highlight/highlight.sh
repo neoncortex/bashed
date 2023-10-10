@@ -127,6 +127,7 @@ function _edithiextract {
 function ess { editshowhi "$@"; }
 
 function _editshowhi {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)

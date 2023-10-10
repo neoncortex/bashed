@@ -283,6 +283,7 @@ function et { editstore "$@"; }
 function eu { editundo "$@"; }
 
 function _editundo {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)

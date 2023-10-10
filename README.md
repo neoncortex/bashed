@@ -229,7 +229,13 @@ ecopy and epaste are two functinos that allows to copy and paste a portion of a 
 edittemp clean
 ````
 
-This will delete all temporary created files.
+This will delete all temporary created files.  Temporary files can be transfer to tmux panes using:
+
+````
+edittemp transfer
+````
+
+The panes that the title is a filename will be available for selection.  Note that, despite the attempt to filter for panes with file name titles, be careful: tmux send-keys will be used to set the variable in that pane, so if its running an interactive program, like mc, for example, it will be a mess, so, select with care.
 
 ### ecopy:
 ecopy works that way:

@@ -5,7 +5,6 @@ editdir="$HOME/.edit"
 editsearchdir="$editdir/search"
 edittempdir="$editdir/temp"
 #editreadlines="$editdir/readlines"
-editreadlines=
 eddatacmd="xdg-open"
 
 # edit
@@ -161,7 +160,7 @@ function edittemp {
 		then
 			printf -- '%s\n' "$file"
 		else
-			_editalert "edittemp: cant create temporary file"
+			_editalert "edittemp: create: cant create temporary file"
 			return 2
 		fi
 	elif [[ $1 == clean ]]
@@ -173,7 +172,40 @@ function edittemp {
 				[[ -f $i ]] && rm "$i"
 			done
 		else
-			_editalert "edittemp: edittempdir does not exist"
+			_editalert "edittemp: clean:  edittempdir does not exist"
+			return 3
+		fi
+	elif [[ $1 == transfer ]]
+	then
+		if ! tmux run 2>/dev/null
+		then
+			_editalert "edittemp: get: tmux session not found"
+			return 4
+		fi
+
+		local IFS=$'\t\n'
+		local session="$(tmux display-message -p '#S')"
+		local buffers=
+		for i in $(tmux lsp -s -t "$session:0" -F '#I::#D #T')
+		do
+			local location="${i/\ */}"
+			if [[ "${i#$location\ }" =~ ^\/ ]] \
+				&& [[ -f "${i#$location\ }" ]]
+			then
+				[[ -z $buffers ]] \
+					&& buffers="$i" \
+					|| buffers="$buffers
+$i"
+			fi
+		done
+
+		local res="$(_editfzf '' 'echo' 0 1 "${buffers[@]}")"
+		if [[ -n $res ]]
+		then
+			local location="${res/\ */}"
+			local pane="${location/*::/}"
+			local file="editreadlines=\"$editreadlines\""
+			tmux send-keys -t "$pane" "$file" Enter
 		fi
 	fi
 
@@ -1321,14 +1353,18 @@ function editdata {
 			done
 		fi
 
-		[[ -n $path ]] \
+		if [[ -n $path ]] \
 			&& ! [[ $path =~ ^\$\{ ]] \
 			&& ! [[ $path =~ ^\$\( ]] \
 			&& ! [[ $path =~ ^\.[\ \*] ]] \
 			&& ! [[ $path =~ ^\* ]] \
 			&& ! [[ $path =~ ^\$.\  ]] \
-			&& files="$files
+		then
+			[[ -z $files ]] \
+				&& files="$path" \
+				|| files="$files
 $path"
+		fi
 	done < "$f"
 
 	if [[ ${#files[@]} -gt 0 ]]
@@ -1370,6 +1406,7 @@ function ey { edittransfer "$@"; }
 function e { edit "$@"; }
 
 function _editappend {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	COMPREPLY=($(compgen -f -c -- $cur))
 }
@@ -1380,6 +1417,7 @@ complete -o nospace -o filenames -o nosort -F _editappend editinsert
 complete -o nospace -o filenames -o nosort -F _editappend ei
 
 function _editchangeline {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	local words=($(edcolor=0 editshow l))
 	local word="${words[COMP_CWORD]}"
@@ -1392,6 +1430,7 @@ complete -o nospace -o filenames -o nosort -F _editchangeline editchangeline
 complete -o nospace -o filenames -o nosort -F _editchangeline echl
 
 function _editchange {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1411,6 +1450,7 @@ complete -o nospace -o filenames -F _editchange editchange
 complete -o nospace -o filenames -F _editchange ech
 
 function _editclose {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1423,6 +1463,7 @@ complete -o nospace -o filenames -F _editclose editclose
 complete -o nospace -o filenames -F _editclose eq
 
 function _editcmd {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1445,6 +1486,7 @@ complete -o nospace -o filenames -F _editcmd editcmd
 complete -o nospace -o filenames -F _editcmd ec
 
 function _editcopy {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1470,6 +1512,7 @@ complete -o nospace -o filenames -F _editcopy editcopy
 complete -o nospace -o filenames -F _editcopy ecopy
 
 function _editdelete {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1489,6 +1532,7 @@ complete -o nospace -o filenames -F _editdelete editdelete
 complete -o nospace -o filenames -F _editdelete edel
 
 function _editexternal {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1508,6 +1552,7 @@ complete -o nospace -o filenames -F _editexternal editexternal
 complete -o nospace -o filenames -F _editexternal ee
 
 function _editfind {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		2)
@@ -1526,6 +1571,7 @@ complete -o nospace -o filenames -F _editfind editfindg
 complete -o nospace -o filenames -F _editfind efg
 
 function _editfilefind {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		2)
@@ -1549,6 +1595,7 @@ complete -o nospace -o filenames -F _editfilefind editfilefind
 complete -o nospace -o filenames -F _editfilefind eff
 
 function _editjoin {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1568,6 +1615,7 @@ complete -o nospace -o filenames -F _editjoin editjoin
 complete -o nospace -o filenames -F _editjoin ej
 
 function _editmove {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1590,6 +1638,7 @@ complete -o nospace -o filenames -F _editmove editmove
 complete -o nospace -o filenames -F _editmove em
 
 function _editopen {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		2)
@@ -1607,6 +1656,7 @@ complete -o filenames -F _editopen editopen
 complete -o filenames -F _editopen eo
 
 function _editshow {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1629,6 +1679,7 @@ complete -o nospace -o filenames -F _editshow editshowfzf
 complete -o nospace -o filenames -F _editshow esf
 
 function _editpaste {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1648,6 +1699,7 @@ complete -o nospace -o filenames -F _editpaste editpaste
 complete -o nospace -o filenames -F _editpaste epaste
 
 function _editsub {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
@@ -1670,10 +1722,12 @@ complete -o nospace -o filenames -F _editsub editsub
 complete -o nospace -o filenames -F _editsub esu
 
 function _edittemp {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)
-			COMPREPLY=($(compgen -o nosort -W "create clean" -- $cur))
+			COMPREPLY=($(compgen -o nosort -W "create clean transfer" \
+				-- $cur))
 			;;
 	esac
 }
@@ -1682,6 +1736,7 @@ complete -o nospace -o filenames -F _edittemp edittemp
 complete -o nospace -o filenames -F _edittemp etemp
 
 function _edittransfer {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	case "$COMP_CWORD" in
 		1)

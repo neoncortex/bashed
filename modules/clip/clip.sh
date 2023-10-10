@@ -369,6 +369,7 @@ function _editclipboardcompletion {
 }
 
 function _editclipboard {
+	local IFS=$' \t\n'
 	local cur=${COMP_WORDS[COMP_CWORD]}
 	local prev=${COMP_WORDS[COMP_CWORD-1]}
 	case "$COMP_CWORD" in
