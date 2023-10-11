@@ -222,14 +222,14 @@ ey start-line end-line
 
 This will copy the current line to the variable $yank.
 
-## ecopy and epaste:
+## ecopy, epaste, and etemp:
 ecopy and epaste are two functinos that allows to copy and paste a portion of a text file to a temporary location, or the X/Wayland clipboard, so it can be pasted in another shell, file, etc.  The temporary file will be created on demand, inside the directory $edittempdir.  It may happen that previously used files stay inside $edittempdir, you can clean it by running;
 
 ````
 edittemp clean
 ````
 
-This will delete all temporary created files.  Temporary files can be transfer to tmux panes using:
+Or etemp, for short.  This will delete all temporary created files.  Temporary files can be transfer to tmux panes using:
 
 ````
 edittemp transfer

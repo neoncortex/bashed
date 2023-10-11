@@ -655,7 +655,7 @@ function editshow {
 			return
 		elif [[ $arg == mf ]]
 		then
-			local res="$(_editfzf '' 'echo' 0 1 "$(edcolor=0 editshow m)")"
+			local res="$(_editfzf '' 'echo' 0 1 "$(edcolor=0 edcmd=n editshow m)")"
 			if [[ -n $res ]]
 			then
 				local line="${res/$'\t'*/}"
