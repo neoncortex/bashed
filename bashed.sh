@@ -13,6 +13,9 @@ edcmd="n"
 # color
 edcolor=0
 
+#escapes
+edescape=1
+
 # bind key for editwords
 editwordkey="o"
 
@@ -862,6 +865,26 @@ function editprint {
 	edcmd=p edcolor=0 editshow "$@"
 }
 
+function _editescape {
+	[[ -z $1 ]] \
+		&& _editalert "_editescape: no argument" \
+		&& return 1
+	local data="$@"
+	if [[ -n $data ]]
+	then
+		data="${data//\A/\\a}"
+		data="${data//\B/\\b}"
+		data="${data//\E/\\e}"
+		data="${data//\F/\\f}"
+		data="${data//\N/\\n}"
+		data="${data//\R/\\r}"
+		data="${data//\T/\\t}"
+		data="${data//\V/\\v}"
+	fi
+
+	printf -- '%s\n' "$data"
+}
+
 function editappend {
 	[[ -z $fn ]] \
 		&& _editalert "editappend: no file" \
@@ -872,6 +895,7 @@ function editappend {
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
 	[[ $data =~ ^(\\n)+$ ]] && data="${data/\\n/}"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
 	local line=$fl
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
@@ -938,6 +962,7 @@ function editchange {
 		&& return 3
 	local data="$3"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
@@ -967,6 +992,7 @@ function editchangeline {
 		&& return 3
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && printf -- '%s\n' "$res"
 	editshow l
@@ -996,10 +1022,12 @@ function editsub {
 		&& _editalert "editsub: missing regex" \
 		&& return 5
 	local out="$4"
-	in="${in//\\\\/\\\\\\\\}"
-	in="${in//\\N/\\\\\\n}"
-	out="${out//\\\\/\\\\\\\\}"
-	out="${out//\\N/\\\\\\n}"
+	if [[ $edescape == 1 ]]
+	then
+		in="$(_editescape "$in")"
+		out="$(_editescape "$out")"
+	fi
+
 	local pattern="s/$in/$out/"
 	[[ $5 == "g" ]] && pattern="${pattern}g"
 	local res=
