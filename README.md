@@ -329,7 +329,7 @@ ef 'g/re/n'
 ````
 
 ## Escape sequences:
-Functions that insert and modify text, namely: ea, ei, ech, echl, and esub, have a special set of escape sequences.  When one of these functions receives a escape sequence like \\n, they will insert a newline character, not the characters \\, and n.  To insert a \\ plus a n character, a special escape sequence, \\N can be used.  The sequences available are: \\A, \\B, \\E, \\F, \\N, \\R, \\T, \\V.
+Functions that insert and modify text, namely: ea, ei, ech, echl, and esub, have a special set of escape sequences.  When one of these functions receives a escape sequence like \\n, they will insert a newline character, not the characters \\, and n.  To insert a \\ plus a n character, a special escape sequence, \\N can be used.  The sequences available are: \\A, \\B, \\E, \\F, \\N, \\R, \\T, \\V.  These sequences are just a shortcut to \\\\\\\\n, \\\\\\\\t, etc.
 
 The interpretation of these special escape sequences can be disabled by setting the variable $edescape to 0.
 
@@ -617,7 +617,7 @@ If the variable ednotifysend contains 1, notify-send will be used to display not
 - edfzfpsize: size of the fzf preview window, by default, 30%;
 - edsound: Sets the sound on, or off.  By default, 1;
 - edtmuxpsize: Size of tmux popup, by default, 80%;
-- editwordkey: the key to be used with bind-key ro call editwords;
+- editwordkey: the key to be used with bind-key to call editwords;
 - eslast: Contains the last command executed by es;
 - eslastarg: Contains the last argument received by es;
 - fileresult: Contains the search results to be displayed by ef, and es s;

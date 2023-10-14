@@ -866,23 +866,22 @@ function editprint {
 }
 
 function _editescape {
-	[[ -z $1 ]] \
-		&& _editalert "_editescape: no argument" \
-		&& return 1
+	[[ -z $1 ]] && return 0
 	local data="$@"
 	if [[ -n $data ]]
 	then
-		data="${data//\A/\\a}"
-		data="${data//\B/\\b}"
-		data="${data//\E/\\e}"
-		data="${data//\F/\\f}"
-		data="${data//\N/\\n}"
-		data="${data//\R/\\r}"
-		data="${data//\T/\\t}"
-		data="${data//\V/\\v}"
+		data="${data//\\A/\\\\a}"
+		data="${data//\\B/\\\\b}"
+		data="${data//\\E/\\\\e}"
+		data="${data//\\F/\\\\f}"
+		data="${data//\\N/\\\\n}"
+		data="${data//\\R/\\\\r}"
+		data="${data//\\T/\\\\t}"
+		data="${data//\\V/\\\\v}"
 	fi
 
 	printf -- '%s\n' "$data"
+	return 0
 }
 
 function editappend {
