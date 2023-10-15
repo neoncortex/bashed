@@ -867,17 +867,26 @@ function editprint {
 
 function _editescape {
 	[[ -z $1 ]] && return 0
-	local data="$@"
+	local data="$1"
+	local slashes="\\\\"
+	if [[ -n $2 ]] && [[ $2 =~ ^[0-9]+$ ]]
+	then
+		for ((i=0; i < $2; ++i))
+		do
+			slashes="$slashes\\"
+		done
+	fi
+
 	if [[ -n $data ]]
 	then
-		data="${data//\\A/\\\\a}"
-		data="${data//\\B/\\\\b}"
-		data="${data//\\E/\\\\e}"
-		data="${data//\\F/\\\\f}"
-		data="${data//\\N/\\\\n}"
-		data="${data//\\R/\\\\r}"
-		data="${data//\\T/\\\\t}"
-		data="${data//\\V/\\\\v}"
+		data="${data//\\A/${slashes}a}"
+		data="${data//\\B/${slashes}b}"
+		data="${data//\\E/${slashes}e}"
+		data="${data//\\F/${slashes}f}"
+		data="${data//\\N/${slashes}n}"
+		data="${data//\\R/${slashes}r}"
+		data="${data//\\T/${slashes}t}"
+		data="${data//\\V/${slashes}v}"
 	fi
 
 	printf -- '%s\n' "$data"
@@ -1023,8 +1032,8 @@ function editsub {
 	local out="$4"
 	if [[ $edescape == 1 ]]
 	then
-		in="$(_editescape "$in")"
-		out="$(_editescape "$out")"
+		in="$(_editescape "$in" 5)"
+		out="$(_editescape "$out" 5)"
 	fi
 
 	local pattern="s/$in/$out/"

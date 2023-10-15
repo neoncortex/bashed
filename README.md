@@ -329,7 +329,10 @@ ef 'g/re/n'
 ````
 
 ## Escape sequences:
-Functions that insert and modify text, namely: ea, ei, ech, echl, and esub, have a special set of escape sequences.  When one of these functions receives a escape sequence like \\n, they will insert a newline character, not the characters \\, and n.  To insert a \\ plus a n character, a special escape sequence, \\N can be used.  The sequences available are: \\A, \\B, \\E, \\F, \\N, \\R, \\T, \\V.  These sequences are just a shortcut to \\\\\\\\n, \\\\\\\\t, etc.
+Functions that insert and modify text, namely: ea, ei, ech, echl, and esub, have a special set of escape sequences.
+
+When one of these functions receives a escape sequence like \\n, they will insert a newline character, not the characters \\, and n, with exception of esub, in which you need to insert \\\\\\n to insert a newline character.  To insert a \\ plus a n character, a special escape sequence, \\N can be used.  The sequences available are: \\A, \\B, \\E, \\F, \\N, \\R, \\T, \\V.  These sequences are just a shortcut to \\\\\\\\n, \\\\\\\\t, etc.
+
 
 The interpretation of these special escape sequences can be disabled by setting the variable $edescape to 0.
 
