@@ -4,8 +4,14 @@ bash wrapper for the ed editor.
 # What it is:
 It is a collection of functions that wraps the ed functionalities, and manage the files and windows using tmux, and fzf.  This allows files to be edited directly from the bash prompt.  It offers features like versioning, content searching, syntax highlight, and others.
 
+It was written with GNU/Linux and GNU Coreutils in mind, to be used with these.  Also, the ed version used was the GNU one.  That said, it may happens it works with other versions of ed, in other systems, but its not garanteed.
+
 # How it works:
-It keeps state, the file opened, current line, and various others,  with shell variables, and files.
+It keeps state, the file opened, current line, and various others,  with shell variables, and files.  The idea is to have a set of utilities that manipulate text as commands, pretty much like ed does, but instead of having a separated shell, like ed does, have it directly in bash.
+
+So, for example, instead of opening a file in ed, and typing a, followed by the text you want to add, and a single dot to end adding, you open a file using a command, eo, that will fill some variables, and alter some bash and tmux state, in a way that allows the file to be accessed as in a line text editor.
+
+From there, you can add text, using ea command, for example.  The command arguments will be the text to be inserted.  See the [how it works](#How-it-works:) section for an explanation of all commands available, and how to use them.
 
 # Dependencies:
 - ed;
@@ -24,6 +30,12 @@ Add to your ~/.bashrc:
 
 ````
 source /path/to/bashed/bashed.sh
+````
+
+where /path/to/bashed is where you cloned.  For example, if it was cloned in /home/user/src/bashed:
+
+````
+source /home/user/src/bashed/bashed.sh
 ````
 
 ## User interface:
@@ -73,6 +85,8 @@ eo file u
 ````
 
 Also, you can subdivide an existing pane.  Lets say you window have two panes, and you want to subdivide the unfocused pane, then: ul, for subdivide the upper pane, and open in the left, ur, for subdividing the upper pane, and open on the right, lu, for subdivide the left pane, and open on the top, ld, for subdivide the left pane, and open on the bottom, rl and rd does the same as lu and ld, but for the right pane, and dl and dr does the same as ul and ur, but for the bottom pane.  This argument, when 0, have no effect, and the file will be opened on the current pane.
+
+If the file is a directory, and there is not a second argument indicating a pane, it will cd to that directory, and if there is a second argument, it will create a new pane, and cd there.
 
 ### File arguments:
 Files can be opened with arguments. These arguments can specify a line, or a string.  Examples:
@@ -1015,9 +1029,18 @@ Omitting the third argument will keep the current language syntax:
 ess a file '' rewrite
 ````
 
+### Personal syntax files:
+The highlight data directory can be copied to a conveninent location, where its files can be customized.  For example, one can copy it to ~/.highlight, then adjust the $ehidatadir variable:
+
+````
+ehidatadir=~/.highlight
+````
+
+from there, these files will be used instead of the default, /usr/share/highlight.
+
 ### Variables:
 - ehidir: directory to store the temporary highlighted files;
-- ehidefs: highlight langDefs, by default, /usr/share/highlight/langDefs;
+- ehidatadir: highlight data, by default, /usr/share/highlight;
 - ehioutformat: highlight output format, by default, xterm256;
 - ehitheme: highlight theme, by default, camo;
 

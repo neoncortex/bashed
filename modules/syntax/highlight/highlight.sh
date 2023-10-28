@@ -5,7 +5,8 @@
 ! [[ -d $editdir ]] && \
 	_editalert "highlight: editdir does not exist"
 ehidir="$editdir/syntax/hi"
-ehidefs="/usr/share/highlight/langDefs"
+ehidatadir="/usr/share/highlight"
+ehidefs="$ehidatadir/langDefs"
 ehioutformat="xterm256"
 ehitheme=camo
 
@@ -53,10 +54,10 @@ function editshowhi {
 		[[ -f $syntfile ]] \
 			&& local syntax="$(cat "$syntfile")"
 		[[ -n $syntax ]] \
-			&& highlight --syntax "$syntax" -s $theme \
+			&& highlight -D "$ehidatadir" --syntax "$syntax" -s $theme \
 				--out-format=$format "$file" > "$dir/$name" \
-			|| highlight -s $theme --out-format=$format \
-				"$file" > "$dir/$name"
+			|| highlight -D "$ehidatadir" -s $theme \
+				--out-format=$format "$file" > "$dir/$name"
 	fi
 
 	edcolor=0 editshow $arg "$dir/$name"

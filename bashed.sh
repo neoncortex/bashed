@@ -368,19 +368,24 @@ function editopen {
 		&& [[ $f =~ '\$HOME' ]] \
 		&& f="$PWD/$f"
 	f="$(readlink -f "$f")"
-	! [[ -f $f ]] && touch "$f"
-	_editwindow "$f" "$argument"
-	[[ $? -eq 1 ]] \
-		&& _editalert '' "$edalertsound" \
-		&& return 2
-	if tmux run 2>/dev/null
+	! [[ -f $f ]] \
+		&& ! [[ -d $f ]] \
+		&& touch "$f"
+	if ! [[ -d $f ]]
 	then
-		local wordkey="${editwordkey:-o}"
-		tmux bind-key $wordkey run -b \
-			"bash -ic \"fn=\"$f\" editwords\""
-	else
-		_editalert "editopen: tmux session not found"
-		return 3
+		_editwindow "$f" "$argument"
+		[[ $? -eq 1 ]] \
+			&& _editalert '' "$edalertsound" \
+			&& return 2
+		if tmux run 2>/dev/null
+		then
+			local wordkey="${editwordkey:-o}"
+			tmux bind-key $wordkey run -b \
+				"bash -ic \"fn=\"$f\" editwords\""
+		else
+			_editalert "editopen: tmux session not found"
+			return 3
+		fi
 	fi
 
 	local location="$2"
@@ -399,6 +404,10 @@ function editopen {
 	[[ $location == 'rd' ]] && tmux select-pane -R && tmux splitw -c "$f"
 	[[ $location == 'ru' ]] && tmux select-pane -L && tmux splitw -b -c "$f"
 	tmux select-pane -T "$f"
+	[[ -d $f ]] && [[ -z $location ]] \
+		&& cd "$f" \
+		&& return 0
+	[[ -d $f ]] && return 0
 	if [[ -z $location ]]
 	then
 		fn="$f"
@@ -1032,8 +1041,8 @@ function editsub {
 	local out="$4"
 	if [[ $edescape == 1 ]]
 	then
-		in="$(_editescape "$in" 5)"
-		out="$(_editescape "$out" 5)"
+		in="$(_editescape "$in" 4)"
+		out="$(_editescape "$out" 4)"
 	fi
 
 	local pattern="s/$in/$out/"
