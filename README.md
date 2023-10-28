@@ -11,7 +11,7 @@ It keeps state, the file opened, current line, and various others,  with shell v
 
 So, for example, instead of opening a file in ed, and typing a, followed by the text you want to add, and a single dot to end adding, you open a file using a command, eo, that will fill some variables, and alter some bash and tmux state, in a way that allows the file to be accessed as in a line text editor.
 
-From there, you can add text, using ea command, for example.  The command arguments will be the text to be inserted.  See the [how it works](#How-it-works:) section for an explanation of all commands available, and how to use them.
+From there, you can add text, using ea command, for example.  The command arguments will be the text to be inserted.  See the [how to use it](#How-to-use-it:) section for an explanation of all commands available, and how to use them.
 
 # Dependencies:
 - ed;
