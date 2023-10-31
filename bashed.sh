@@ -912,7 +912,7 @@ function editappend {
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
 	[[ $data =~ ^(\\n)+$ ]] && data="${data/\\n/}"
-	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data" 1)"
 	local line=$fl
 	[[ $fs -eq 0 ]] && fs="$(wc -l "$fn" | cut -d ' ' -f1)"
 	[[ $fs -eq 0 ]] && [[ $line -eq 1 ]] && line=$((line - 1))
@@ -979,7 +979,7 @@ function editchange {
 		&& return 3
 	local data="$3"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
-	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data" 1)"
 	[[ -n $2 ]] \
 		&& local to="$(_editline "$2" "$f")" \
 		&& [[ -z $to ]] \
@@ -1009,7 +1009,7 @@ function editchangeline {
 		&& return 3
 	local data="$@"
 	[[ -z $data ]] && data="$(cat /dev/stdin)"
-	[[ $edescape == 1 ]] && data="$(_editescape "$data")"
+	[[ $edescape == 1 ]] && data="$(_editescape "$data" 1)"
 	res="$(edit "${fl}c\n$data\n.\nw" "$fn")"
 	[[ -n $res ]] && printf -- '%s\n' "$res"
 	editshow l
@@ -1041,8 +1041,8 @@ function editsub {
 	local out="$4"
 	if [[ $edescape == 1 ]]
 	then
-		in="$(_editescape "$in" 4)"
-		out="$(_editescape "$out" 4)"
+		in="$(_editescape "$in" 6)"
+		out="$(_editescape "$out" 5)"
 	fi
 
 	local pattern="s/$in/$out/"
